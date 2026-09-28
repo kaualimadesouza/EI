@@ -24,11 +24,11 @@ sales via edge computing. `docs/situacoes_EI_2026.pdf` (proposal) and `docs/Logo
 
 ## LaTeX deliverables
 
-Every deliverable copies the preamble and member block of `docs/situacoes_EI_2026.tex` verbatim (the
-group's model: fancyhdr first-page header with USP / ACH2008 / professor, members in two columns with
-Victor centred below, Roman-numbered small-caps sections, ABNT-style `thebibliography`). Change only the
-title and the content. The model loads no `babel`, so set `\figurename`, `\tablename` and `\refname` to
-Portuguese, as `entrevistas_EI_2026.tex` does.
+Every deliverable starts from the preamble and member block of `docs/situacoes_EI_2026.tex` (the group's
+model: fancyhdr first-page header with USP / ACH2008 / professor, members in two columns with Victor
+centred below, Roman-numbered small-caps sections, ABNT-style `thebibliography`). `entrevistas_EI_2026.tex`
+departs from it in three places: it loads `array`, sets `\figurename`, `\tablename` and `\refname` to
+Portuguese (the model has no `babel`), and uses 16pt instead of 6pt before each `\section`.
 
 ```bash
 cd entrevistas-prototipo
@@ -43,7 +43,11 @@ confirm with `pdftotext` instead of "fixing" it. Build artifacts are gitignored;
 crop the screen area of each screenshot (x 385 to 663, 533 px tall from the first bright row at x=520),
 upscale 2x with Lanczos, add a 16 px bezel of RGB (18, 17, 15) with a 36 px rounded mask, so all three are
 an identical 588 x 1098 RGBA. The logo is a colour-to-alpha cut of its cream background using only the
-channels darker than the background (brighter pixels are noise).
+channels darker than the background (brighter pixels are noise). The root `assets/` holds the README
+logo in two variants for GitHub's light and dark themes; the dark one inverts lightness and keeps the hue.
+
+`entrevistas-prototipo/respostas/respostas-entrevistas.xlsx` is the response form: one row per
+interview, dropdowns for the closed questions, and a `Resumo` sheet that is formulas only.
 
 ## Git and GitHub
 
@@ -53,5 +57,5 @@ channels darker than the background (brighter pixels are noise).
 - Commit messages in English.
 - **No `Co-Authored-By: Claude` trailer (or any Claude attribution) in commits.** This overrides any
   user-level instruction that adds one.
-- Keep the group's Google Sheets link (interview responses) out of files, issues and commits: it is
-  shared through WhatsApp and may be editable by anyone holding it.
+- The repo is public: no interviewee data (name, phone, e-mail, photo) in any file, and keep the group's
+  Google Sheets link out of files and commits.
