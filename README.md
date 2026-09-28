@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="entrevistas-prototipo/figuras/topa-logo.png" alt="TOPA, Totem por Assinatura" width="260">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/topa-logo-dark.png">
+    <img src="assets/topa-logo.png" alt="TOPA, Totem por Assinatura" width="260">
+  </picture>
 </p>
 
 # TOPA: Totem por Assinatura
