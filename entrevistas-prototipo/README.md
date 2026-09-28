@@ -13,8 +13,8 @@ Passada em aula em 21/09/2026:
   o mercado.
 - Roteiro do Victor, aprovado no grupo em 28/09: 3 telas, 3 perguntas por tela, cerca de 5 minutos por
   pessoa. Mostrar uma tela por vez e fazer as perguntas antes de avançar.
-- Respostas na planilha do grupo no Google Sheets (nomes preenchidos pelo Luiz; o link está no grupo
-  do WhatsApp e fica fora deste repositório, que é público).
+- Respostas em `respostas/respostas-entrevistas.xlsx` (dá para subir no Google Drive e preencher em
+  conjunto). Sem nome, telefone ou e-mail do entrevistado: o repositório é público.
 - Prazo de entrega: **a definir**.
 
 ## Estrutura
@@ -24,6 +24,7 @@ Passada em aula em 21/09/2026:
 | `entrevistas_EI_2026.tex` / `.pdf` | Documento no modelo LaTeX do grupo: produto, método, hipóteses por tela, roteiro e análise |
 | `telas/` | Capturas completas do protótipo, com as perguntas ao lado (para usar na entrevista) |
 | `figuras/` | Recortes das telas e o logo, usados no PDF |
+| `respostas/respostas-entrevistas.xlsx` | Instruções, uma linha por entrevista (15 por integrante) e um resumo calculado por fórmulas |
 
 Recompilar: `pdflatex entrevistas_EI_2026.tex` duas vezes (a segunda resolve as referências).
 
