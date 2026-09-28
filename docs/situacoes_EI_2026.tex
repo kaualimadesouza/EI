@@ -1,0 +1,179 @@
+\documentclass[a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{left=1.5cm, right=1.5cm, top=2.54cm, bottom=2.54cm}
+\usepackage{graphicx, setspace, amsmath, amssymb, titlesec, fancyhdr, parskip, indentfirst, etoolbox, caption, cite, xcolor}
+\usepackage{listings}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{multicol}
+
+% Title Formatting
+\titleformat{\section}{\centering\large\scshape}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection.}{1em}{}
+
+\setstretch{1.0}
+\setlength{\parskip}{6pt}
+
+\titlespacing{\section}{0pt}{6pt}{6pt}
+\titlespacing{\subsection}{0pt}{6pt}{6pt}
+\titlespacing{\subsubsection}{0pt}{6pt}{6pt}
+
+% Document Title
+\title{
+    \textbf{Cenários de Mercado/Mundo que Favorecem ou Desfavorecem Nosso Trabalho}
+}
+
+\date{}
+
+\captionsetup{labelfont={small,sc}, textfont={small,sc}}
+
+% Section Numbering
+\renewcommand{\thesection}{\Roman{section}.}
+\renewcommand{\thesubsection}{\textit{\Alph{subsection}.}}
+\renewcommand{\thesubsubsection}{\textit{\arabic{subsubsection}.}}
+\renewcommand{\thetable}{\Roman{table}}
+\renewcommand{\thefigure}{\Roman{figure}}
+
+% Make titles italic as well
+\titleformat{\subsection}
+    {\normalfont\large\itshape}
+    {\thesubsection}
+    {1em}
+    {}
+
+\titleformat{\subsubsection}
+    {\normalfont\itshape}
+    {\thesubsubsection}
+    {1em}
+    {}
+
+\setcounter{page}{1}
+
+% Fancy Header Configuration
+\pagestyle{fancy}
+\fancyhf{}
+
+% First Page Header
+\fancypagestyle{firstpage}{
+    \fancyhead[C]{
+        \centering
+        {\fontsize{14pt}{10pt}\selectfont
+        \textbf{Universidade de São Paulo}\\[0.5em]
+        \textbf{ACH2008 - Empreendedorismo em Informática}}\\[0.2em]
+        {\fontsize{8pt}{10pt}\selectfont
+        \textbf{Prof. Doutor:} Luciano Vieira de Araújo
+        \textbf{Ano:} 2° Semestre/2026}
+    }
+}
+
+% Default Header for Other Pages
+\fancyhead[C]{
+    \textbf{Escola de Artes, Ciências e Humanidades - Universidade de São Paulo}
+}
+
+\begin{document}
+
+\maketitle
+\vspace{-1.5cm}
+\thispagestyle{firstpage}
+
+% =========================================================
+% INTEGRANTES
+% =========================================================
+
+\begin{multicols}{2}
+    \centering
+
+    \textbf{Kauã Lima de Souza}\\
+    15674702\\
+    T94
+
+    \vspace{0.5cm}
+
+    \textbf{Kevin Rodrigues Nunes}\\
+    15676030\\
+    T94
+
+    \vspace{0.5cm}
+
+    \textbf{Luiz Felipe Couto de Souza}\\
+    13673169\\
+    T94
+
+    \vspace{0.5cm}
+
+    \textbf{Renan Biruel Uema}\\
+    15486661\\
+    T94
+
+\end{multicols}
+
+\vspace{-0.2cm} % Ajuste de espaçamento vertical
+
+\begin{center}
+    \textbf{Victor Yodono}\\
+    13829040\\
+    T94
+\end{center}
+
+\vspace{0.5cm}
+
+% =========================================================
+% CONTEÚDO
+% =========================================================
+
+\singlespacing
+\setlength{\parskip}{6pt}
+\setlength{\parindent}{0.5cm}
+
+\section{Proposta de Empreendimento}
+
+A proposta consiste no desenvolvimento de uma plataforma inteligente de autoatendimento focada no segmento de pequenas e médias empresas, integrando um modelo de \textit{Hardware-as-a-Service} (HaaS) de baixo custo por meio de \textit{tablets} ou \textit{smartphones} com tecnologia \textit{Tap to Pay} (NFC) a um software SaaS em nuvem. Segundo relatório da \textit{Global Market Insights} divulgado pela Revista Pequenas Empresas \& Grandes Negócios, o mercado global de \textit{self-checkout} deve registrar um crescimento de 11\% ao ano até 2027, quando alcançará o montante de US\$ 6,5 bilhões \cite{pegn2026}. Nesse cenário em expansão, a solução busca atender pequenos e médios empresários que necessitam automatizar o atendimento presencial, mas não possuem capital suficiente para adquirir os totens industriais de alto custo oferecidos pelos grandes players do setor \cite{genialtec2026}. Enquanto os grandes players mantêm abordagens tradicionais, a presente proposta aproveita a liberdade de arriscar mais, inovar rápido e aplicar criatividade em pontos de gargalo característicos do mercado, suportados pelos seguintes itens:
+
+\begin{itemize}
+    \item \textbf{HaaS:} Grandes competidores como a Genialtec já estão adotando o modelo de \textit{Hardware-as-a-Service}, visando empresas de pequeno e médio porte. Porém, as projeções indicam que essa modalidade chegará a 60\% das operações dessas empresas apenas em 2029, sendo a operação principal do mercado atual a venda direta dos equipamentos (\textit{CapEx}).
+    \item \textbf{Motor de Inteligência Artificial:} Foco na inovação de software com IA para aumento do ticket médio (\textit{upselling}) e ganho de experiência do usuário, oferecendo recomendações dinâmicas baseadas em perfil de consumo e sazonalidade, além de explorar novas formas de interação como atendimento por voz ou chat.
+    \item \textbf{Pagamentos Instantâneos e Tap on Phone:} Suporte nativo a pagamentos por Pix via QR Code e cartão por aproximação através da tecnologia \textit{Tap on Phone} (NFC em tablets/smartphones), eliminando a necessidade e os custos de aquisição ou aluguel de maquininhas de cartão (\textit{PinPads}) externas.
+\end{itemize}
+
+\section{Elementos Favoráveis}
+
+O avanço das discussões e a implementação do fim da escala 6x1 trazem um aumento previsível de até 22\% nos custos operacionais com mão de obra para negócios de funcionamento diário \cite{fecomercio2026, abrasel2026}. A automação do atendimento surge como a principal alternativa para manter o funcionamento nos finais de semana sem a necessidade de contratar novos turnos de funcionários. Paralelamente, imaginamos que a utilização da tecnologia \textit{Tap on Phone} (NFC em dispositivos móveis) possa simplificar a área de pagamentos, eliminando a necessidade de aquirir maquininhas e integrar com sistemas de pagamento. O modelo por assinatura (HaaS) elimina o investimento inicial (\textit{CapEx}) do lojista, convertendo a automação em uma despesa operacional (\textit{OpEx}) de baixo custo e com retorno sobre o investimento.
+
+\section{Elementos Desfavoráveis}
+
+Apesar das oportunidades de mercado, a proposta enfrenta desafios inerentes ao modelo de negócio. O principal risco técnico está na complexidade de integração com os sistemas de gestão (ERPs legados) já utilizados pelos estabelecimentos. A presença de softwares locais desatualizados ou desprovidos de APIs modernas dificulta a baixa automática de estoque, a conciliação financeira de caixa e a unificação fiscal, podendo gerar custos elevados de suporte técnico caso os pedidos sofram gargalos ao fluir para a produção. Do ponto de vista financeiro, a intensidade de capital requerida pelo modelo de \textit{Hardware-as-a-Service} (HaaS) exige que a startup financie os dispositivos na largada e recupere o investimento em meses; dessa forma, taxas elevadas de cancelamento representam uma ameaça direta à sustentabilidade do fluxo de caixa.
+
+\section{Continuidade do Produto}
+
+A equipe decidiu pela continuidade do produto de autoatendimento. Apesar dos desafios e gargalos do setor, entendemos que eles representam, na verdade, as principais oportunidades para direcionar a inovação do projeto. A solução se mantém focada em apoiar pequenos e médios estabelecimentos no enfrentamento das transformações do mercado de trabalho. Além disso, a estratégia adota uma postura ágil e adaptativa ao longo do desenvolvimento: buscamos avaliar continuamente onde residem as oportunidades de maior tração, nos mantendo flexível a focar, por exemplo, prioritariamente no fornecimento da infraestrutura de hardware (\textit{HaaS}), enquanto estabelece parcerias estratégicas para a camada de software, escalando a solução própria em um segundo momento.
+
+\section{O que Mudou na Proposta}
+
+A proposta original manteve sua essência, mas passou por retrabalho em três pilares estratégicos:
+\begin{enumerate}
+    \item \textbf{Foco de Mercado:} Afunilamento do Perfil de Cliente Ideal (ICP) para focar prioritariamente em pequenos e médios estabelecimentos de alimentação fora do lar e comércio de proximidade fortemente impactados pelas mudanças na escala 6x1.
+    \item \textbf{Arquitetura de Hardware:} Abandonou-se a ideia de competir no segmento de totens industriais, adotando terminais com suporte antifurto e tecnologia \textit{Tap on Phone} (NFC), o que viabiliza a troca expressa de equipamentos via correios.
+\end{enumerate}
+
+\begin{thebibliography}{99}
+
+\bibitem{pegn2026}
+GENIALTEC projeta crescer 32\% em 2026 impulsionada pela expansão do autoatendimento no Brasil. \textbf{Revista Pequenas Empresas \& Grandes Negócios}, São Paulo, jun. 2026. Conteúdo de Marca / Pressworks. Disponível em: \url{https://revistapegn.globo.com/conteudo-de-marca/pressworks/noticia/2026/06/genialtec-projeta-crescer-32-em-2026-impulsionada-pela-expansao-do-autoatendimento-no-brasil-1.ghtml}. Acesso em: 16 ago. 2026.
+
+\bibitem{genialtec2026}
+GENIALTEC TECNOLOGIA. \textbf{Soluções em tecnologia e terminais de autoatendimento}. Balneário Camboriú, 2026. Disponível em: \url{https://www.genialtec.com.br/}. Acesso em: 16 ago. 2026.
+
+\bibitem{fecomercio2026}
+FECOMERCIO-SP. \textbf{Custo do trabalho aumentaria 22\% com fim da escala 6x1}. Notícias FecomercioSP, São Paulo, 12 fev. 2026. Disponível em: \url{https://www.fecomercio.com.br/noticia/custo-do-trabalho-aumentaria-22-com-fim-da-escala-6x1}. Acesso em: 16 ago. 2026.
+
+\bibitem{abrasel2026}
+ABRASEL - ASSOCIAÇÃO BRASILEIRA DE BARES E RESTAURANTES. \textbf{Fim da escala 6x1: impactos econômicos e operacionais da mudança na jornada no setor de alimentação}. Análise Institucional Abrasel / CNN Brasil, 18 abr. 2026. Disponível em: \url{https://www.cnnbrasil.com.br/economia/macroeconomia/abrasel-fim-da-escala-6x1-avanca-por-interesse-eleitoral-e-de-modo-acodado/}. Acesso em: 16 ago. 2026.
+
+\end{thebibliography}
+
+
+\end{document}
