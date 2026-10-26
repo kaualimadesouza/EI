@@ -362,6 +362,24 @@ describe('KioskApp', () => {
     expect(button('Coxinha, esgotado')).toBeDisabled()
   })
 
+  it('still shows the rejection when the menu cannot be refreshed after it', async () => {
+    const f = fakes()
+    f.place.mockRejectedValue(new OrderRejectedError('Coxinha esgotou.'))
+    const { user } = setup(f)
+    await startOrder(user)
+    await user.click(button('Salgados'))
+    await user.click(button('Adicionar Coxinha'))
+    f.list.mockRejectedValue(new Error('offline'))
+    await user.click(button('Ver pedido'))
+    await user.click(button('Pagar'))
+
+    await user.click(button('Simular aprovação (demo)'))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Coxinha esgotou.')
+    await user.click(button('Voltar ao pedido'))
+    expect(screen.getByText('Total, 1 item')).toBeInTheDocument()
+  })
+
   it('stops at 20 units of a product, as the store does', async () => {
     const { user } = setup()
     await startOrder(user)
