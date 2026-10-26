@@ -1,6 +1,16 @@
 from collections.abc import Callable
 
+import pytest
 from fastapi.testclient import TestClient
+
+INVALID_REQUEST = "Não foi possível processar a solicitação. Tente de novo."
+COXINHA = {
+    "id": "coxinha",
+    "name": "Coxinha",
+    "description": "Frango com catupiry.",
+    "category": "salgados",
+    "price_cents": 890,
+}
 
 # the seed of the products migration, in menu order: (id, category, name, description, price)
 MENU = [
@@ -52,3 +62,68 @@ def test_a_sold_out_product_stays_on_the_menu_marked_unavailable(
 
     assert [product["id"] for product in products] == [row[0] for row in MENU]
     assert [product["id"] for product in products if not product["available"]] == ["coxinha"]
+
+
+def test_a_product_marked_sold_out_comes_back_unavailable_and_stays_so(
+    client: TestClient,
+) -> None:
+    response = client.patch("/products/coxinha", json={"available": False})
+
+    assert response.status_code == 200
+    assert response.json() == {**COXINHA, "available": False}
+    sold_out = [
+        product["id"] for product in client.get("/products").json() if not product["available"]
+    ]
+    assert sold_out == ["coxinha"]
+
+
+def test_a_product_back_on_sale_comes_back_available(
+    client: TestClient, sell_out: Callable[[str], None]
+) -> None:
+    sell_out("coxinha")
+
+    response = client.patch("/products/coxinha", json={"available": True})
+
+    assert response.status_code == 200
+    assert response.json() == {**COXINHA, "available": True}
+    assert all(product["available"] for product in client.get("/products").json())
+
+
+def test_the_kiosk_refuses_a_product_the_dashboard_sold_out_until_it_is_back(
+    client: TestClient,
+) -> None:
+    order = {
+        "items": [{"product_id": "coxinha", "quantity": 1}],
+        "dine_in": True,
+        "payment_method": "pix",
+    }
+
+    client.patch("/products/coxinha", json={"available": False})
+    refused = client.post("/orders", json=order)
+    client.patch("/products/coxinha", json={"available": True})
+    accepted = client.post("/orders", json=order)
+
+    assert (refused.status_code, refused.json()) == (409, {"detail": "Coxinha esgotou."})
+    assert accepted.status_code == 201
+
+
+def test_an_unknown_product_is_not_found(client: TestClient) -> None:
+    response = client.patch("/products/pastel", json={"available": False})
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Produto não encontrado."}
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [{}, {"available": "talvez"}, {"available": None}],
+    ids=["no-availability", "not-a-boolean", "null"],
+)
+def test_a_malformed_availability_gets_the_generic_message(
+    client: TestClient, payload: dict[str, object]
+) -> None:
+    response = client.patch("/products/coxinha", json=payload)
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": INVALID_REQUEST}
+    assert all(product["available"] for product in client.get("/products").json())

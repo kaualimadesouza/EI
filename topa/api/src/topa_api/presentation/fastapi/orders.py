@@ -1,13 +1,19 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
+from topa_api.application.change_order_status import ChangeOrderStatusUseCase
+from topa_api.application.list_orders import ListOrdersUseCase
 from topa_api.application.place_order import PlaceOrder, PlaceOrderUseCase
-from topa_api.domain.orders import OrderLine, OrderStatus, PaymentMethod
-from topa_api.presentation.fastapi.dependencies import get_place_order_use_case
+from topa_api.domain.orders import Order, OrderLine, OrderStatus, PaymentMethod
+from topa_api.presentation.fastapi.dependencies import (
+    get_change_order_status_use_case,
+    get_list_orders_use_case,
+    get_place_order_use_case,
+)
 from topa_api.presentation.fastapi.errors import ErrorResponse
 
 router = APIRouter(tags=["orders"])
@@ -24,6 +30,10 @@ class PlaceOrderRequest(BaseModel):
     items: list[OrderItemRequest]
     dine_in: bool
     payment_method: PaymentMethod
+
+
+class ChangeStatusRequest(BaseModel):
+    status: OrderStatus
 
 
 class OrderItemResponse(BaseModel):
@@ -66,6 +76,38 @@ def place_order(
             payment_method=request.payment_method,
         )
     )
+    return _order_response(order)
+
+
+@router.get(
+    "/orders",
+    responses={422: {"model": ErrorResponse, "description": "the date is not YYYY-MM-DD"}},
+)
+def list_orders(
+    use_case: Annotated[ListOrdersUseCase, Depends(get_list_orders_use_case)],
+    business_date: Annotated[date | None, Query(alias="date")] = None,
+) -> list[OrderResponse]:
+    """A business day's orders by number: today in São Paulo unless `date` names another."""
+    return [_order_response(order) for order in use_case.execute(business_date)]
+
+
+@router.patch(
+    "/orders/{order_id}",
+    responses={
+        404: {"model": ErrorResponse, "description": "no order has that id"},
+        409: {"model": ErrorResponse, "description": "not one step forward or back"},
+        422: {"model": ErrorResponse, "description": "unknown status or malformed id"},
+    },
+)
+def change_order_status(
+    order_id: uuid.UUID,
+    request: ChangeStatusRequest,
+    use_case: Annotated[ChangeOrderStatusUseCase, Depends(get_change_order_status_use_case)],
+) -> OrderResponse:
+    return _order_response(use_case.execute(order_id, request.status))
+
+
+def _order_response(order: Order) -> OrderResponse:
     return OrderResponse(
         id=order.id,
         number=order.number,

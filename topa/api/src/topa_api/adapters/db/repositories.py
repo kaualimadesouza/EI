@@ -1,17 +1,21 @@
+import uuid
 from collections.abc import Collection
 from datetime import date
 
 from psycopg.errors import UniqueViolation
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from topa_api.adapters.db.models import OrderItemRow, OrderRow, ProductRow
 from topa_api.domain.catalog import Category, Product
 from topa_api.domain.errors import OrderNumberTakenError
-from topa_api.domain.orders import Order
+from topa_api.domain.orders import Order, OrderItem, OrderStatus, PaymentMethod
 
 ORDER_NUMBER_CONSTRAINT = "uq_orders_business_date_number"
+
+# items in a second query, not a join: Postgres refuses FOR UPDATE on an outer join
+WITH_ITEMS = selectinload(OrderRow.items).joinedload(OrderItemRow.product)
 
 
 class SqlAlchemyProductRepository:
@@ -25,6 +29,13 @@ class SqlAlchemyProductRepository:
     def find(self, product_ids: Collection[str]) -> list[Product]:
         rows = self._session.scalars(select(ProductRow).where(ProductRow.id.in_(product_ids)))
         return [_product_of(row) for row in rows]
+
+    def set_availability(self, product_id: str, available: bool) -> Product | None:
+        row = self._session.get(ProductRow, product_id)
+        if row is None:
+            return None
+        row.available = available
+        return _product_of(row)
 
 
 class SqlAlchemyOrderRepository:
@@ -65,6 +76,24 @@ class SqlAlchemyOrderRepository:
                 raise
             raise OrderNumberTakenError from error
 
+    def list_for_day(self, business_date: date) -> list[Order]:
+        rows = self._session.scalars(
+            select(OrderRow)
+            .where(OrderRow.business_date == business_date)
+            .order_by(OrderRow.number)
+            .options(WITH_ITEMS)
+        )
+        return [_order_of(row) for row in rows]
+
+    def get_for_update(self, order_id: uuid.UUID) -> Order | None:
+        row = self._session.get(OrderRow, order_id, options=[WITH_ITEMS], with_for_update=True)
+        return None if row is None else _order_of(row)
+
+    def set_status(self, order_id: uuid.UUID, status: OrderStatus) -> None:
+        self._session.execute(
+            update(OrderRow).where(OrderRow.id == order_id).values(status=status.value)
+        )
+
 
 def _violates(error: IntegrityError, constraint: str) -> bool:
     cause = error.orig
@@ -79,4 +108,26 @@ def _product_of(row: ProductRow) -> Product:
         category=Category(row.category),
         price_cents=row.price_cents,
         available=row.available,
+    )
+
+
+def _order_of(row: OrderRow) -> Order:
+    return Order(
+        id=row.id,
+        number=row.number,
+        business_date=row.business_date,
+        status=OrderStatus(row.status),
+        dine_in=row.dine_in,
+        payment_method=PaymentMethod(row.payment_method),
+        # menu order, the one the kitchen reads; the order the customer tapped is not stored
+        items=tuple(
+            OrderItem(
+                product_id=item.product_id,
+                name=item.product.name,
+                quantity=item.quantity,
+                unit_price_cents=item.unit_price_cents,
+            )
+            for item in sorted(row.items, key=lambda item: item.product.position)
+        ),
+        created_at=row.created_at,
     )

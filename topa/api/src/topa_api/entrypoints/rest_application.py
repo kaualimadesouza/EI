@@ -21,7 +21,7 @@ from topa_api.presentation.fastapi.products import router as products_router
 
 def get_session(engine: Annotated[Engine, Depends(get_engine)]) -> Iterator[Session]:
     """One transaction per request. Depend on it with scope="function": the default
-    scope commits after the response is sent, so a failed commit would still say 201."""
+    scope commits after the response is sent, so a failed commit would still say 2xx."""
     with Session(engine) as session, session.begin():
         yield session
 

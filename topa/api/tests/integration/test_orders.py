@@ -230,3 +230,111 @@ def test_an_order_whose_commit_fails_is_never_confirmed(app: FastAPI, db_engine:
 
     assert response.status_code == 500
     assert _stored_orders(db_engine) == 0
+
+
+def test_the_days_orders_are_listed_by_number_as_they_were_placed(client: TestClient) -> None:
+    first = client.post(
+        "/orders", json=_order(("xsalada", 2), ("refri", 1), dine_in=False, payment_method="card")
+    ).json()
+    second = client.post("/orders", json=_order(("cafe", 1))).json()
+
+    response = client.get("/orders")
+
+    assert response.status_code == 200
+    assert response.json() == [first, second]
+
+
+def test_listed_items_follow_the_menu_order(client: TestClient) -> None:
+    """The kitchen reads lanches before bebidas, whatever order the customer tapped them in."""
+    client.post("/orders", json=_order(("refri", 1), ("cafe", 1), ("xsalada", 1)))
+
+    items = client.get("/orders").json()[0]["items"]
+
+    assert [item["product_id"] for item in items] == ["xsalada", "cafe", "refri"]
+
+
+def test_another_days_orders_are_listed_when_asked_for(
+    client: TestClient, clock: FixedClock
+) -> None:
+    monday = client.post("/orders", json=_order(("cafe", 1))).json()
+    clock.moment += timedelta(days=1)
+    tuesday = client.post("/orders", json=_order(("agua", 1))).json()
+
+    assert client.get("/orders", params={"date": "2026-10-26"}).json() == [monday]
+    assert client.get("/orders").json() == [tuesday]
+
+
+def test_a_day_without_orders_lists_nothing(client: TestClient) -> None:
+    client.post("/orders", json=_order(("cafe", 1)))
+
+    response = client.get("/orders", params={"date": "2026-01-01"})
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+@pytest.mark.parametrize("day", ["26/10/2026", "2026-02-30", "ontem"])
+def test_a_malformed_date_gets_the_generic_message(client: TestClient, day: str) -> None:
+    response = client.get("/orders", params={"date": day})
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": INVALID_REQUEST}
+
+
+def test_moving_an_order_returns_it_with_the_new_status(client: TestClient) -> None:
+    placed = client.post("/orders", json=_order(("xsalada", 1), ("refri", 2))).json()
+
+    response = client.patch(f"/orders/{placed['id']}", json={"status": "preparing"})
+
+    assert response.status_code == 200
+    assert response.json() == {**placed, "status": "preparing"}
+    assert client.get("/orders").json() == [{**placed, "status": "preparing"}]
+
+
+def test_an_order_walks_to_delivered_and_back_one_step_at_a_time(client: TestClient) -> None:
+    order_id = client.post("/orders", json=_order(("cafe", 1))).json()["id"]
+    steps = ["preparing", "ready", "delivered", "ready", "preparing", "received"]
+
+    responses = [client.patch(f"/orders/{order_id}", json={"status": step}) for step in steps]
+
+    assert [(response.status_code, response.json()["status"]) for response in responses] == [
+        (200, step) for step in steps
+    ]
+
+
+def test_skipping_a_step_is_refused_and_the_order_stays_put(client: TestClient) -> None:
+    placed = client.post("/orders", json=_order(("cafe", 1))).json()
+
+    response = client.patch(f"/orders/{placed['id']}", json={"status": "delivered"})
+
+    assert response.status_code == 409
+    assert response.json() == {"detail": "O pedido 001 não pode passar de recebido para entregue."}
+    assert client.get("/orders").json() == [placed]
+
+
+def test_moving_an_unknown_order_is_not_found(client: TestClient) -> None:
+    response = client.patch(f"/orders/{uuid.uuid4()}", json={"status": "preparing"})
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Pedido não encontrado."}
+
+
+@pytest.mark.parametrize(
+    ("order_id", "payload"),
+    [
+        (str(uuid.uuid4()), {"status": "cancelled"}),
+        (str(uuid.uuid4()), {"status": "recebido"}),
+        (str(uuid.uuid4()), {}),
+        ("47", {"status": "preparing"}),
+    ],
+    ids=["unknown-status", "label-instead-of-value", "no-status", "id-not-a-uuid"],
+)
+def test_a_malformed_status_change_gets_the_generic_message(
+    client: TestClient, caplog: pytest.LogCaptureFixture, order_id: str, payload: dict[str, str]
+) -> None:
+    with caplog.at_level(logging.WARNING):
+        response = client.patch(f"/orders/{order_id}", json=payload)
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": INVALID_REQUEST}
+    assert f"invalid request to /orders/{order_id}" in caplog.text

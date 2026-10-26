@@ -56,11 +56,12 @@ def db_engine(alembic_config: Config) -> Iterator[Engine]:
 
 
 @pytest.fixture(autouse=True)
-def clean_orders(db_engine: Engine) -> Iterator[None]:
-    """The products are the migration's seed and stay; every order a test placed goes."""
+def reset_database(db_engine: Engine) -> Iterator[None]:
+    """The seeded menu stays, all of it back on sale; every order a test placed goes."""
     yield
     with db_engine.begin() as connection:
         connection.execute(delete(OrderRow))
+        connection.execute(update(ProductRow).values(available=True))
 
 
 @pytest.fixture
@@ -82,19 +83,13 @@ def client(app: FastAPI) -> Iterator[TestClient]:
 
 
 @pytest.fixture
-def sell_out(db_engine: Engine) -> Iterator[Callable[[str], None]]:
-    """Marks seeded products unavailable for one test and puts them back after it."""
-    sold_out: list[str] = []
+def sell_out(db_engine: Engine) -> Callable[[str], None]:
+    """Marks a seeded product unavailable for one test; reset_database puts it back."""
 
     def mark(product_id: str) -> None:
         with db_engine.begin() as connection:
             connection.execute(
                 update(ProductRow).where(ProductRow.id == product_id).values(available=False)
             )
-        sold_out.append(product_id)
 
-    yield mark
-    with db_engine.begin() as connection:
-        connection.execute(
-            update(ProductRow).where(ProductRow.id.in_(sold_out)).values(available=True)
-        )
+    return mark
