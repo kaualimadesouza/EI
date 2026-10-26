@@ -1,0 +1,154 @@
+name: Web
+
+# Checks topa/web, then deploys it with the Vercel CLI (the git integration stays off in
+# vercel.json): a preview per PR, DEV on push to main, PROD from release-please or by hand.
+# No VITE_API_URL in the cloud: the deployed app runs in demo mode.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - topa/web/**
+      - .github/workflows/web.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - topa/web/**
+      - .github/workflows/web.yml
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy to (prod only from main)"
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+  # release-please calls this for PROD: a release made with GITHUB_TOKEN triggers nothing
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+
+# a new push to a PR supersedes its running checks and preview; other runs never cancel
+concurrency:
+  group: web-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: topa/web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: topa/web/package-lock.json
+
+      - run: npm ci
+      - name: Lint, typecheck, test (100% coverage), build
+        run: npm run check
+
+  # decides once where this run deploys, and stays dormant until the Vercel secrets exist
+  # (a job-level `if` cannot read secrets)
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+      env: ${{ steps.check.outputs.env }}
+    steps:
+      - id: check
+        env:
+          READY: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID != '' }}
+          REQUESTED: ${{ inputs.environment }}
+        run: |
+          case "$REQUESTED" in
+            dev | prod) target="$REQUESTED" ;;
+            "") if [ "$GITHUB_EVENT_NAME" = pull_request ]; then target="pr"; else target="dev"; fi ;;
+            *) echo "::error::unknown environment '$REQUESTED' (dev or prod)"; exit 1 ;;
+          esac
+          if [ "$target" = prod ] && [ "$GITHUB_REF" != refs/heads/main ]; then
+            echo "::error::prod deploys only from main, not $GITHUB_REF"
+            exit 1
+          fi
+          { echo "ready=$READY"; echo "env=$target"; } >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: [build, preflight]
+    if: needs.preflight.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    # DEV and PROD each move a shared alias, so their deploys queue; previews queue per PR
+    concurrency:
+      group: deploy-web-${{ needs.preflight.outputs.env == 'pr' && format('pr-{0}', github.event.number) || needs.preflight.outputs.env }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pull-requests: write
+    defaults:
+      run:
+        working-directory: topa/web
+    env:
+      ENV_NAME: ${{ needs.preflight.outputs.env }}
+      VERCEL_ENV: ${{ needs.preflight.outputs.env == 'prod' && 'production' || 'preview' }}
+      PROD_FLAG: ${{ needs.preflight.outputs.env == 'prod' && '--prod' || '' }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: topa/web/package-lock.json
+
+      - run: npm ci
+      - run: npm i -g vercel@59.10.0
+      - run: vercel pull --yes --environment="$VERCEL_ENV" --token="$VERCEL_TOKEN"
+      # PROD_FLAG is unquoted on purpose: empty outside prod, it must vanish from the command
+      - run: |
+          # shellcheck disable=SC2086
+          vercel build $PROD_FLAG --token="$VERCEL_TOKEN"
+
+      - name: Deploy
+        id: deploy
+        env:
+          DEV_ALIAS: ${{ vars.VERCEL_DEV_ALIAS || 'topa-totem-dev.vercel.app' }}
+        run: |
+          # shellcheck disable=SC2086
+          URL=$(vercel deploy --prebuilt $PROD_FLAG --token="$VERCEL_TOKEN")
+          if [ "$ENV_NAME" = dev ]; then
+            vercel alias set "$URL" "$DEV_ALIAS" --token="$VERCEL_TOKEN"
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Deployed $ENV_NAME: $URL" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment the preview URL on the PR
+        if: needs.preflight.outputs.env == 'pr'
+        uses: actions/github-script@v7
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.url }}
+        with:
+          script: |
+            const marker = '<!-- topa-preview -->'
+            const body = `${marker}\nPreview: ${process.env.PREVIEW_URL}\n\nCommit ${context.payload.pull_request.head.sha.slice(0, 7)}`
+            const { owner, repo } = context.repo
+            const issue_number = context.payload.pull_request.number
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number })
+            const mine = comments.find((c) => c.body.startsWith(marker))
+            if (mine) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: mine.id, body })
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body })
+            }

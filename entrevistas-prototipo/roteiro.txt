@@ -1,0 +1,9 @@
+1. Olhando essa tela, você saberia fazer um pedido sozinho, sem ajuda?
+2. Esse totem resolveria a espera ou o atendimento que você costuma enfrentar nesses lugares?
+3. A "sugestão para você" ajuda ou incomoda? Como você se sentiria sabendo que ela é feita por uma câmera no aparelho?
+4. Você pagaria por aqui em vez de ir ao caixa? Por quê (ou por que não)?
+5. O que te deixaria inseguro ao pagar nesse totem?
+6. Você pagaria mais caro (ex.: R$ 1 a mais) por essa comodidade, ou só usaria se fosse igual ao caixa?
+7. Se a fila estivesse grande, você pediria pelo próprio celular ou esperaria o totem? Por quê?
+8. Escanear ou aproximar o celular sem baixar app é tranquilo para você? O que travaria?
+9. No geral: você usaria esse totem no lugar do caixa?

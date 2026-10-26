@@ -1,0 +1,40 @@
+name: release-please
+
+# Keeps a release PR open on main from the conventional commits that touch topa/. Merging it
+# tags, publishes the GitHub Release and topa/CHANGELOG.md, then calls web.yml for PROD:
+# a release created with GITHUB_TOKEN never triggers other workflows on its own.
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      # the package lives at topa/, so the action prefixes its per-package outputs with `topa--`
+      tag_name: ${{ steps.release.outputs['topa--tag_name'] }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.RP_TOKEN || secrets.GITHUB_TOKEN }}
+          config-file: .github/release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  deploy-prod:
+    needs: release-please
+    if: needs.release-please.outputs.releases_created == 'true'
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/web.yml
+    with:
+      environment: prod
+    secrets: inherit # pragma: allowlist secret

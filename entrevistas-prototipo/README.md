@@ -22,6 +22,7 @@ Passada em aula em 21/09/2026:
 | Caminho | O que é |
 | --- | --- |
 | `entrevistas_EI_2026.tex` / `.pdf` | Documento no modelo LaTeX do grupo: produto, método, hipóteses por tela, roteiro e análise |
+| `roteiro.txt` | As 9 perguntas do roteiro, numeradas, uma por linha |
 | `telas/` | Capturas completas do protótipo, com as perguntas ao lado (para usar na entrevista) |
 | `figuras/` | Recortes das telas e o logo, usados no PDF |
 | `respostas/respostas-entrevistas.xlsx` | Instruções, uma linha por entrevista (15 por integrante) e um resumo calculado por fórmulas |

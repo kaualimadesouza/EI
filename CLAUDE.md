@@ -5,9 +5,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this repository is
 
 Semester project of group T94 in **ACH2008 - Empreendedorismo em Informática** (EACH/USP, Prof. Luciano
-Vieira de Araújo, 2nd semester 2026). There is no application code: the repo holds the group's
-deliverables (LaTeX sources and compiled PDFs) and the material behind them. All deliverable content is
-in Portuguese.
+Vieira de Araújo, 2nd semester 2026). The repo holds the group's deliverables (LaTeX sources and
+compiled PDFs), the material behind them, and the MVP code under `topa/` (`topa/web/`, `topa/api/`, with its `docker-compose.yml` and `Makefile`). All deliverable content
+and UI copy is in Portuguese; code is in English.
+
+## MVP code
+
+- `topa/web/`: Vite + React 19 + TypeScript + Tailwind 4, tested with Vitest. Hexagonal: `src/ports`
+  (interfaces, plus the `Adapters` the UI receives: the mode and its ports), `src/adapters/http` (the
+  API), `src/adapters/local` (demo mode, no backend) and `src/ui`; the domain layer (`src/domain`, pure
+  rules) arrives with the order flow. `src/composition.ts` is the only place that picks adapters:
+  `VITE_API_URL` set means the API, unset means demo mode. It must be same-origin (`/api`, proxied by
+  Vite) because the API sends no CORS headers. `eslint.config.js` enforces the layer boundaries.
+  Tokens live in the `@theme` block of `src/index.css`, which resets Tailwind's default palette.
+  `npm run check` runs lint, typecheck, tests (100% coverage) and build, as CI does.
+- `topa/api/`: FastAPI + SQLAlchemy 2 + Alembic + Postgres, managed with uv. Hexagonal; import-linter
+  keeps `domain` and `application` free of frameworks. See `topa/api/README.md`.
+- `make run` (run from `topa/`) brings up postgres (host 5435), api (host 8010) and web
+  (http://localhost:5180, proxying `/api` to the api container). `make test` and `make lint` cover both
+  sides and run on the host (only the api tests' Postgres comes from compose): Node 24 (or
+  `npx -y npm@11 ci` in `topa/web` on older Node) plus uv.
+  Both CIs demand 100% coverage. The backend runs only locally for now; `.github/workflows/web.yml`
+  checks the web app and deploys it to the Vercel project `topa-totem` in demo mode (a preview per
+  PR, the DEV alias on push to main, PROD when release-please cuts a release).
+- release-please versions the `topa` package only, so only commits touching `topa/` release; it bumps
+  `web/package.json`, `web/package-lock.json` and `api/pyproject.toml` and writes `topa/CHANGELOG.md`.
+- Skills in `.claude/skills/` (card-workflow, design-tokens, portuguese-copy, tdd,
+  thermo-nuclear-code-quality-review) hold the working conventions; follow them.
 
 The product is **TOPA (Totem por Assinatura)**: self-service ordering sold as Hardware-as-a-Service to
 small and medium food and neighbourhood-retail businesses, running on a vertical tablet or a smartphone

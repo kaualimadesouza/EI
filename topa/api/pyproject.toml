@@ -1,0 +1,89 @@
+[project]
+name = "topa-api"
+version = "0.1.0"
+description = "TOPA API: self-service ordering backend for the subscription kiosk"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic-settings>=2.4",
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+    "psycopg[binary]>=3.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=5.0",
+    "httpx2>=2.16",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "import-linter>=2.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/topa_api"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+# alembic autogenerate emits long sa.Column(...) lines; not worth hand-wrapping
+"migrations/versions/*" = ["E501"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+files = ["src", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov"
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+omit = ["*/tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 100
+
+[tool.importlinter]
+root_packages = ["topa_api"]
+include_external_packages = true
+
+# adapters sit outside the layers: they may import application and domain,
+# and only entrypoints may import them
+[[tool.importlinter.contracts]]
+name = "each layer imports only the ones below it"
+type = "layers"
+layers = [
+    "topa_api.entrypoints",
+    "topa_api.presentation",
+    "topa_api.application",
+    "topa_api.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "presentation reaches adapters only through application ports"
+type = "forbidden"
+source_modules = ["topa_api.presentation"]
+forbidden_modules = ["topa_api.adapters"]
+
+[[tool.importlinter.contracts]]
+name = "domain and application stay framework-free"
+type = "forbidden"
+source_modules = ["topa_api.domain", "topa_api.application"]
+forbidden_modules = ["fastapi", "sqlalchemy", "topa_api.adapters"]

@@ -1,0 +1,55 @@
+name: API
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - topa/api/**
+      - .github/workflows/api.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - topa/api/**
+      - .github/workflows/api.yml
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    working-directory: topa/api
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:16
+        env:
+          POSTGRES_USER: topa
+          POSTGRES_PASSWORD: topa # pragma: allowlist secret (throwaway CI container)
+          POSTGRES_DB: topa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -h localhost -U topa -d topa"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TOPA_DATABASE_URL: postgresql+psycopg://topa:topa@localhost:5432/topa
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: 0.9.26
+
+      - run: uv sync --locked
+      - run: make lint
+      - name: Test (100% coverage, migration roundtrip included)
+        run: make test
