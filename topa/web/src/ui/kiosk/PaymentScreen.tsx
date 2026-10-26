@@ -17,7 +17,7 @@ interface PaymentScreenProps {
   onBackToBag: () => void
 }
 
-const PIX_SECONDS = 300
+export const PIX_SECONDS = 300
 
 export function PaymentScreen(props: PaymentScreenProps) {
   const { totalCents, method, payment, error, onMethod, onApprove, onDecline, onBackToBag } = props

@@ -297,6 +297,85 @@ describe('KioskApp', () => {
     expect(screen.getByRole('heading', { name: 'Peça aqui. Pague aqui.' })).toBeInTheDocument()
   })
 
+  it('waits for a Pix payment as long as the code is valid before asking', async () => {
+    const { user } = setup()
+    await startOrder(user)
+    await user.click(button('Adicionar Misto quente'))
+    await user.click(button('Não, obrigado'))
+    await user.click(button('Ver pedido'))
+    await user.click(button('Pagar'))
+    await user.click(button('Pix'))
+
+    act(() => vi.advanceTimersByTime(299_000))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Código Pix de demonstração')).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(1_000))
+
+    expect(screen.getByRole('dialog', { name: 'Você ainda está aí?' })).toBeInTheDocument()
+  })
+
+  it('still starts over when a customer leaves the cancel question unanswered', async () => {
+    const { user } = setup()
+    await startOrder(user)
+    await user.click(button('Doces'))
+    await user.click(button('Adicionar Pudim'))
+    await user.click(button('Cancelar pedido'))
+
+    act(() => vi.advanceTimersByTime(45_000))
+    expect(screen.getAllByRole('dialog')).toHaveLength(1)
+    expect(screen.getByRole('dialog', { name: 'Você ainda está aí?' })).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(15_000))
+
+    expect(screen.getByRole('heading', { name: 'Peça aqui. Pague aqui.' })).toBeInTheDocument()
+  })
+
+  it('swaps an unanswered suggestion for the idle question instead of stacking them', async () => {
+    const { user } = setup()
+    await startOrder(user)
+    await user.click(button('Adicionar X-salada'))
+
+    act(() => vi.advanceTimersByTime(45_000))
+
+    expect(screen.getAllByRole('dialog')).toHaveLength(1)
+    expect(screen.getByRole('dialog', { name: 'Você ainda está aí?' })).toBeInTheDocument()
+  })
+
+  it('takes a product that sold out during the order off the bag and the menu', async () => {
+    const f = fakes()
+    f.place.mockRejectedValue(new OrderRejectedError('Coxinha esgotou.'))
+    const { user } = setup(f)
+    await startOrder(user)
+    await user.click(button('Salgados'))
+    await user.click(button('Adicionar Coxinha'))
+    await user.click(button('Adicionar Pão de queijo'))
+    f.list.mockResolvedValue(DEMO_CATALOG.map((p) => ({ ...p, available: p.id !== 'coxinha' })))
+    await user.click(button('Ver pedido'))
+    await user.click(button('Pagar'))
+
+    await user.click(button('Simular aprovação (demo)'))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Coxinha esgotou.')
+    await user.click(button('Voltar ao pedido'))
+
+    expect(screen.getByText('Total, 1 item')).toBeInTheDocument()
+    expect(screen.queryByText('Coxinha')).not.toBeInTheDocument()
+    await user.click(button('Continuar comprando'))
+    expect(button('Coxinha, esgotado')).toBeDisabled()
+  })
+
+  it('stops at 20 units of a product, as the store does', async () => {
+    const { user } = setup()
+    await startOrder(user)
+    await user.click(button('Doces'))
+    await user.click(button('Adicionar Pudim'))
+    for (let i = 1; i < 20; i++) await user.click(button('Mais um Pudim'))
+
+    expect(screen.getByLabelText('20 no pedido')).toBeInTheDocument()
+    expect(button('Mais um Pudim')).toBeDisabled()
+    await user.click(button('Ver pedido'))
+    expect(button('Mais um Pudim')).toBeDisabled()
+    expect(screen.getByText('Total, 20 itens')).toBeInTheDocument()
+  })
+
   it('returns to the start 20 seconds after the order number, or on tap', async () => {
     const { user } = setup()
     await startOrder(user)

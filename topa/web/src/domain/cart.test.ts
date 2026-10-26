@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { DEMO_CATALOG } from './demo-catalog'
-import { addOne, itemCount, quantityOf, removeOne, totalCents } from './cart'
+import { addOne, itemCount, MAX_QUANTITY, quantityOf, removeOne, totalCents } from './cart'
 
 describe('cart', () => {
   it('adds a new line, then raises its quantity on the next add', () => {
@@ -10,6 +10,13 @@ describe('cart', () => {
 
     expect(once).toEqual([{ productId: 'misto', quantity: 1 }])
     expect(twice).toEqual([{ productId: 'misto', quantity: 2 }])
+  })
+
+  it('stops at the most units of one product the store takes', () => {
+    const full = [{ productId: 'misto', quantity: MAX_QUANTITY }]
+
+    expect(MAX_QUANTITY).toBe(20)
+    expect(addOne(full, 'misto')).toEqual(full)
   })
 
   it('keeps other lines untouched when adding', () => {

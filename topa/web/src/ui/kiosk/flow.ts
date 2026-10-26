@@ -98,7 +98,7 @@ export function failed(state: KioskState, message: string): KioskState {
 }
 
 export function openSheet(state: KioskState, sheet: 'cancel' | 'idle'): KioskState {
-  return { ...state, sheet }
+  return { ...state, sheet, upsell: null }
 }
 
 export function closeSheet(state: KioskState): KioskState {

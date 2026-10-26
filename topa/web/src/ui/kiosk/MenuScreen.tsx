@@ -1,4 +1,4 @@
-import { itemCount, quantityOf, totalCents, type CartLine } from '../../domain/cart'
+import { itemCount, MAX_QUANTITY, quantityOf, totalCents, type CartLine } from '../../domain/cart'
 import { CATEGORIES, findProduct, formatBRL, type Product } from '../../domain/menu'
 import type { Suggestion } from '../../domain/suggest'
 import { CategoryIcon, MinusIcon, PlusIcon } from '../icons'
@@ -157,7 +157,7 @@ function ProductCard({ product, quantity, onAdd, onRemove }: ProductCardProps) {
             <MinusIcon />
           </button>
           <span aria-label={`${quantity} no pedido`} className="text-[26px] font-bold tabular-nums">{quantity}</span>
-          <button type="button" onClick={onAdd} aria-label={`Mais um ${product.name}`} className="flex size-16 items-center justify-center max-sm:w-14">
+          <button type="button" onClick={onAdd} disabled={quantity >= MAX_QUANTITY} aria-label={`Mais um ${product.name}`} className="flex size-16 items-center justify-center disabled:opacity-40 max-sm:w-14">
             <PlusIcon />
           </button>
         </div>

@@ -102,6 +102,13 @@ describe('kiosk flow', () => {
     expect(closeSheet(openSheet(begin(true), 'idle')).sheet).toBe('none')
   })
 
+  it('shows one overlay at a time: a sheet takes the place of an open suggestion', () => {
+    const offered = add(begin(true), product('xsalada'), DEMO_CATALOG)
+
+    expect(offered.upsell).not.toBeNull()
+    expect(openSheet(offered, 'idle')).toMatchObject({ sheet: 'idle', upsell: null })
+  })
+
   it('drops cart lines that sold out, and keeps the same state when nothing changed', () => {
     const state = increment(increment(begin(true), 'coxinha'), 'cafe')
     const soldOut = DEMO_CATALOG.map((p) => (p.id === 'coxinha' ? { ...p, available: false } : p))
