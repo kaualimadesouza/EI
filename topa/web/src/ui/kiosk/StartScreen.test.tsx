@@ -1,7 +1,8 @@
 import { act, render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
 
-import type { ConnectionPort } from '../ports/connection'
+import type { ConnectionPort } from '../../ports/connection'
 import { StartScreen } from './StartScreen'
 
 const ONLINE = 'Servidor local conectado'
@@ -13,35 +14,54 @@ function portAnswering(reachable: boolean): ConnectionPort {
 
 const pending: ConnectionPort = { isReachable: () => new Promise<boolean>(() => {}) }
 
+function renderStart(mode: 'api' | 'demo', connection: ConnectionPort) {
+  const onBegin = vi.fn()
+  const onQueue = vi.fn()
+  const view = render(<StartScreen mode={mode} connection={connection} onBegin={onBegin} onQueue={onQueue} />)
+  return { onBegin, onQueue, view }
+}
+
 describe('StartScreen', () => {
   it('greets the customer with the store and the headline', () => {
-    render(<StartScreen mode="api" connection={pending} />)
+    renderStart('api', pending)
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Peça aqui. Pague aqui.')
     expect(screen.getByText('Lanchonete Bem-te-vi')).toBeInTheDocument()
     expect(screen.getByText('por TOPA')).toBeInTheDocument()
   })
 
+  it('starts a dine-in or take-away order, or opens the phone queue', async () => {
+    const user = userEvent.setup()
+    const { onBegin, onQueue } = renderStart('demo', pending)
+
+    await user.click(screen.getByRole('button', { name: /Comer aqui/ }))
+    await user.click(screen.getByRole('button', { name: /Levar para viagem/ }))
+    await user.click(screen.getByRole('button', { name: 'A fila está grande? Peça pelo celular' }))
+
+    expect(onBegin.mock.calls).toEqual([[true], [false]])
+    expect(onQueue).toHaveBeenCalledOnce()
+  })
+
   it('says it is checking while the local server has not answered', () => {
-    render(<StartScreen mode="api" connection={pending} />)
+    renderStart('api', pending)
 
     expect(screen.getByRole('status')).toHaveTextContent('Verificando conexão')
   })
 
   it('shows demo mode at once, without waiting for any answer', () => {
-    render(<StartScreen mode="demo" connection={pending} />)
+    renderStart('demo', pending)
 
     expect(screen.getByRole('status')).toHaveTextContent('Modo demonstração')
   })
 
   it('shows the local server as connected when the API answers', async () => {
-    render(<StartScreen mode="api" connection={portAnswering(true)} />)
+    renderStart('api', portAnswering(true))
 
     expect(await screen.findByText(ONLINE)).toBeInTheDocument()
   })
 
   it('warns and says what to check when the local server does not answer', async () => {
-    render(<StartScreen mode="api" connection={portAnswering(false)} />)
+    renderStart('api', portAnswering(false))
 
     expect(await screen.findByText(OFFLINE)).toBeInTheDocument()
   })
@@ -54,9 +74,9 @@ describe('StartScreen', () => {
           answerFirst = resolve
         }),
     }
-    const { rerender } = render(<StartScreen mode="api" connection={first} />)
+    const { view } = renderStart('api', first)
 
-    rerender(<StartScreen mode="api" connection={portAnswering(false)} />)
+    view.rerender(<StartScreen mode="api" connection={portAnswering(false)} onBegin={vi.fn()} onQueue={vi.fn()} />)
     expect(await screen.findByText(OFFLINE)).toBeInTheDocument()
     await act(async () => answerFirst(true))
 
