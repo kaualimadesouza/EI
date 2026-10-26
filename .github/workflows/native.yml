@@ -77,10 +77,9 @@ jobs:
 
       - run: npm ci
 
+      # the runner image ships the SDK and NDKs; its variables are not in the env context
       - name: Build the APK
-        env:
-          NDK_HOME: ${{ env.ANDROID_NDK_LATEST_HOME }}
-        run: npx tauri android build --debug --apk --target aarch64
+        run: NDK_HOME="$ANDROID_NDK_LATEST_HOME" npx tauri android build --debug --apk --target aarch64
 
       - uses: actions/upload-artifact@v4
         with:

@@ -21,7 +21,8 @@ function urlOf(tag: Tag): TagUrl | ScanFailure {
 
 // Android rejects with { message }; a call that never reached the plugin rejects with a string
 function failureOf(error: unknown): ScanFailure {
-  const reason = typeof error === 'object' && error !== null && 'message' in error ? String(error.message) : String(error)
+  const reason =
+    typeof error === 'object' && error !== null && 'message' in error ? String(error.message) : String(error)
   if (reason.includes('does not have NFC')) return { kind: 'no-nfc' }
   if (reason.includes('disabled')) return { kind: 'nfc-off' }
   return { kind: 'nothing-read' }
