@@ -108,5 +108,7 @@ export function closeSheet(state: KioskState): KioskState {
 /** Drops cart lines whose product sold out or left the menu since they were added. */
 export function pruneUnavailable(state: KioskState, products: readonly Product[]): KioskState {
   const lines = state.lines.filter((line) => findProduct(products, line.productId)?.available)
-  return lines.length === state.lines.length ? state : { ...state, lines }
+  if (lines.length === state.lines.length) return state
+  // an empty cart cannot stay on the bag or the payment
+  return { ...state, lines, screen: lines.length === 0 ? 'menu' : state.screen }
 }

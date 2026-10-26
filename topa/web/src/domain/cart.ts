@@ -14,8 +14,8 @@ export const MAX_QUANTITY = 20
 
 export function addOne(lines: readonly CartLine[], productId: string): CartLine[] {
   const current = quantityOf(lines, productId)
-  if (current === 0) return [...lines, { productId, quantity: 1 }]
   if (current >= MAX_QUANTITY) return [...lines]
+  if (current === 0) return [...lines, { productId, quantity: 1 }]
   return lines.map((line) =>
     line.productId === productId ? { productId, quantity: line.quantity + 1 } : line,
   )

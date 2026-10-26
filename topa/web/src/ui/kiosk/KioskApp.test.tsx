@@ -314,6 +314,39 @@ describe('KioskApp', () => {
     expect(screen.getByRole('dialog', { name: 'Você ainda está aí?' })).toBeInTheDocument()
   })
 
+  it('does not push the idle question past the Pix code when the screen is touched meanwhile', async () => {
+    const { user } = setup()
+    await startOrder(user)
+    await user.click(button('Adicionar Misto quente'))
+    await user.click(button('Não, obrigado'))
+    await user.click(button('Ver pedido'))
+    await user.click(button('Pagar'))
+    await user.click(button('Pix'))
+
+    act(() => vi.advanceTimersByTime(100_000))
+    await user.click(screen.getByLabelText('Código Pix de demonstração'))
+    act(() => vi.advanceTimersByTime(200_000))
+
+    expect(screen.getByRole('dialog', { name: 'Você ainda está aí?' })).toBeInTheDocument()
+  })
+
+  it('sends the customer back to the menu when every line sold out during the order', async () => {
+    const f = fakes()
+    f.place.mockRejectedValue(new OrderRejectedError('Coxinha esgotou.'))
+    const { user } = setup(f)
+    await startOrder(user)
+    await user.click(button('Salgados'))
+    await user.click(button('Adicionar Coxinha'))
+    f.list.mockResolvedValue(DEMO_CATALOG.map((p) => ({ ...p, available: p.id !== 'coxinha' })))
+    await user.click(button('Ver pedido'))
+    await user.click(button('Pagar'))
+
+    await user.click(button('Simular aprovação (demo)'))
+
+    expect(await screen.findByRole('button', { name: 'Coxinha, esgotado' })).toBeDisabled()
+    expect(screen.getByText('Toque em um produto para adicionar.')).toBeInTheDocument()
+  })
+
   it('still starts over when a customer leaves the cancel question unanswered', async () => {
     const { user } = setup()
     await startOrder(user)

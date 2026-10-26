@@ -63,12 +63,13 @@ def test_the_next_number_follows_the_highest_of_that_day_only(db_engine: Engine)
 
 def test_simultaneous_orders_of_one_day_all_get_their_own_number(db_engine: Engine) -> None:
     """Two kiosks reading the same max must not both pick it: the lock serialises them."""
-    kiosks = 20
+    kiosks = 10  # under the pool size: each waits at the barrier holding a connection
     barrier = Barrier(kiosks)
 
     def place_one(_: int) -> int:
         with Session(db_engine) as session, session.begin():
             orders = SqlAlchemyOrderRepository(session)
+            session.connection()  # open the transaction now, connections are lazy
             barrier.wait(timeout=10)
             number = orders.next_number(MONDAY)
             orders.add(_order(number))

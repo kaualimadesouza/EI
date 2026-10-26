@@ -41,7 +41,7 @@ class SqlAlchemyOrderRepository:
         self._session = session
 
     def next_number(self, business_date: date) -> int:
-        # held until the transaction ends: the next kiosk reads the max only after this commit
+        # held to the commit; the max() below then sees the last commit, which needs READ COMMITTED
         self._session.execute(
             select(func.pg_advisory_xact_lock(ORDER_NUMBER_LOCK, business_date.toordinal()))
         )

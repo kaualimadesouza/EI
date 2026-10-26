@@ -50,12 +50,13 @@ export function KioskApp({ adapters, now = () => new Date() }: KioskAppProps) {
   const shopping = ['menu', 'bag', 'payment'].includes(state.screen)
   const idleWatch = shopping && state.sheet !== 'idle' && state.payment !== 'processing'
   const waitingPix = state.screen === 'payment' && state.paymentMethod === 'pix' && state.payment === 'choosing'
+  // a touch must not stretch the wait past the Pix code, so it only restarts other timers
   const idleSeconds = waitingPix ? PIX_SECONDS : IDLE_SECONDS
   useEffect(() => {
     if (!idleWatch) return
     const timer = setTimeout(() => setState((s) => flow.openSheet(s, 'idle')), idleSeconds * 1000)
     return () => clearTimeout(timer)
-  }, [idleWatch, idleSeconds, touches, state.screen])
+  }, [idleWatch, idleSeconds, waitingPix ? 0 : touches, state.screen])
 
   const reset = () => setState(flow.START)
 

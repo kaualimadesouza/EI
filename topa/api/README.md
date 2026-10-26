@@ -55,7 +55,8 @@ make test
 
 Every error body is `{"detail": "<one pt-BR sentence>"}`: 422 for an empty order, a
 quantity outside 1 to 20 per product, an unknown product or a malformed body, path or query;
-409 for a sold-out product or a status change that is not one step; 404 for an unknown order or product. Metrics are not an endpoint: the
+409 for a sold-out product or a status change that is not
+one step; 404 for an unknown order or product. Metrics are not an endpoint: the
 dashboard computes them from `GET /orders`.
 
 ## Layout
