@@ -40,7 +40,15 @@ const PROBLEMS: Record<ScanFailure['kind'], Problem> = {
 
 function ContactlessGlyph({ active }: { active: boolean }) {
   return (
-    <svg width="120" height="120" viewBox="0 0 96 96" fill="none" strokeWidth="4" strokeLinecap="round" aria-hidden="true">
+    <svg
+      width="120"
+      height="120"
+      viewBox="0 0 96 96"
+      fill="none"
+      strokeWidth="4"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
       <rect x="20" y="14" width="34" height="62" rx="7" className="stroke-white" />
       <path d="M32 22h10" className="stroke-white" />
       <g className={`stroke-sage ${active ? 'motion-safe:animate-pulse' : ''}`}>
@@ -54,7 +62,16 @@ function ContactlessGlyph({ active }: { active: boolean }) {
 
 function WarningGlyph() {
   return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="flex-none stroke-warning" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+    <svg
+      width="28"
+      height="28"
+      viewBox="0 0 24 24"
+      fill="none"
+      className="flex-none stroke-warning"
+      strokeWidth="2"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
       <circle cx="12" cy="12" r="10" />
       <path d="M12 7v6M12 17h.01" />
     </svg>
