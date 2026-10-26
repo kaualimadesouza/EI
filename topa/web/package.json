@@ -10,15 +10,19 @@
     "typecheck": "tsc -b",
     "test": "vitest run --coverage",
     "test:watch": "vitest",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "tauri": "tauri"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/plugin-nfc": "^2.4.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.28.0",
     "@tailwindcss/vite": "^4.3.3",
+    "@tauri-apps/cli": "^2.12.4",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.6",

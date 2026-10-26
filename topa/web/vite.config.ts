@@ -7,10 +7,15 @@ import { defineConfig, loadEnv } from 'vite'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const target = env.API_PROXY_TARGET || 'http://localhost:8010'
+  // `tauri android dev` sets it: the phone loads the dev server over the LAN, not localhost
+  const tauriHost = env.TAURI_DEV_HOST
 
   return {
     plugins: [react(), tailwindcss()],
     server: {
+      host: tauriHost || false,
+      hmr: tauriHost ? { protocol: 'ws', host: tauriHost, port: 1421 } : undefined,
+      watch: { ignored: ['**/src-tauri/**'] },
       proxy: {
         '/api': { target, rewrite: (path) => path.replace(/^\/api/, '') },
       },

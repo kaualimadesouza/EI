@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "mobile",
+  "description": "Lets the phone app read the NFC sticker next to the totem",
+  "platforms": ["android", "iOS"],
+  "windows": ["main"],
+  "permissions": ["nfc:allow-scan"]
+}

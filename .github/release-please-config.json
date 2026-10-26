@@ -7,7 +7,9 @@
       "bump-patch-for-minor-pre-major": true,
       "include-v-in-tag": false,
       "extra-files": [
-        { "type": "json", "path": "topa/web/package.json", "jsonpath": "$.version" }
+        { "type": "json", "path": "topa/web/package.json", "jsonpath": "$.version" },
+        { "type": "json", "path": "topa/web/src-tauri/tauri.conf.json", "jsonpath": "$.version" },
+        { "type": "toml", "path": "topa/web/src-tauri/Cargo.toml", "jsonpath": "$.package.version" }
       ]
     }
   }

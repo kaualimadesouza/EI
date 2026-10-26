@@ -1,8 +1,8 @@
 name: release-please
 description: |
   Keeps a release PR open on main, built from conventional commits. Merging it creates the
-  tag, the GitHub Release and CHANGELOG.md, then chains the prod deploy: a release created
-  with GITHUB_TOKEN never triggers other workflows on its own.
+  tag, the GitHub Release and CHANGELOG.md, then chains the prod deploy and the native apps: a
+  release created with GITHUB_TOKEN never triggers other workflows on its own.
 
 on:
   push:
@@ -37,3 +37,12 @@ jobs:
     with:
       environment: prod
     secrets: inherit # pragma: allowlist secret
+
+  native-apps:
+    needs: release-please
+    if: needs.release-please.outputs.releases_created == 'true'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/native.yml
+    with:
+      tag: ${{ needs.release-please.outputs.tag_name }}

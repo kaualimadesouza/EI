@@ -1,0 +1,197 @@
+name: Native apps
+
+# Packages topa/web with Tauri: the Android phone app (debug APK, unsigned) and the desktop app.
+# A PR gets the APK and a Linux bundle as workflow artifacts; a release gets the desktop installers
+# for Linux, Windows and macOS plus the APK attached. release-please chains the release build:
+# a release created with GITHUB_TOKEN triggers nothing on its own.
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - topa/web/**
+      - .github/workflows/native.yml
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to attach the apps to (empty builds artifacts only)"
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+
+concurrency:
+  group: native-${{ inputs.tag || github.event.release.tag_name || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.event.release.tag_name }}
+
+defaults:
+  run:
+    working-directory: topa/web
+
+jobs:
+  android:
+    name: Android debug APK
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: topa/web/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      # arm64 only: every phone that matters for the demo; add more --target flags for emulators
+      - name: Rust for Android
+        run: |
+          rustup update stable --no-self-update
+          rustup default stable
+          rustup target add aarch64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: topa/web/src-tauri -> target
+
+      - run: npm ci
+
+      - name: Build the APK
+        env:
+          NDK_HOME: ${{ env.ANDROID_NDK_LATEST_HOME }}
+        run: npx tauri android build --debug --apk --target aarch64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: topa-android-debug-apk
+          path: topa/web/src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
+          if-no-files-found: error
+
+  linux:
+    name: Linux desktop bundle
+    if: ${{ !(inputs.tag || github.event_name == 'release') }}
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: WebKitGTK and bundler dependencies
+        working-directory: .
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: topa/web/package-lock.json
+
+      - name: Rust
+        run: |
+          rustup update stable --no-self-update
+          rustup default stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: topa/web/src-tauri -> target
+
+      - run: npm ci
+      - run: npx tauri build --bundles deb,appimage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: topa-linux-desktop
+          path: |
+            topa/web/src-tauri/target/release/bundle/deb/*.deb
+            topa/web/src-tauri/target/release/bundle/appimage/*.AppImage
+          if-no-files-found: error
+
+  desktop-release:
+    name: Desktop installers (${{ matrix.platform }})
+    if: ${{ inputs.tag || github.event_name == 'release' }}
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # 22.04 keeps the AppImage and .deb on an older glibc, so they run on more distros
+        platform: [ubuntu-22.04, windows-latest, macos-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: WebKitGTK and bundler dependencies
+        if: runner.os == 'Linux'
+        working-directory: .
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: topa/web/package-lock.json
+
+      - name: Rust
+        shell: bash
+        run: |
+          rustup update stable --no-self-update
+          rustup default stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: topa/web/src-tauri -> target
+
+      - run: npm ci
+
+      - uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          projectPath: topa/web
+          tauriScript: npm run tauri
+          tagName: ${{ env.RELEASE_TAG }}
+          releaseName: ${{ env.RELEASE_TAG }}
+
+  android-release:
+    name: Attach the APK to the release
+    needs: android
+    if: ${{ inputs.tag || github.event_name == 'release' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: topa-android-debug-apk
+          path: apk
+
+      - name: Upload
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mv apk/app-universal-debug.apk "topa_${RELEASE_TAG}_android-debug.apk"
+          gh release upload "$RELEASE_TAG" "topa_${RELEASE_TAG}_android-debug.apk" --clobber --repo "$GITHUB_REPOSITORY"
