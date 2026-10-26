@@ -11,10 +11,10 @@ and UI copy is in Portuguese; code is in English.
 
 ## MVP code
 
-- `topa/web/`: Vite + React 19 + TypeScript + Tailwind 4, tested with Vitest. Hexagonal: `src/ports`
-  (interfaces, plus the `Adapters` the UI receives: the mode and its ports), `src/adapters/http` (the
-  API), `src/adapters/local` (demo mode, no backend) and `src/ui`; the domain layer (`src/domain`, pure
-  rules) arrives with the order flow. `src/composition.ts` is the only place that picks adapters:
+- `topa/web/`: Vite + React 19 + TypeScript + Tailwind 4, tested with Vitest. Hexagonal: `src/domain`
+  (pure rules), `src/ports` (interfaces, plus the `Adapters` the UI receives: the mode and its ports),
+  `src/adapters/http` (the API), `src/adapters/local` (demo mode, no backend) and `src/ui`.
+  `src/composition.ts` is the only place that picks adapters:
   `VITE_API_URL` set means the API, unset means demo mode. It must be same-origin (`/api`, proxied by
   Vite) because the API sends no CORS headers. `eslint.config.js` enforces the layer boundaries.
   Tokens live in the `@theme` block of `src/index.css`, which resets Tailwind's default palette.

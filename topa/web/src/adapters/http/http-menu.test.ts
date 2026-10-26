@@ -16,7 +16,7 @@ describe('HttpMenu', () => {
 
     const products = await new HttpMenu(new HttpClient('/api')).list()
 
-    expect(fetchFn).toHaveBeenCalledWith('/api/products')
+    expect(fetchFn).toHaveBeenCalledWith('/api/products', { signal: expect.any(AbortSignal) })
     expect(products).toEqual([
       { id: 'suco', name: 'Suco de laranja', description: 'Natural, 300 ml.', category: 'bebidas', priceCents: 990, available: false },
     ])

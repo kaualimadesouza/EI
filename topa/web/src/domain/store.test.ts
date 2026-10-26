@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { storeFromUrl } from './store'
+import { phoneMenuUrl, storeFromUrl } from './store'
 
 describe('storeFromUrl', () => {
   it('reads the store slug from the loja parameter of an https URL', () => {
@@ -44,5 +44,37 @@ describe('storeFromUrl', () => {
 
   it('rejects text that is not a URL at all', () => {
     expect(storeFromUrl('lanchonete-bauru')).toBeNull()
+  })
+})
+
+describe('phoneMenuUrl', () => {
+  it('points to the hosted demo when the totem runs on loopback, a wildcard bind, or an opaque origin', () => {
+    for (const origin of [
+      'http://localhost:5180',
+      'http://localhost.:5180',
+      'http://127.0.0.1:5173',
+      'http://127.0.1.1:5180',
+      'http://0.0.0.0:5180',
+      'http://[::1]:5180',
+      'http://[::]:5180',
+      'http://tauri.localhost',
+      'tauri://localhost',
+      'null',
+    ]) {
+      expect(phoneMenuUrl(origin)).toBe('https://topa-totem.vercel.app/?loja=lanchonete-bem-te-vi')
+    }
+  })
+
+  it('keeps the totem origin when a phone on the network or the internet can reach it', () => {
+    expect(phoneMenuUrl('https://topa-totem.vercel.app')).toBe(
+      'https://topa-totem.vercel.app/?loja=lanchonete-bem-te-vi',
+    )
+    expect(phoneMenuUrl('http://192.168.0.10:5180', '/totem/')).toBe(
+      'http://192.168.0.10:5180/totem/?loja=lanchonete-bem-te-vi',
+    )
+    expect(storeFromUrl(phoneMenuUrl('https://topa-totem.vercel.app'))).toEqual({
+      slug: 'lanchonete-bem-te-vi',
+      url: 'https://topa-totem.vercel.app/?loja=lanchonete-bem-te-vi',
+    })
   })
 })

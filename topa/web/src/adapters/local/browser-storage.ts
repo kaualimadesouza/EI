@@ -15,7 +15,7 @@ export function browserStorage(): KeyValueStore | null {
 
 /** A JSON value in storage; when storage is missing, full or corrupt, memory keeps the demo going. */
 export class StoredValue<T> {
-  private readonly storage: KeyValueStore | null
+  private storage: KeyValueStore | null
   private readonly key: string
   private memory: T
 
@@ -28,8 +28,20 @@ export class StoredValue<T> {
   read(): T {
     try {
       const raw = this.storage?.getItem(this.key)
-      return raw ? (JSON.parse(raw) as T) : this.memory
+      if (!raw) return this.memory
+      const parsed: unknown = JSON.parse(raw)
+      if (
+        parsed === null ||
+        typeof parsed !== typeof this.memory ||
+        Array.isArray(parsed) !== Array.isArray(this.memory)
+      ) {
+        this.storage = null
+        return this.memory
+      }
+      this.memory = parsed as T
+      return this.memory
     } catch {
+      this.storage = null
       return this.memory
     }
   }
@@ -39,7 +51,8 @@ export class StoredValue<T> {
     try {
       this.storage?.setItem(this.key, JSON.stringify(value))
     } catch {
-      // quota or private mode: memory keeps it for this session
+      // once a write fails, storage lags behind memory for the rest of the session
+      this.storage = null
     }
   }
 }

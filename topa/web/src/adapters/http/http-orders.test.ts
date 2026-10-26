@@ -69,7 +69,7 @@ describe('HttpOrders', () => {
 
     const orders = await new HttpOrders(new HttpClient('/api')).list('2026-10-26')
 
-    expect(fetchSpy).toHaveBeenCalledWith('/api/orders?date=2026-10-26')
+    expect(fetchSpy).toHaveBeenCalledWith('/api/orders?date=2026-10-26', { signal: expect.any(AbortSignal) })
     expect(orders).toEqual([
       {
         id: 'o1',

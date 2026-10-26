@@ -36,7 +36,7 @@ export function BagScreen({ products, lines, onIncrement, onDecrement, onBack, o
                         type="button"
                         onClick={() => onDecrement(product.id)}
                         aria-label={line.quantity === 1 ? `Remover ${product.name}` : `Tirar um ${product.name}`}
-                        className="flex h-16 min-w-16 items-center justify-center gap-2 rounded-[16px] border-2 border-slate px-3 text-[18px] font-semibold max-sm:h-14 max-sm:min-w-14 max-sm:text-[16px]"
+                        className="flex h-16 min-w-16 items-center justify-center gap-2 rounded-[16px] border-2 border-slate px-3 text-[18px] font-semibold max-sm:text-[16px]"
                       >
                         {line.quantity === 1 ? (
                           <>
@@ -53,7 +53,7 @@ export function BagScreen({ products, lines, onIncrement, onDecrement, onBack, o
                         onClick={() => onIncrement(product.id)}
                         disabled={line.quantity >= MAX_QUANTITY}
                         aria-label={`Mais um ${product.name}`}
-                        className="flex size-16 items-center justify-center rounded-[16px] bg-teal text-white max-sm:size-14"
+                        className="flex size-16 items-center justify-center rounded-[16px] bg-teal text-white disabled:opacity-40"
                       >
                         <PlusIcon size={24} />
                       </button>
