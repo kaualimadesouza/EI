@@ -1,4 +1,4 @@
-import { itemCount, totalCents, type CartLine } from '../../domain/cart'
+import { itemCount, MAX_QUANTITY, totalCents, type CartLine } from '../../domain/cart'
 import { findProduct, formatBRL, type Product } from '../../domain/menu'
 import { MinusIcon, PlusIcon, TrashIcon } from '../icons'
 import { photoOf } from './photo'
@@ -51,6 +51,7 @@ export function BagScreen({ products, lines, onIncrement, onDecrement, onBack, o
                       <button
                         type="button"
                         onClick={() => onIncrement(product.id)}
+                        disabled={line.quantity >= MAX_QUANTITY}
                         aria-label={`Mais um ${product.name}`}
                         className="flex size-16 items-center justify-center rounded-[16px] bg-teal text-white max-sm:size-14"
                       >

@@ -11,7 +11,7 @@ import * as flow from './flow'
 import { MenuScreen } from './MenuScreen'
 import { ChoiceButtons, KioskHeader, Sheet } from './parts'
 import { CheckIcon } from '../icons'
-import { PaymentScreen } from './PaymentScreen'
+import { PaymentScreen, PIX_SECONDS } from './PaymentScreen'
 import { StartScreen } from './StartScreen'
 import { photoOf } from './photo'
 import { useCountdown } from './use-countdown'
@@ -48,14 +48,26 @@ export function KioskApp({ adapters, now = () => new Date() }: KioskAppProps) {
   }, [state.screen, loadMenu])
 
   const shopping = ['menu', 'bag', 'payment'].includes(state.screen)
-  const idleWatch = shopping && state.sheet === 'none' && state.payment !== 'processing'
+  const idleWatch = shopping && state.sheet !== 'idle' && state.payment !== 'processing'
+  const waitingPix = state.screen === 'payment' && state.paymentMethod === 'pix' && state.payment === 'choosing'
+  // a touch must not stretch the wait past the Pix code, so it only restarts other timers
+  const idleSeconds = waitingPix ? PIX_SECONDS : IDLE_SECONDS
   useEffect(() => {
     if (!idleWatch) return
-    const timer = setTimeout(() => setState((s) => flow.openSheet(s, 'idle')), IDLE_SECONDS * 1000)
+    const timer = setTimeout(() => setState((s) => flow.openSheet(s, 'idle')), idleSeconds * 1000)
     return () => clearTimeout(timer)
-  }, [idleWatch, touches, state.screen])
+  }, [idleWatch, idleSeconds, waitingPix ? 0 : touches, state.screen])
 
   const reset = () => setState(flow.START)
+
+  const refreshMenu = () =>
+    adapters.menu.list().then(
+      (list) => {
+        setProducts(list)
+        setState((s) => flow.pruneUnavailable(s, list))
+      },
+      () => {},
+    )
 
   const pay = async () => {
     setState(flow.startPaying)
@@ -67,8 +79,9 @@ export function KioskApp({ adapters, now = () => new Date() }: KioskAppProps) {
       })
       setState((s) => flow.paid(s, placed))
     } catch (error) {
-      const message =
-        error instanceof OrderRejectedError ? error.message : 'Não foi possível registrar o pedido. Tente de novo.'
+      const rejected = error instanceof OrderRejectedError
+      if (rejected) void refreshMenu()
+      const message = rejected ? error.message : 'Não foi possível registrar o pedido. Tente de novo.'
       setState((s) => flow.failed(s, message))
     }
   }

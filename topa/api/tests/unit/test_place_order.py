@@ -7,7 +7,6 @@ from topa_api.application.place_order import PlaceOrder, PlaceOrderUseCase
 from topa_api.domain.catalog import Category, Product
 from topa_api.domain.errors import (
     EmptyOrderError,
-    OrderNumberTakenError,
     ProductUnavailableError,
     UnknownProductError,
 )
@@ -131,28 +130,6 @@ def test_repeated_products_become_one_item(place_order: PlaceOrderUseCase) -> No
         ("xsalada", 3),
         ("refri", 2),
     ]
-
-
-def test_retries_once_when_another_kiosk_took_the_number(
-    place_order: PlaceOrderUseCase, orders: InMemoryOrderRepository
-) -> None:
-    orders.collisions = 1
-
-    order = place_order.execute(_order_of(OrderLine(product_id="refri", quantity=1)))
-
-    assert order.number == 2
-    assert orders.orders == [order]
-
-
-def test_gives_up_when_the_number_is_taken_twice(
-    place_order: PlaceOrderUseCase, orders: InMemoryOrderRepository
-) -> None:
-    orders.collisions = 2
-
-    with pytest.raises(OrderNumberTakenError):
-        place_order.execute(_order_of(OrderLine(product_id="refri", quantity=1)))
-
-    assert orders.orders == []
 
 
 @pytest.mark.parametrize(

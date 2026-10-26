@@ -1,18 +1,19 @@
-"""The order repository against real Postgres: the number race between two kiosks,
+"""The order repository against real Postgres: the number race between kiosks,
 and the reads and locks behind the dashboard."""
 
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, date, datetime
+from threading import Barrier
 
 import pytest
 from psycopg.errors import LockNotAvailable
 from sqlalchemy import Engine, select
-from sqlalchemy.exc import IntegrityError, OperationalError
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from topa_api.adapters.db.models import OrderRow
 from topa_api.adapters.db.repositories import SqlAlchemyOrderRepository
-from topa_api.domain.errors import OrderNumberTakenError
 from topa_api.domain.orders import Order, OrderItem, OrderStatus, PaymentMethod
 
 MONDAY = date(2026, 10, 26)
@@ -60,26 +61,25 @@ def test_the_next_number_follows_the_highest_of_that_day_only(db_engine: Engine)
         assert orders.next_number(TUESDAY) == 1
 
 
-def test_a_number_taken_by_another_kiosk_is_reported_and_the_transaction_survives(
-    db_engine: Engine,
-) -> None:
-    with Session(db_engine) as late, late.begin():
-        late_orders = SqlAlchemyOrderRepository(late)
-        stale_number = late_orders.next_number(MONDAY)
-        with Session(db_engine) as early, early.begin():
-            SqlAlchemyOrderRepository(early).add(_order(stale_number))
+def test_simultaneous_orders_of_one_day_all_get_their_own_number(db_engine: Engine) -> None:
+    """Two kiosks reading the same max must not both pick it: the lock serialises them."""
+    kiosks = 10  # under the pool size: each waits at the barrier holding a connection
+    barrier = Barrier(kiosks)
 
-        with pytest.raises(OrderNumberTakenError):
-            late_orders.add(_order(stale_number))
-        late_orders.add(_order(late_orders.next_number(MONDAY)))
+    def place_one(_: int) -> int:
+        with Session(db_engine) as session, session.begin():
+            orders = SqlAlchemyOrderRepository(session)
+            session.connection()  # open the transaction now, connections are lazy
+            barrier.wait(timeout=10)
+            number = orders.next_number(MONDAY)
+            orders.add(_order(number))
+            return number
 
-    assert _numbers(db_engine, MONDAY) == [1, 2]
+    with ThreadPoolExecutor(max_workers=kiosks) as pool:
+        got = list(pool.map(place_one, range(kiosks)))
 
-
-def test_any_other_integrity_error_is_not_mistaken_for_a_taken_number(db_engine: Engine) -> None:
-    """A product that vanished mid-order is a bug to surface, not a race to retry."""
-    with Session(db_engine) as session, session.begin(), pytest.raises(IntegrityError):
-        SqlAlchemyOrderRepository(session).add(_order(1, product_id="pastel"))
+    assert sorted(got) == list(range(1, kiosks + 1))
+    assert _numbers(db_engine, MONDAY) == list(range(1, kiosks + 1))
 
 
 def test_a_days_orders_come_by_number_and_only_from_that_day(db_engine: Engine) -> None:
