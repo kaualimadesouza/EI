@@ -1,0 +1,39 @@
+name: release-please
+description: |
+  Keeps a release PR open on main, built from conventional commits. Merging it creates the
+  tag, the GitHub Release and CHANGELOG.md, then chains the prod deploy: a release created
+  with GITHUB_TOKEN never triggers other workflows on its own.
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          token: ${{ secrets.RP_TOKEN || secrets.GITHUB_TOKEN }}
+          config-file: .github/release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  deploy-prod:
+    needs: release-please
+    if: needs.release-please.outputs.releases_created == 'true'
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: prod
+    secrets: inherit # pragma: allowlist secret

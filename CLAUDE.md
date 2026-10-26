@@ -5,9 +5,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this repository is
 
 Semester project of group T94 in **ACH2008 - Empreendedorismo em Informática** (EACH/USP, Prof. Luciano
-Vieira de Araújo, 2nd semester 2026). There is no application code: the repo holds the group's
-deliverables (LaTeX sources and compiled PDFs) and the material behind them. All deliverable content is
-in Portuguese.
+Vieira de Araújo, 2nd semester 2026). The repo holds the group's deliverables (LaTeX sources and
+compiled PDFs), the material behind them, and the MVP code under `topa/` (`topa/web/`, `topa/api/`, with its `docker-compose.yml` and `Makefile`). All deliverable content
+and UI copy is in Portuguese; code is in English.
+
+## MVP code
+
+- `topa/web/`: Vite + React 19 + TypeScript + Tailwind 4, tested with Vitest. Hexagonal: `src/domain` (pure
+  rules), `src/ports` (interfaces), `src/adapters/http` (the API) and `src/adapters/local` (in-browser
+  demo store), `src/ui`. `src/composition.ts` is the only place that picks adapters: `VITE_API_URL` set
+  means the API, unset means demo mode. Tokens live in the `@theme` block of `src/index.css`.
+- `topa/api/`: FastAPI + SQLAlchemy 2 + Alembic + Postgres, managed with uv. Hexagonal like argumenta-api;
+  import-linter keeps `domain` and `application` free of frameworks. See `topa/api/README.md`.
+- `make run` (run from `topa/`) brings up postgres (host 5435), api (host 8010) and web (http://localhost:5180, proxying
+  `/api` to the api container). `make test` and `make lint` cover both sides; both CIs demand 100%
+  coverage. The backend runs only locally for now; the Vercel project `topa-totem` serves the web app
+  in demo mode (DEV alias on push to main, PROD on release-please release, a preview per PR).
+- Skills in `.claude/skills/` (card-workflow, design-tokens, portuguese-copy, tdd,
+  thermo-nuclear-code-quality-review) hold the working conventions; follow them.
 
 The product is **TOPA (Totem por Assinatura)**: self-service ordering sold as Hardware-as-a-Service to
 small and medium food and neighbourhood-retail businesses, running on a vertical tablet or a smartphone

@@ -1,0 +1,63 @@
+name: API
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - topa/api/**
+      - .github/workflows/api.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - topa/api/**
+      - .github/workflows/api.yml
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    working-directory: topa/api
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:16
+        env:
+          POSTGRES_USER: topa
+          POSTGRES_PASSWORD: topa # pragma: allowlist secret (throwaway CI container)
+          POSTGRES_DB: topa
+        # the settings default points at 5435, the compose host port
+        ports:
+          - 5435:5432
+        options: >-
+          --health-cmd "pg_isready -U topa"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: 0.9.26
+
+      - run: uv sync --frozen
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy
+      - run: uv run lint-imports
+      - name: Migration roundtrip
+        run: |
+          uv run alembic upgrade head
+          uv run alembic downgrade base
+          uv run alembic upgrade head
+          uv run alembic check
+      - name: Test (100% coverage)
+        run: uv run pytest

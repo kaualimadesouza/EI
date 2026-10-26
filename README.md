@@ -35,6 +35,23 @@ Diferenciais:
 
 As tarefas do grupo estão no [GitHub Project](https://github.com/users/kaualimadesouza/projects/5).
 
+## MVP
+
+O MVP do totem fica em [`topa/`](topa/): [`topa/web/`](topa/web/) (Vite, React, TypeScript e
+Tailwind) e [`topa/api/`](topa/api/) (FastAPI e Postgres). Os dois seguem arquitetura hexagonal. Para subir tudo na sua
+máquina (precisa de Docker):
+
+```bash
+cd topa
+make run    # postgres + api + web; o totem abre em http://localhost:5180
+make test   # testes do web e da api
+make lint
+```
+
+Na nuvem, o front é publicado na Vercel em modo demonstração, com os pedidos guardados no navegador:
+[topa-totem-dev.vercel.app](https://topa-totem-dev.vercel.app) recebe cada push na `main`, e
+[topa-totem.vercel.app](https://topa-totem.vercel.app) recebe cada release.
+
 ## Como compilar os documentos
 
 Os documentos são escritos em LaTeX e compilados com `pdflatex` (TeX Live). Rode duas vezes para

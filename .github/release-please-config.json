@@ -1,0 +1,14 @@
+{
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "package-name": "topa",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "include-v-in-tag": false,
+      "extra-files": [
+        { "type": "json", "path": "topa/web/package.json", "jsonpath": "$.version" }
+      ]
+    }
+  }
+}

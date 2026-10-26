@@ -10,3 +10,24 @@
 # OS noise
 .DS_Store
 *:Zone.Identifier
+
+# web
+node_modules/
+dist/
+coverage/
+.vercel/
+*.tsbuildinfo
+
+# api
+.venv/
+__pycache__/
+.coverage
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# local secrets and browser automation output
+.env
+.env.*
+.playwright-mcp/
+.import_linter_cache/
