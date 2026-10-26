@@ -36,6 +36,7 @@ function demoStore() {
     connection: { isReachable: () => Promise.resolve(true) },
     menu,
     orders: ordersAt(() => NOW),
+    nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
   }
   return { adapters, menu, ordersAt }
 }
@@ -270,6 +271,7 @@ describe('PainelApp', () => {
       connection: { isReachable: () => Promise.resolve(false) },
       menu: { list: () => Promise.reject(new Error('down')), setAvailability: vi.fn() },
       orders: { place: vi.fn(), list: () => Promise.reject(new Error('down')), setStatus: vi.fn() },
+      nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
     }
 
     renderPainel(failing)
@@ -302,6 +304,7 @@ describe('PainelApp', () => {
       connection: { isReachable: () => Promise.resolve(true) },
       menu: { list: () => Promise.resolve([suco]), setAvailability: () => Promise.reject(new Error('network')) },
       orders: { place: vi.fn(), list: () => Promise.resolve([order]), setStatus },
+      nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
     }
     renderPainel(adapters)
 

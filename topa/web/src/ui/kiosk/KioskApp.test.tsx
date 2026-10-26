@@ -25,6 +25,7 @@ function fakes(products: Product[] = DEMO_CATALOG.map((p) => ({ ...p }))): Fakes
     connection: { isReachable: () => Promise.resolve(true) },
     menu: { list, setAvailability: vi.fn() },
     orders: { place, list: vi.fn(), setStatus: vi.fn() },
+    nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
   }
   return { adapters, place, list }
 }
