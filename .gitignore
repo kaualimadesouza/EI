@@ -29,5 +29,6 @@ __pycache__/
 # local secrets and browser automation output
 .env
 .env.*
+!.env.example
 .playwright-mcp/
 .import_linter_cache/

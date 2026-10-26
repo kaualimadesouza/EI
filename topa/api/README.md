@@ -5,10 +5,10 @@ hexagonal layout enforced by import-linter.
 
 ## Run
 
-From the repo root, `make run` brings up Postgres, this API and the web app with reload.
+From `topa/`, `make run` brings up Postgres, this API and the web app with reload.
 The web dev server proxies `/api/*` here with the prefix stripped, so routes live at the root.
 
-Outside Docker, against the compose Postgres on host port 5435:
+Outside Docker, from `topa/api/`, against the compose Postgres on host port 5435:
 
 ```bash
 uv sync
@@ -19,18 +19,23 @@ make run        # http://localhost:8000/health and /health/ready
 `TOPA_DATABASE_URL` overrides the database (default
 `postgresql+psycopg://topa:topa@localhost:5435/topa`).
 
-## Test
+## Check
 
-The suite runs against a real Postgres, migrated to head by the session fixture, and fails
-under 100% coverage of `src/`.
+`make check` is the one command CI runs, from `topa/api/`:
+
+- `make lint`: ruff, ruff format check, mypy strict and the import-linter contracts.
+- `make test`: pytest, failing under 100% coverage of `src/`.
+
+The suite never touches the database in `TOPA_DATABASE_URL`: it creates `topa_test` on the
+same server, migrates it to head, truncates every table after each test and drops it at
+the end. The user in that URL needs the `CREATEDB` privilege. The migration roundtrip
+(`downgrade base`, `upgrade head` again, and the `alembic check` diff against the models)
+runs there too, in `tests/integration/test_migrations.py`.
 
 ```bash
-docker compose up -d --wait db   # from the repo root, or point TOPA_DATABASE_URL elsewhere
+docker compose up -d --wait db   # from topa/, or point TOPA_DATABASE_URL elsewhere
 make test
 ```
-
-`make check` runs everything CI does: ruff, format check, mypy strict, import contracts,
-`alembic upgrade head` plus `alembic check`, and pytest.
 
 ## Layout
 
@@ -38,11 +43,12 @@ make test
 src/topa_api/
   domain/                 business rules, no frameworks, no IO
   application/            use cases and the ports they need
-  adapters/db/            engine, declarative Base, Alembic support
-  presentation/fastapi/   routers and response schemas
-  entrypoints/            create_app() and the ASGI app
+  adapters/db/            engine, readiness probe, declarative Base
+  presentation/fastapi/   routers, response schemas, the dependencies routes ask for
+  entrypoints/            create_app(): picks the adapter behind each port
 migrations/               Alembic, wired to Base.metadata
 ```
 
-`domain` and `application` never import FastAPI, SQLAlchemy or an outer layer
-(`make imports`). New migrations: `make migration m="add products"`.
+Each layer imports only the ones below it (entrypoints, presentation, application, domain).
+Adapters implement application ports and only `entrypoints` may import them, so a route
+reaches the database through a port. New migrations: `make migration m="add products"`.

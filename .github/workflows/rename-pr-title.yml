@@ -1,9 +1,6 @@
 name: Rewrite and Validate PR Title
-description: |
-  Rewrites a PR title in slash format (e.g. feat/new stuff) to the conventional
-  commit format (feat: new stuff) and fails if the result is not conventional.
-  Squash merges use the PR title as the commit subject, which Release Please
-  parses to build versions and changelog.
+
+# Rewrites "feat/x" PR titles to "feat: x" and fails non-conventional ones (squash commits feed release-please).
 
 on:
   pull_request:
@@ -17,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Rewrite PR title if needed and validate format
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.RP_TOKEN || secrets.GITHUB_TOKEN }}
           script: |

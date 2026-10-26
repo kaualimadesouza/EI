@@ -1,21 +1,19 @@
-import type { Connection, ConnectionPort } from '../../ports/connection'
+import type { ConnectionPort } from '../../ports/connection'
 
 export class HttpConnection implements ConnectionPort {
   private readonly baseUrl: string
-  private readonly fetchFn: typeof fetch
 
-  // the wrapper keeps `this` out of fetch: a bare reference throws "Illegal invocation"
-  constructor(baseUrl: string, fetchFn: typeof fetch = (input, init) => fetch(input, init)) {
+  constructor(baseUrl: string) {
     this.baseUrl = baseUrl
-    this.fetchFn = fetchFn
   }
 
-  async check(): Promise<Connection> {
+  async isReachable(): Promise<boolean> {
     try {
-      const response = await this.fetchFn(`${this.baseUrl}/health/ready`)
-      return { mode: 'api', reachable: response.ok }
+      // a hung API must read as unreachable instead of leaving the kiosk checking forever
+      const response = await fetch(`${this.baseUrl}/health/ready`, { signal: AbortSignal.timeout(3000) })
+      return response.ok
     } catch {
-      return { mode: 'api', reachable: false }
+      return false
     }
   }
 }

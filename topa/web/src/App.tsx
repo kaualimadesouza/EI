@@ -1,4 +1,4 @@
-import type { Adapters } from './composition'
+import type { Adapters } from './ports/adapters'
 import { StartScreen } from './ui/StartScreen'
 
 interface AppProps {
@@ -10,7 +10,7 @@ export function App({ adapters }: AppProps) {
   return (
     <div className="flex min-h-dvh justify-center bg-ink">
       <main className="flex min-h-dvh w-full max-w-[800px] flex-col">
-        <StartScreen connection={adapters.connection} />
+        <StartScreen mode={adapters.mode} connection={adapters.connection} />
       </main>
     </div>
   )

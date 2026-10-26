@@ -33,14 +33,15 @@ jobs:
           POSTGRES_USER: topa
           POSTGRES_PASSWORD: topa # pragma: allowlist secret (throwaway CI container)
           POSTGRES_DB: topa
-        # the settings default points at 5435, the compose host port
         ports:
-          - 5435:5432
+          - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U topa"
+          --health-cmd "pg_isready -h localhost -U topa -d topa"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+    env:
+      TOPA_DATABASE_URL: postgresql+psycopg://topa:topa@localhost:5432/topa
     steps:
       - uses: actions/checkout@v4
 
@@ -48,16 +49,7 @@ jobs:
         with:
           version: 0.9.26
 
-      - run: uv sync --frozen
-      - run: uv run ruff check .
-      - run: uv run ruff format --check .
-      - run: uv run mypy
-      - run: uv run lint-imports
-      - name: Migration roundtrip
-        run: |
-          uv run alembic upgrade head
-          uv run alembic downgrade base
-          uv run alembic upgrade head
-          uv run alembic check
-      - name: Test (100% coverage)
-        run: uv run pytest
+      - run: uv sync --locked
+      - run: make lint
+      - name: Test (100% coverage, migration roundtrip included)
+        run: make test

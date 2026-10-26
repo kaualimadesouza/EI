@@ -1,42 +1,50 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { HttpConnection } from './http-connection'
 
+afterEach(() => {
+  vi.useRealTimers()
+  vi.restoreAllMocks()
+})
+
 describe('HttpConnection', () => {
   it('asks the readiness endpoint and reports a reachable API', async () => {
-    const fetchFn = vi.fn<typeof fetch>().mockResolvedValue(new Response('{}', { status: 200 }))
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 200 }))
 
-    const connection = await new HttpConnection('/api', fetchFn).check()
+    const reachable = await new HttpConnection('/api').isReachable()
 
-    expect(fetchFn).toHaveBeenCalledWith('/api/health/ready')
-    expect(connection).toEqual({ mode: 'api', reachable: true })
+    expect(fetchSpy).toHaveBeenCalledWith('/api/health/ready', { signal: expect.any(AbortSignal) })
+    expect(reachable).toBe(true)
   })
 
   it('reports an unreachable API when the database is down', async () => {
-    const fetchFn = vi.fn<typeof fetch>().mockResolvedValue(new Response('{}', { status: 503 }))
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}', { status: 503 }))
 
-    const connection = await new HttpConnection('/api', fetchFn).check()
-
-    expect(connection).toEqual({ mode: 'api', reachable: false })
+    expect(await new HttpConnection('/api').isReachable()).toBe(false)
   })
 
   it('reports an unreachable API when the request itself fails', async () => {
-    const fetchFn = vi.fn<typeof fetch>().mockRejectedValue(new TypeError('Failed to fetch'))
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'))
 
-    const connection = await new HttpConnection('/api', fetchFn).check()
-
-    expect(connection).toEqual({ mode: 'api', reachable: false })
+    expect(await new HttpConnection('/api').isReachable()).toBe(false)
   })
 
-  it('calls the global fetch when no fetch is injected', async () => {
-    const globalFetch = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(new Response('{}', { status: 200 }))
+  it('gives up on an API that hangs for 3 seconds and reports it unreachable', async () => {
+    vi.useFakeTimers()
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(
+      (_input, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(init.signal?.reason))
+        }),
+    )
 
-    const connection = await new HttpConnection('http://localhost:8010').check()
+    const answer = new HttpConnection('/api').isReachable()
+    const signal = fetchSpy.mock.calls[0][1]?.signal
+    await vi.advanceTimersByTimeAsync(2999)
+    expect(signal?.aborted).toBe(false)
+    await vi.advanceTimersByTimeAsync(1)
 
-    expect(globalFetch).toHaveBeenCalledWith('http://localhost:8010/health/ready', undefined)
-    expect(connection).toEqual({ mode: 'api', reachable: true })
-    globalFetch.mockRestore()
+    expect(signal?.aborted).toBe(true)
+    expect(await answer).toBe(false)
   })
 })

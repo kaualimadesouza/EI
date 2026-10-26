@@ -1,9 +1,4 @@
-/** Where the kiosk keeps its orders: the local API, or the in-browser demo store. */
-export interface Connection {
-  mode: 'api' | 'demo'
-  reachable: boolean
-}
-
+/** Whether the backend that keeps the orders answers right now. */
 export interface ConnectionPort {
-  check(): Promise<Connection>
+  isReachable(): Promise<boolean>
 }

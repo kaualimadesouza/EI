@@ -48,7 +48,14 @@ make test   # testes do web e da api
 make lint
 ```
 
-Na nuvem, o front é publicado na Vercel em modo demonstração, com os pedidos guardados no navegador:
+`make test` e `make lint` rodam direto na sua máquina (no Docker, só o Postgres dos testes da API):
+precisam do Node 24 (em Node mais antigo, instale as dependências do front com `npx -y npm@11 ci`
+dentro de `topa/web`) e do [uv](https://docs.astral.sh/uv/) para a API.
+
+O front encontra a API por `VITE_API_URL`, que precisa ser do mesmo domínio (`/api`, repassado pelo
+servidor do Vite), porque a API não libera CORS. Sem essa variável, o front abre em modo demonstração.
+
+Na nuvem, o front é publicado na Vercel em modo demonstração, sem API:
 [topa-totem-dev.vercel.app](https://topa-totem-dev.vercel.app) recebe cada push na `main`, e
 [topa-totem.vercel.app](https://topa-totem.vercel.app) recebe cada release.
 

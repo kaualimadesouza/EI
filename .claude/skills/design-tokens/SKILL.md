@@ -9,7 +9,8 @@ The `@theme` block in `topa/web/src/index.css` is the **single source**. Tailwin
 turns each `--color-x` into `bg-x`, `text-x`, `border-x`, and CSS reads it as
 `var(--color-x)`. **Never hardcode a hex**, in CSS or as an arbitrary value
 (`bg-[#1A4D49]`), and never use Tailwind's default palette (`bg-blue-500`,
-`text-gray-600`). A new colour goes into `@theme` first, then gets used. The
+`text-gray-600`): `@theme` resets it (`--color-*: initial`), so such a class
+compiles to nothing. A new colour goes into `@theme` first, then gets used. The
 one allowed copy is `theme-color` in `topa/web/index.html`, which cannot read CSS.
 If this table and `index.css` disagree, `index.css` wins and this file gets
 fixed.
@@ -32,6 +33,7 @@ Contrast is measured against cream; AA text needs 4.5:1.
 | `line` | #E4DDCB | hairlines and card borders |
 | `sage` | #9DB3AD | decoration only (2.1:1): never text, never the only sign of a state |
 | `warning` | #9A5508 | warnings as text or icon: esgotado, fila cheia, servidor local sem resposta (5.3:1) |
+| `warning-tint` | #FBF0DE | light warning surface behind `warning` text; the warning dot on teal |
 
 - One primary action per screen, in teal with white text. Everything else is
   slate, outline or plain text.

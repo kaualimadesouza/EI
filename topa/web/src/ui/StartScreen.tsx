@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 
-import type { Connection, ConnectionPort } from '../ports/connection'
+import type { ConnectionPort } from '../ports/connection'
 
 interface StartScreenProps {
+  mode: 'api' | 'demo'
   connection: ConnectionPort
 }
 
@@ -11,27 +12,34 @@ interface StatusLook {
   dot: string
 }
 
-function lookOf(status: Connection | null): StatusLook {
-  if (status === null) return { label: 'Verificando conexão', dot: 'bg-sage' }
-  if (status.mode === 'demo') return { label: 'Modo demonstração', dot: 'bg-sage' }
-  if (status.reachable) return { label: 'Servidor local conectado', dot: 'bg-white' }
-  return { label: 'Servidor local sem resposta', dot: 'bg-warning' }
+function lookOf(status: 'checking' | 'demo' | 'online' | 'offline'): StatusLook {
+  switch (status) {
+    case 'checking':
+      return { label: 'Verificando conexão', dot: 'bg-sage' }
+    case 'demo':
+      return { label: 'Modo demonstração', dot: 'bg-sage' }
+    case 'online':
+      return { label: 'Servidor local conectado', dot: 'bg-white' }
+    case 'offline':
+      return { label: 'Servidor local sem resposta: confira o make run', dot: 'bg-warning-tint' }
+  }
 }
 
-export function StartScreen({ connection }: StartScreenProps) {
-  const [status, setStatus] = useState<Connection | null>(null)
+export function StartScreen({ mode, connection }: StartScreenProps) {
+  const [reachability, setReachability] = useState<'checking' | 'online' | 'offline'>('checking')
 
   useEffect(() => {
     let current = true
-    void connection.check().then((answer) => {
-      if (current) setStatus(answer)
+    void connection.isReachable().then((reachable) => {
+      if (current) setReachability(reachable ? 'online' : 'offline')
     })
     return () => {
       current = false
     }
   }, [connection])
 
-  const look = lookOf(status)
+  // demo mode is known up front; only the API's reachability is worth waiting for
+  const look = lookOf(mode === 'demo' ? 'demo' : reachability)
 
   return (
     <section className="flex flex-1 flex-col bg-teal text-white">
@@ -40,10 +48,10 @@ export function StartScreen({ connection }: StartScreenProps) {
         <div className="absolute inset-x-[clamp(1rem,6vw,3rem)] top-[clamp(1rem,5vw,2.5rem)] flex items-center">
           <span className="flex h-14 items-center gap-3 rounded-full bg-white pr-5 pl-2 text-[clamp(1rem,2.5vw,1.25rem)] font-semibold text-ink">
             <svg width="40" height="40" viewBox="0 0 48 48" aria-hidden="true">
-              <circle cx="24" cy="24" r="24" fill="#000000" />
-              <path d="M1 27c0 12.7 10.3 23 23 23s23-10.3 23-23z" fill="#1A4D49" />
-              <path d="M9 19c6-6 24-6 30 0" stroke="#FFFFFF" strokeWidth="3.5" fill="none" strokeLinecap="round" />
-              <circle cx="31" cy="22" r="2.5" fill="#FFFFFF" />
+              <circle cx="24" cy="24" r="24" className="fill-ink" />
+              <path d="M1 27c0 12.7 10.3 23 23 23s23-10.3 23-23z" className="fill-teal" />
+              <path d="M9 19c6-6 24-6 30 0" strokeWidth="3.5" fill="none" strokeLinecap="round" className="stroke-white" />
+              <circle cx="31" cy="22" r="2.5" className="fill-white" />
             </svg>
             Lanchonete Bem-te-vi
           </span>

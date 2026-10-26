@@ -12,4 +12,4 @@ test-api: ; docker compose up -d --wait db && $(MAKE) -C api test
 
 lint: lint-web lint-api
 lint-web: ; cd web && npm run lint && npm run typecheck
-lint-api: ; cd api && uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run lint-imports
+lint-api: ; $(MAKE) -C api lint

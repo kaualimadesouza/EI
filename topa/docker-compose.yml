@@ -10,7 +10,8 @@ services:
     ports:
       - "5435:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U topa"]
+      # TCP, not the socket: the init-time server listens only on the socket and restarts after
+      test: ["CMD-SHELL", "pg_isready -h localhost -U topa -d topa"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -19,6 +20,7 @@ services:
 
   api:
     build: ./api
+    restart: on-failure
     ports:
       - "8010:8000"
     environment:

@@ -2,9 +2,9 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Response, status
 from pydantic import BaseModel
-from sqlalchemy import Engine
 
-from topa_api.adapters.db.session import database_is_up, get_engine
+from topa_api.application.ports import ReadinessProbe
+from topa_api.presentation.fastapi.dependencies import get_readiness_probe
 
 router = APIRouter()
 
@@ -14,7 +14,6 @@ class HealthResponse(BaseModel):
 
 
 class ReadyResponse(BaseModel):
-    status: Literal["ok", "unavailable"]
     database: Literal["up", "down"]
 
 
@@ -29,10 +28,12 @@ def health() -> HealthResponse:
     "/health/ready",
     responses={status.HTTP_503_SERVICE_UNAVAILABLE: {"model": ReadyResponse}},
 )
-def ready(engine: Annotated[Engine, Depends(get_engine)], response: Response) -> ReadyResponse:
+def ready(
+    probe: Annotated[ReadinessProbe, Depends(get_readiness_probe)], response: Response
+) -> ReadyResponse:
     """Readiness: 503 while Postgres does not answer, so the compose healthcheck
     keeps the container unhealthy instead of letting it serve errors."""
-    if database_is_up(engine):
-        return ReadyResponse(status="ok", database="up")
+    if probe.database_is_up():
+        return ReadyResponse(database="up")
     response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-    return ReadyResponse(status="unavailable", database="down")
+    return ReadyResponse(database="down")

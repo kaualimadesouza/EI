@@ -32,7 +32,7 @@ the MVP monorepo (`topa/web/`, `topa/api/`). The repo is public.
 2. Branch from main: `feat/<slug>` (or `fix/`, `chore/`, `ci/`, `docs/`).
 3. **Tests first**: follow the `tdd` skill.
 4. Implement. Locally green before pushing:
-   - `topa/web/`: `npm run lint && npm run typecheck && npm test`
+   - `topa/web/`: `npm run check` (lint, typecheck, tests with coverage, build)
    - `topa/api/`: `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run lint-imports && uv run pytest`
 5. **Coverage of the diff is 100%**: every line the branch adds or changes is
    covered, both arms of every branch. A line that cannot be reached without a

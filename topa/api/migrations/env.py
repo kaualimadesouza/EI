@@ -4,7 +4,7 @@ from alembic import context
 from sqlalchemy import create_engine, pool
 
 from topa_api.adapters.db.base import Base
-from topa_api.settings import get_settings
+from topa_api.settings import Settings
 
 config = context.config
 
@@ -13,7 +13,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 # read straight from Settings: set_main_option would choke on a %-encoded password
-database_url = get_settings().database_url
+database_url = Settings().database_url
 target_metadata = Base.metadata
 
 

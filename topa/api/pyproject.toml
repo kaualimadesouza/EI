@@ -64,20 +64,26 @@ fail_under = 100
 root_packages = ["topa_api"]
 include_external_packages = true
 
+# adapters sit outside the layers: they may import application and domain,
+# and only entrypoints may import them
+[[tool.importlinter.contracts]]
+name = "each layer imports only the ones below it"
+type = "layers"
+layers = [
+    "topa_api.entrypoints",
+    "topa_api.presentation",
+    "topa_api.application",
+    "topa_api.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "presentation reaches adapters only through application ports"
+type = "forbidden"
+source_modules = ["topa_api.presentation"]
+forbidden_modules = ["topa_api.adapters"]
+
 [[tool.importlinter.contracts]]
 name = "domain and application stay framework-free"
 type = "forbidden"
 source_modules = ["topa_api.domain", "topa_api.application"]
-forbidden_modules = [
-    "fastapi",
-    "sqlalchemy",
-    "topa_api.adapters",
-    "topa_api.presentation",
-    "topa_api.entrypoints",
-]
-
-[[tool.importlinter.contracts]]
-name = "domain does not depend on application"
-type = "forbidden"
-source_modules = ["topa_api.domain"]
-forbidden_modules = ["topa_api.application"]
+forbidden_modules = ["fastapi", "sqlalchemy", "topa_api.adapters"]

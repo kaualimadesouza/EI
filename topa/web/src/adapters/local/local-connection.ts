@@ -1,7 +1,7 @@
-import type { Connection, ConnectionPort } from '../../ports/connection'
+import type { ConnectionPort } from '../../ports/connection'
 
 export class LocalConnection implements ConnectionPort {
-  check(): Promise<Connection> {
-    return Promise.resolve({ mode: 'demo', reachable: true })
+  isReachable(): Promise<boolean> {
+    return Promise.resolve(true)
   }
 }

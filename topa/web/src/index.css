@@ -1,9 +1,12 @@
 @import 'tailwindcss';
 
-/* TOPA tokens: logo colors plus black and white; the single source for every screen */
+/* TOPA tokens: logo colors plus black and white; the single source for every screen.
+   The default palette is reset, so a class outside these tokens (bg-blue-500) compiles to nothing. */
 @theme {
   --font-sans: 'Lexend', system-ui, sans-serif;
 
+  --color-*: initial;
+  --color-white: #ffffff;
   --color-teal: #1a4d49;
   --color-slate: #3d5552;
   --color-sage: #9db3ad;
@@ -15,6 +18,7 @@
   --color-sage-tint: #eef3f0;
   --color-on-teal: #dce6e2;
   --color-warning: #9a5508;
+  --color-warning-tint: #fbf0de;
 }
 
 body {
