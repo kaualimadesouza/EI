@@ -1,4 +1,5 @@
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -6,15 +7,20 @@ from alembic import command
 from alembic.config import Config
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy import Engine, NullPool, create_engine, make_url, text
+from sqlalchemy import Engine, NullPool, create_engine, delete, make_url, text, update
 
-from topa_api.adapters.db.base import Base
+from tests.fakes import FixedClock
+from topa_api.adapters.db.models import OrderRow, ProductRow
 from topa_api.adapters.db.session import get_engine
 from topa_api.entrypoints.rest_application import create_app
+from topa_api.presentation.fastapi.dependencies import get_clock
 from topa_api.settings import Settings
 
 ALEMBIC_INI = Path(__file__).resolve().parents[2] / "alembic.ini"
 TEST_DATABASE = "topa_test"
+
+# 15h UTC is noon in São Paulo, far from either edge of the business day
+NOON_IN_SAO_PAULO = datetime(2026, 10, 26, 15, 0, tzinfo=UTC)
 
 
 @pytest.fixture(scope="session")
@@ -50,20 +56,45 @@ def db_engine(alembic_config: Config) -> Iterator[Engine]:
 
 
 @pytest.fixture(autouse=True)
-def clean_database(db_engine: Engine) -> Iterator[None]:
+def clean_orders(db_engine: Engine) -> Iterator[None]:
+    """The products are the migration's seed and stay; every order a test placed goes."""
     yield
-    tables = ", ".join(table.name for table in Base.metadata.sorted_tables)
-    if tables:
-        with db_engine.begin() as connection:
-            connection.execute(text(f"TRUNCATE {tables} RESTART IDENTITY CASCADE"))
+    with db_engine.begin() as connection:
+        connection.execute(delete(OrderRow))
 
 
 @pytest.fixture
-def app(db_engine: Engine) -> FastAPI:
-    return create_app()
+def clock() -> FixedClock:
+    return FixedClock(NOON_IN_SAO_PAULO)
+
+
+@pytest.fixture
+def app(db_engine: Engine, clock: FixedClock) -> FastAPI:
+    application = create_app()
+    application.dependency_overrides[get_clock] = lambda: clock
+    return application
 
 
 @pytest.fixture
 def client(app: FastAPI) -> Iterator[TestClient]:
     with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture
+def sell_out(db_engine: Engine) -> Iterator[Callable[[str], None]]:
+    """Marks seeded products unavailable for one test and puts them back after it."""
+    sold_out: list[str] = []
+
+    def mark(product_id: str) -> None:
+        with db_engine.begin() as connection:
+            connection.execute(
+                update(ProductRow).where(ProductRow.id == product_id).values(available=False)
+            )
+        sold_out.append(product_id)
+
+    yield mark
+    with db_engine.begin() as connection:
+        connection.execute(
+            update(ProductRow).where(ProductRow.id.in_(sold_out)).values(available=True)
+        )

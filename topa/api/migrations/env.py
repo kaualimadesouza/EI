@@ -3,6 +3,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import create_engine, pool
 
+import topa_api.adapters.db.models  # noqa: F401  (registers every table on Base.metadata)
 from topa_api.adapters.db.base import Base
 from topa_api.settings import Settings
 

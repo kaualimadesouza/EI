@@ -1,13 +1,33 @@
-from fastapi import FastAPI, Request
+from typing import Annotated
 
-from topa_api.application.ports import ReadinessProbe
+from fastapi import Depends
+
+from topa_api.application.place_order import PlaceOrderUseCase
+from topa_api.application.ports import Clock, OrderRepository, ProductRepository, ReadinessProbe
+
+# The ports a route asks for. Presentation never sees an adapter: create_app() binds
+# each of these to its adapter through dependency_overrides, and tests rebind them.
 
 
-def bind_readiness_probe(app: FastAPI, probe: ReadinessProbe) -> None:
-    """Called by the composition root, the only layer that knows the adapters."""
-    app.state.readiness_probe = probe
+def get_readiness_probe() -> ReadinessProbe:
+    raise NotImplementedError
 
 
-def get_readiness_probe(request: Request) -> ReadinessProbe:
-    probe: ReadinessProbe = request.app.state.readiness_probe
-    return probe
+def get_product_repository() -> ProductRepository:
+    raise NotImplementedError
+
+
+def get_order_repository() -> OrderRepository:
+    raise NotImplementedError
+
+
+def get_clock() -> Clock:
+    raise NotImplementedError
+
+
+def get_place_order_use_case(
+    products: Annotated[ProductRepository, Depends(get_product_repository)],
+    orders: Annotated[OrderRepository, Depends(get_order_repository)],
+    clock: Annotated[Clock, Depends(get_clock)],
+) -> PlaceOrderUseCase:
+    return PlaceOrderUseCase(products, orders, clock)

@@ -1,0 +1,54 @@
+from collections.abc import Callable
+
+from fastapi.testclient import TestClient
+
+# the seed of the products migration, in menu order: (id, category, name, description, price)
+MENU = [
+    ("combo-cafe", "combos", "Café + pão de queijo", "Café coado e três pães de queijo.", 1290),
+    ("combo-misto", "combos", "Misto + suco", "Misto quente com suco de laranja de 300 ml.", 2290),
+    ("misto", "lanches", "Misto quente", "Pão de forma, presunto e queijo na chapa.", 1490),
+    ("xsalada", "lanches", "X-salada", "Hambúrguer, queijo, alface e tomate.", 2290),
+    ("bauru", "lanches", "Bauru", "Rosbife, queijo, tomate e picles no pão francês.", 1890),
+    ("americano", "lanches", "Americano", "Presunto, queijo, ovo, alface e tomate.", 1990),
+    ("paoqueijo", "salgados", "Pão de queijo", "Porção com três unidades.", 750),
+    ("coxinha", "salgados", "Coxinha", "Frango com catupiry.", 890),
+    ("esfiha", "salgados", "Esfiha de carne", "Massa aberta com carne temperada.", 790),
+    ("enroladinho", "salgados", "Enroladinho", "Salsicha em massa assada.", 690),
+    ("cafe", "bebidas", "Café coado", "Xícara de 150 ml.", 550),
+    ("suco", "bebidas", "Suco de laranja", "Natural, 300 ml.", 990),
+    ("refri", "bebidas", "Refrigerante", "Copo de 350 ml com gelo.", 690),
+    ("agua", "bebidas", "Água sem gás", "500 ml.", 400),
+    ("bolo", "doces", "Bolo de cenoura", "Fatia com cobertura de chocolate.", 850),
+    ("pudim", "doces", "Pudim", "Fatia de pudim de leite.", 990),
+    ("brigadeiro", "doces", "Brigadeiro", "Unidade.", 450),
+    ("brownie", "doces", "Brownie", "Com nozes.", 890),
+]
+
+
+def test_the_menu_lists_every_product_in_menu_order(client: TestClient) -> None:
+    response = client.get("/products")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {
+            "id": product_id,
+            "name": name,
+            "description": description,
+            "category": category,
+            "price_cents": price_cents,
+            "available": True,
+        }
+        for product_id, category, name, description, price_cents in MENU
+    ]
+
+
+def test_a_sold_out_product_stays_on_the_menu_marked_unavailable(
+    client: TestClient, sell_out: Callable[[str], None]
+) -> None:
+    """The kiosk greys it out instead of hiding it, so the menu does not reshuffle."""
+    sell_out("coxinha")
+
+    products = client.get("/products").json()
+
+    assert [product["id"] for product in products] == [row[0] for row in MENU]
+    assert [product["id"] for product in products if not product["available"]] == ["coxinha"]

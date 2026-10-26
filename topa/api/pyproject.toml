@@ -59,6 +59,8 @@ omit = ["*/tests/*"]
 [tool.coverage.report]
 show_missing = true
 fail_under = 100
+# the port markers in presentation/fastapi/dependencies.py, always bound by create_app()
+exclude_also = ["raise NotImplementedError"]
 
 [tool.importlinter]
 root_packages = ["topa_api"]
