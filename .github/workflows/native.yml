@@ -5,10 +5,6 @@ name: Native apps
 # for Linux, Windows and macOS plus the APK attached. release-please chains the release build:
 # a release created with GITHUB_TOKEN triggers nothing on its own.
 on:
-  # TEMPORARY: validates the workflow before it reaches main; dropped before the PR
-  push:
-    branches:
-      - feat/native-apps
   pull_request:
     branches:
       - main
