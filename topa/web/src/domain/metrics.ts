@@ -35,3 +35,8 @@ export function metricsOf(orders: readonly OrderSummary[]): DayMetrics {
     byHour,
   }
 }
+
+/** Relative change against a previous value, or null when there is nothing to compare with. */
+export function changeRatio(current: number, previous: number): number | null {
+  return previous === 0 ? null : (current - previous) / previous
+}

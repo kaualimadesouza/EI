@@ -12,6 +12,15 @@ export interface Upsell {
   reason: string
 }
 
+/** How each rule below reads on the dashboard's menu table, keyed by the product it offers. */
+export const SUGGESTION_RULES: Readonly<Record<string, string>> = {
+  'combo-cafe': 'Banner até as 11h',
+  'combo-misto': 'Banner das 11h às 15h',
+  bolo: 'Banner a partir das 15h',
+  suco: 'Oferecido após um lanche sem bebida',
+  paoqueijo: 'Oferecido após um café sem salgado',
+}
+
 /** What the menu banner offers at this time of day (store hours, local time). */
 export function suggestionAt(now: Date): Suggestion {
   const hour = now.getHours()

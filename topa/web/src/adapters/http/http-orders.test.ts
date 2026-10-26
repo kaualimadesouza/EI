@@ -52,4 +52,79 @@ describe('HttpOrders', () => {
 
     await expect(orders.place(draft)).rejects.toThrow('POST /orders answered 500')
   })
+
+  it('lists one day of orders in the domain shape', async () => {
+    const fetchSpy = json([
+      {
+        id: 'o1',
+        number: 3,
+        status: 'preparing',
+        dine_in: true,
+        payment_method: 'card',
+        total_cents: 2290,
+        created_at: '2026-10-26T15:00:00Z',
+        items: [{ product_id: 'xsalada', name: 'X-salada', quantity: 1, unit_price_cents: 2290 }],
+      },
+    ])
+
+    const orders = await new HttpOrders(new HttpClient('/api')).list('2026-10-26')
+
+    expect(fetchSpy).toHaveBeenCalledWith('/api/orders?date=2026-10-26')
+    expect(orders).toEqual([
+      {
+        id: 'o1',
+        number: 3,
+        status: 'preparing',
+        dineIn: true,
+        paymentMethod: 'card',
+        totalCents: 2290,
+        createdAt: '2026-10-26T15:00:00Z',
+        items: [{ productId: 'xsalada', name: 'X-salada', quantity: 1, unitPriceCents: 2290 }],
+      },
+    ])
+  })
+
+  it('fails loudly when the day cannot be listed', async () => {
+    json({}, 500)
+
+    await expect(new HttpOrders(new HttpClient('/api')).list('2026-10-26')).rejects.toThrow('GET /orders answered 500')
+  })
+
+  it('moves an order and returns it as the API now has it', async () => {
+    const fetchSpy = json({
+      id: 'o1',
+      number: 3,
+      status: 'ready',
+      dine_in: false,
+      payment_method: 'pix',
+      total_cents: 990,
+      created_at: '2026-10-26T15:00:00Z',
+      items: [],
+    })
+
+    const order = await new HttpOrders(new HttpClient('/api')).setStatus('o1', 'ready')
+
+    expect(fetchSpy).toHaveBeenCalledWith('/api/orders/o1', expect.objectContaining({ method: 'PATCH', body: '{"status":"ready"}' }))
+    expect(order).toMatchObject({ id: 'o1', status: 'ready', dineIn: false })
+  })
+
+  it('passes on the API words when a move is refused or the order is gone', async () => {
+    const orders = new HttpOrders(new HttpClient('/api'))
+
+    json({ detail: 'O pedido 003 não pode passar de recebido para entregue.' }, 409)
+    await expect(orders.setStatus('o1', 'delivered')).rejects.toEqual(
+      new OrderRejectedError('O pedido 003 não pode passar de recebido para entregue.'),
+    )
+    vi.restoreAllMocks()
+    json({ detail: [{ msg: 'odd' }] }, 404)
+    await expect(orders.setStatus('o1', 'ready')).rejects.toEqual(new OrderRejectedError('Não foi possível mudar o pedido.'))
+  })
+
+  it('fails loudly on any other error while moving an order', async () => {
+    json({}, 500)
+
+    await expect(new HttpOrders(new HttpClient('/api')).setStatus('o1', 'ready')).rejects.toThrow(
+      'PATCH /orders/o1 answered 500',
+    )
+  })
 })

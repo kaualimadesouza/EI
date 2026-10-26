@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { DEMO_CATALOG } from './demo-catalog'
 import { findProduct, type Product } from './menu'
-import { bannerFor, suggestionAt, upsellAfterAdding } from './suggest'
+import { bannerFor, SUGGESTION_RULES, suggestionAt, upsellAfterAdding } from './suggest'
 
 const at = (hour: number) => new Date(2026, 9, 26, hour, 30)
 const product = (id: string): Product => findProduct(DEMO_CATALOG, id)!
@@ -91,5 +91,18 @@ describe('upsellAfterAdding', () => {
     ]
 
     expect(upsellAfterAdding(product('misto'), lines, DEMO_CATALOG)?.productId).toBe('suco')
+  })
+})
+
+describe('SUGGESTION_RULES', () => {
+  it('describes every product a rule can offer, and only those', () => {
+    const offered = new Set<string>()
+    for (const hour of [8, 12, 17]) offered.add(suggestionAt(new Date(2026, 9, 26, hour)).productId)
+    const lanche = findProduct(DEMO_CATALOG, 'xsalada')!
+    const cafe = findProduct(DEMO_CATALOG, 'cafe')!
+    offered.add(upsellAfterAdding(lanche, [], DEMO_CATALOG)!.productId)
+    offered.add(upsellAfterAdding(cafe, [], DEMO_CATALOG)!.productId)
+
+    expect(new Set(Object.keys(SUGGESTION_RULES))).toEqual(offered)
   })
 })

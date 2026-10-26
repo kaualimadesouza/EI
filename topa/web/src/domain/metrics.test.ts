@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { metricsOf } from './metrics'
+import { changeRatio, metricsOf } from './metrics'
 import type { OrderSummary } from './order'
 
 function order(number: number, totalCents: number, hour: number, dineIn = true): OrderSummary {
@@ -38,5 +38,16 @@ describe('metricsOf', () => {
 
   it('reports zeros for a day with no orders', () => {
     expect(metricsOf([])).toMatchObject({ revenueCents: 0, orderCount: 0, averageTicketCents: 0, takeAwayShare: 0 })
+  })
+})
+
+describe('changeRatio', () => {
+  it('measures the change against the previous value', () => {
+    expect(changeRatio(150, 100)).toBeCloseTo(0.5)
+    expect(changeRatio(50, 100)).toBeCloseTo(-0.5)
+  })
+
+  it('has nothing to say when the previous value is zero', () => {
+    expect(changeRatio(10, 0)).toBeNull()
   })
 })

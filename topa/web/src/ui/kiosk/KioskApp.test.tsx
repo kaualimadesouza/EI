@@ -20,7 +20,13 @@ function fakes(products: Product[] = DEMO_CATALOG.map((p) => ({ ...p }))): Fakes
   const place = vi
     .fn<(draft: OrderDraft) => Promise<PlacedOrder>>()
     .mockImplementation((draft) => Promise.resolve({ number: 47, totalCents: draft.lines.length * 100 }))
-  return { adapters: { mode: 'demo', connection: { isReachable: () => Promise.resolve(true) }, menu: { list }, orders: { place } }, place, list }
+  const adapters: Adapters = {
+    mode: 'demo',
+    connection: { isReachable: () => Promise.resolve(true) },
+    menu: { list, setAvailability: vi.fn() },
+    orders: { place, list: vi.fn(), setStatus: vi.fn() },
+  }
+  return { adapters, place, list }
 }
 
 const morning = () => new Date(2026, 9, 26, 8, 0)
