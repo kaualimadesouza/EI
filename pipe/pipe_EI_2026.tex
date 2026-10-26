@@ -1,0 +1,669 @@
+\documentclass[12pt,a4paper]{article}
+
+% Packages
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel}
+% Arial/Calibri are not available to pdflatex: TeX Gyre Heros is metric-compatible with Arial
+\usepackage{tgheros}
+\renewcommand{\familydefault}{\sfdefault}
+% Latin Modern Typewriter keeps URLs in Type 1 (cm-super is not installed)
+\renewcommand{\ttdefault}{lmtt}
+\usepackage{geometry}
+\geometry{a4paper, left=3cm, right=1.5cm, top=2.5cm, bottom=2.5cm, footskip=1.2cm}
+\usepackage{setspace, titlesec, fancyhdr, etoolbox, caption, amssymb, indentfirst, needspace}
+% nocompress: ranges like [5-7] would print an en-dash
+\usepackage[nocompress]{cite}
+\usepackage[table]{xcolor}
+\usepackage{array, tabularx, xltabular, multirow, float, pdflscape, enumitem}
+\usepackage[most]{tcolorbox}
+\usepackage{xurl}
+\usepackage[hidelinks, hypertexnames=false]{hyperref}
+
+% Colors taken from the FAPESP Anexo 1 template (item bars and light fill)
+\definecolor{fapespblue}{HTML}{2E4871}
+\definecolor{fapesplight}{HTML}{DEEAF6}
+\colorlet{gantt}{fapespblue!55}
+\definecolor{pendfg}{HTML}{8A3B00}
+\definecolor{pendbg}{HTML}{FFF1DD}
+
+% 1.43 x 14.5pt is about 20.7pt, the height of Word's "1,5 linhas" for Arial 12
+\setstretch{1.43}
+\setlength{\parindent}{1cm}
+\setlength{\emergencystretch}{2em}
+\setlength{\parskip}{4pt}
+\setlist{itemsep=2pt, topsep=4pt, parsep=0pt}
+
+% Item headings: white bold text on the template's dark blue bar, "N - Título"
+\newcommand{\itembar}[1]{\colorbox{fapespblue}{\parbox{\dimexpr\linewidth-2\fboxsep\relax}{\color{white}\strut\thesection\ - #1}}}
+\titleformat{\section}[block]{\normalfont\normalsize\bfseries}{}{0pt}{\itembar}
+\titlespacing*{\section}{0pt}{14pt}{6pt}
+\renewcommand{\thesubsection}{\alph{subsection}}
+\titleformat{\subsection}[hang]{\normalfont\normalsize\bfseries}{\thesubsection)}{0.5em}{}
+\titlespacing*{\subsection}{0pt}{8pt}{2pt}
+
+% Tables: template uses 10pt inside tables
+\captionsetup{font=small, labelfont=bf, labelsep=colon, skip=4pt}
+\newcommand{\tablefont}{\footnotesize\setstretch{1.05}}
+\renewcommand{\arraystretch}{1.25}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\hd}{\rowcolor{fapesplight}}
+\newcommand{\G}{\cellcolor{gantt}}
+
+% Pending items for the group, to be removed before submission
+\newtcolorbox{pendbox}{enhanced, breakable, colback=pendbg, colframe=pendfg,
+  boxrule=0.6pt, leftrule=3pt, arc=1mm, left=5pt, right=5pt, top=2pt, bottom=2pt,
+  before skip=5pt, after skip=7pt, fontupper=\small\setstretch{1.1}}
+\newcommand{\pendente}[1]{\begin{pendbox}\textbf{\color{pendfg}Pendente:} #1\end{pendbox}}
+\newcommand{\pendentecurto}[1]{\colorbox{pendbg}{\color{pendfg}\footnotesize\bfseries Pendente: #1}}
+
+% Bibliography: no automatic heading, the template's subitems a) and b) are used instead
+\patchcmd{\thebibliography}{\section*{\refname}}{}{}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[R]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+\begin{document}
+
+% =========================================================
+% FIRST-PAGE HEADER AND MEMBERS (no cover page, as the template requires)
+% =========================================================
+
+\begin{center}
+\setstretch{1.0}
+{\bfseries Universidade de São Paulo}\\
+{\bfseries ACH2008 - Empreendedorismo em Informática}\\
+{\small \textbf{Prof. Doutor:} Luciano Vieira de Araújo \qquad \textbf{Ano:} 2º Semestre/2026}\\[8pt]
+{\large\bfseries Projeto de Pesquisa para Inovação: PIPE/FAPESP Fase 1}\\[6pt]
+{\small
+\begin{tabular}{@{}c@{\hspace{1.5cm}}c@{}}
+Kauã Lima de Souza, 15674702 & Luiz Felipe Couto de Souza, 13673169\\
+Kevin Rodrigues Nunes, 15676030 & Renan Biruel Uema, 15486661\\
+\multicolumn{2}{c}{Victor Yodono, 13829040}\\
+\multicolumn{2}{c}{Turma T94}
+\end{tabular}}
+\end{center}
+
+% =========================================================
+\section{Título}
+% =========================================================
+
+\begin{center}
+\setstretch{1.2}
+\bfseries Plataforma inteligente de autoatendimento em modelo \textit{Hardware-as-a-Service} com pagamento \textit{Tap on Phone}, recomendação por inteligência artificial e integração adaptativa a sistemas legados para pequenos estabelecimentos de alimentação
+\end{center}
+
+{\small\setstretch{1.15}
+\noindent\textbf{Empresa proponente:} AutoAtende Tecnologia Ltda.\\
+\textbf{Pesquisador Responsável:} Luiz Felipe Couto de Souza\\
+\textbf{Equipe de pesquisa (sócios):} Kauã Lima de Souza, Kevin Rodrigues Nunes, Renan Biruel Uema e Victor Yodono\\
+\textbf{Modalidade:} PIPE Fase 1 (análise de viabilidade técnico-científica), duração de 9 meses\par}
+
+\pendente{Confirmar a razão social definitiva e o Pesquisador Responsável (o rascunho marca os dois como ``a confirmar''). O rascunho usa AutoAtende Tecnologia Ltda., enquanto os demais documentos do grupo apresentam o produto como TOPA (Totem por Assinatura).}
+
+% =========================================================
+\section{Resumo}
+% =========================================================
+
+Pequenos e médios estabelecimentos de alimentação fora do lar e de comércio de proximidade enfrentam uma combinação de pressões: a discussão sobre o fim da escala 6x1 projeta aumento de até 22\% no custo do trabalho para negócios de funcionamento diário \cite{fecomercio2026, abrasel2026}; a automação de atendimento disponível é vendida majoritariamente como bem de capital (totens industriais de alto custo) \cite{genialtec2026}; o meio de pagamento exige maquininhas externas (PinPads) com custo recorrente e falhas de integração; e a gestão é feita em sistemas legados, sem APIs, o que gera retrabalho manual. Embora o mercado global de \textit{self-checkout} cresça cerca de 11\% ao ano \cite{pegn2026}, esse segmento permanece sub-atendido.
+
+Este projeto propõe investigar a viabilidade técnico-científica de uma plataforma de autoatendimento que combine: (i) terminais de baixo custo baseados em \textit{tablets} e \textit{smartphones} Android comerciais (COTS), fornecidos em modelo \textit{Hardware-as-a-Service} (HaaS); (ii) aceitação de cartão por aproximação diretamente no dispositivo (\textit{Tap on Phone}) e Pix via QR Code, dispensando PinPads; (iii) um motor de recomendação capaz de aumentar o ticket médio mesmo em estabelecimentos com pouco histórico de vendas (problema de \textit{cold start}); (iv) interação por voz em português em ambiente ruidoso; e (v) uma camada de integração adaptativa a sistemas de gestão legados, com operação \textit{offline-first} e gestão remota de frota que permita a troca expressa do equipamento pelos correios.
+
+A metodologia combina revisão técnica, prototipagem incremental em ciclos curtos (Scrum), experimentos de bancada controlados (taxa de sucesso e latência de leitura NFC em diferentes dispositivos; taxa de erro de reconhecimento de fala sob ruído; cobertura de conectores de integração) e um piloto em três estabelecimentos reais, com experimento controlado (teste A/B) para medir o efeito das recomendações sobre o ticket médio. O projeto tem duração de 9 meses, com R\$ 271.300,00 solicitados à FAPESP e contrapartida de R\$ 107.400,00 da empresa.
+
+Os resultados esperados ao final da Fase 1 são: uma lista validada de dispositivos de baixo custo aptos a operar \textit{Tap on Phone} com taxa de sucesso de transação $\geq$ 98\%; um modelo de recomendação com ganho estatisticamente mensurável de ticket médio no piloto; um protótipo de pedido por voz com taxa de pedidos corretos $\geq$ 90\% em ruído típico de salão; conectores para ao menos três famílias de sistemas legados; e um modelo econômico do HaaS calibrado com dados reais de custo e uso. Esses resultados reduzirão as principais incertezas técnicas do negócio e fundamentarão a Fase 2. Para a empresa, o projeto viabiliza um produto que converte automação de CapEx em OpEx e gera receita recorrente; para o mercado, torna acessível a automação de atendimento a uma faixa de estabelecimentos hoje excluída dela.
+
+\clearpage
+
+% =========================================================
+\section{Objetivos}
+% =========================================================
+
+\textbf{Objetivo geral.} Demonstrar a viabilidade técnica e econômica de uma plataforma de autoatendimento de baixo custo de entrada, operada sobre dispositivos móveis comerciais em modelo HaaS, que cubra o ciclo completo de pedido, pagamento e envio à produção em pequenos estabelecimentos.
+
+\textbf{Desafios científicos e técnicos a superar}, desdobrados em atividades e marcos no item 7:
+
+\begin{description}[leftmargin=1.1cm, labelindent=0pt, style=sameline]
+    \item[D1.] \textbf{Pagamento em dispositivo COTS:} determinar quais dispositivos Android de baixo custo, em configuração de quiosque com suporte antifurto, sustentam aceitação \textit{Tap on Phone} conforme os requisitos de segurança vigentes \cite{pci_cpoc, pci_mpoc}, com taxa de sucesso $\geq$ 98\% e tempo de transação comparável ao de um PinPad.
+    \item[D2.] \textbf{Recomendação com poucos dados:} obter ganho mensurável de ticket médio em estabelecimentos com cardápio pequeno e histórico curto, explorando sessão, sazonalidade e transferência de conhecimento entre estabelecimentos.
+    \item[D3.] \textbf{Interação por voz em ambiente ruidoso:} converter fala espontânea em português em um pedido estruturado e restrito ao cardápio, com taxa de pedidos corretos $\geq$ 90\% e latência compatível com o atendimento.
+    \item[D4.] \textbf{Integração com sistemas legados:} construir uma camada adaptativa capaz de entregar pedidos, baixas de estoque e dados para emissão fiscal (NFC-e) a sistemas sem API, reduzindo o esforço de implantação por estabelecimento.
+    \item[D5.] \textbf{Operação resiliente e reposição expressa:} garantir funcionamento sob conectividade intermitente e reprovisionamento remoto de um terminal substituto em menos de 15 minutos, sem visita técnica.
+    \item[D6.] \textbf{Viabilidade econômica do HaaS:} estimar, com dados do piloto, custo por terminal, \textit{payback} e sensibilidade à taxa de cancelamento.
+\end{description}
+
+\textbf{Resultados almejados.} Ao final da Fase 1, espera-se obter: (i) uma matriz de dispositivos de baixo custo validados para \textit{Tap on Phone} em modo quiosque; (ii) um modelo de recomendação com ganho de ticket médio medido em teste A/B no piloto; (iii) um protótipo de pedido por voz restrito ao cardápio, avaliado sob ruído; (iv) adaptadores para ao menos três mecanismos de integração com sistemas legados; (v) operação \textit{offline} sem perda de pedidos e reprovisionamento remoto de terminais; e (vi) um modelo econômico do HaaS calibrado com dados reais. Os entregáveis correspondentes estão no item 7e.
+
+\textbf{Objetivos de inovação.}
+\begin{itemize}
+    \item \textbf{Na empresa:} viabilizar um produto que converte automação de CapEx em OpEx e gera receita recorrente, com implantação e reposição remotas que reduzem o custo de suporte.
+    \item \textbf{No cliente:} oferecer ao lojista entrada sem investimento inicial, eliminação do PinPad e de seu custo recorrente e uma IA orientada a receita (ticket médio), e não apenas à economia de mão de obra.
+    \item \textbf{No mercado:} tornar acessível a automação de atendimento a uma faixa de estabelecimentos hoje excluída dela, inclusive fora dos grandes centros.
+\end{itemize}
+
+\pendente{Alinhar o escopo com o protótipo de telas usado nas entrevistas com usuários finais (pasta \texttt{entrevistas-prototipo/}), que apresenta como diferenciais do TOPA a recomendação por visão computacional, o transbordo de fila para o celular do cliente por QR Code ou NFC e a operação \textit{offline} com pagamento sem internet (\textit{edge computing}, com limite por transação). Este projeto, como o rascunho, trata recomendação por sessão e histórico (D2), pedido por voz (D3) e integração com sistemas legados (D4), e cobre a operação \textit{offline} para pedidos (D5). O grupo deve decidir se os desafios D1 a D6 ficam como estão ou se incorporam esses diferenciais.}
+
+% =========================================================
+\section{Informações sobre a empresa}
+% =========================================================
+
+\subsection{Informações comerciais e administrativas}
+
+A empresa proponente é a AutoAtende Tecnologia Ltda.; nos estudos do grupo, o produto é apresentado com o nome TOPA (Totem por Assinatura).
+
+\pendente{Completar razão social definitiva, CNPJ, nomes dos sócios, endereço no Estado de São Paulo e número de empregados (campos deixados em aberto no rascunho). Se a empresa estiver incubada ou em aceleração, ou tiver unidades em outros estados, informar aqui, como pede o modelo.}
+
+Trata-se de empresa recentemente criada por estudantes de Sistemas de Informação da Escola de Artes, Ciências e Humanidades da USP. Sua criação se justifica pela oportunidade descrita nos itens 6 e 9: uma mudança regulatória de impacto quantificado sobre o custo do trabalho \cite{fecomercio2026, abrasel2026}, um mercado de autoatendimento em expansão \cite{pegn2026} e uma lacuna de oferta para pequenos estabelecimentos. As ações já tomadas incluem a análise de cenários favoráveis e desfavoráveis, o mapeamento das dores do público-alvo, a redefinição do perfil de cliente ideal e da arquitetura de hardware, entrevistas de validação com lojistas, um teste de usabilidade com protótipo em papel e um protótipo de telas para entrevistas com usuários finais (item 4b). As próximas ações são a formalização de parcerias com três estabelecimentos piloto, a negociação com subadquirentes e a candidatura a programas de incubação.
+
+\subsection{Informações sobre atividades da empresa em P\&D}
+
+A empresa não possui ainda produtos comercializados; sua atividade de P\&D consiste nos estudos de mercado, de usuário e de arquitetura que deram origem a esta proposta:
+
+\begin{itemize}
+    \item estudo de cenários de mercado favoráveis e desfavoráveis ao empreendimento;
+    \item estudo de dores do público-alvo, soluções atuais e diferencial da proposta;
+    \item 75 entrevistas de validação com donos, sócios ou gerentes de estabelecimentos do público-alvo, sobre aderência ao problema e disposição a pagar (resultados no item 9);
+    \item teste de usabilidade com protótipo em papel de três telas (produtos e pagamento no totem, catálogo do administrador), com 15 participantes (9 clientes e 6 administradores): 77\% das tarefas foram concluídas sem ajuda; o pedido por voz teve a menor nota de facilidade entre as tarefas do totem, com o ícone confundido com o símbolo de aproximação, e a duplicação de loja foi a tarefa mais difícil do catálogo;
+    \item protótipo de telas (cardápio, pagamento e fila cheia) e roteiro de nove perguntas para 75 entrevistas com usuários finais (quem faz o pedido), cujos resultados ainda não foram consolidados.
+\end{itemize}
+
+A empresa compromete-se a disponibilizar a dedicação dos sócios, o espaço de trabalho e a gestão administrativa do projeto.
+
+\textbf{Acervo de propriedade intelectual:} não há patentes, registros de software ou cultivares em nome da empresa até o momento. \textbf{Relatórios internos:} os estudos listados acima. \textbf{Metodologia de proteção:} código-fonte em repositório privado com controle de acesso; acordos de confidencialidade e de cessão de direitos com sócios, bolsistas e prestadores; registro de programa de computador no INPI ao fim de cada marco relevante; avaliação de patenteabilidade de métodos técnicos novos com assessoria especializada.
+
+\subsection{Contrapartida e busca de outros fundos, incluindo propostas equivalentes ou complementares submetidas a outras agências}
+
+A contrapartida da empresa (Tabela \ref{tab:contrapartida}) consiste em horas dos sócios, nenhum dos quais recebe bolsa do projeto, valoradas a R\$ 25/hora (3.900 horas em 39 semanas, R\$ 97.500,00); espaço físico e conectividade (R\$ 800,00/mês, R\$ 7.200,00); e serviços contábeis e administrativos (R\$ 2.700,00), totalizando R\$ 107.400,00.
+
+\begin{table}[H]
+\centering\tablefont
+\caption{Contrapartida da empresa: horas dedicadas ao projeto.}
+\label{tab:contrapartida}
+\begin{tabularx}{\linewidth}{|L{4.2cm}|Y|C{1.8cm}|}
+\hline\hd
+\textbf{Nome} & \textbf{Função e qualificação} & \textbf{h/semana}\\\hline
+Luiz Felipe Couto de Souza & Pesquisador Responsável; coordenação, arquitetura e modelo econômico (A1, A7, A9) & 20\\\hline
+Kauã Lima de Souza & Pagamentos e testes de dispositivo (A2, A6) & 20\\\hline
+Kevin Rodrigues Nunes & Motor de recomendação; supervisão de bolsista (A3) & 20\\\hline
+Renan Biruel Uema & Pedido por voz; supervisão de bolsista (A4) & 20\\\hline
+Victor Yodono & Integração com legados e gestão de frota (A5, A6) & 20\\\hline
+\multicolumn{3}{|l|}{Todos são graduandos em Sistemas de Informação (EACH-USP).}\\\hline
+\end{tabularx}
+\end{table}
+
+Para recursos complementares e para a Fase 3, a empresa buscará: Programa Centelha, Finep (programas de apoio a \textit{startups}), Sebrae, InovAtiva Brasil e incubadoras paulistas; negociação com subadquirentes para cofinanciamento dos terminais (que ganham volume de transações); e, para a escala do HaaS, linhas de financiamento de equipamentos e investidores-anjo, condicionadas aos resultados do piloto.
+
+\textbf{Propostas equivalentes ou complementares:} não há propostas equivalentes ou complementares submetidas a outras agências de financiamento, em análise ou contratadas, até a data desta submissão.
+
+\pendente{Atualizar este parágrafo caso a equipe submeta ao Programa Centelha ou similar.}
+
+\subsection{Infraestrutura existente}
+
+A infraestrutura disponível hoje consiste nos computadores pessoais dos sócios e no acesso a um espaço de trabalho. Os equipamentos de pesquisa do projeto (dispositivos de teste, suportes antifurto, impressoras de comanda, microfone de referência e estações de trabalho com GPU) serão adquiridos com o apoio solicitado e estão detalhados no item 10; parte deles será usada no piloto (A8).
+
+\pendente{Definir o espaço de trabalho (coworking, incubadora ou sede, opções citadas no rascunho), listar os equipamentos já disponíveis e incluir fotos das instalações, exigidas pelo modelo.}
+
+% =========================================================
+\section{Descrição da equipe}
+% =========================================================
+
+O Pesquisador Responsável, Luiz Felipe Couto de Souza, coordena o projeto e responde pela arquitetura do protótipo, pela integração dos componentes e pelo modelo econômico do HaaS. Todos os integrantes são graduandos em Sistemas de Informação na EACH-USP e se dividem pelos desafios técnicos do item 3: pagamento em dispositivos COTS (D1), recomendação (D2), voz (D3), integração com sistemas legados (D4) e resiliência e gestão de frota (D5). Como os sócios atuam em regime parcial (20 horas semanais cada), o projeto solicita três bolsas de Treinamento Técnico para os experimentos que exigem dedicação contínua e conhecimento de aprendizado de máquina (item 10). A Tabela \ref{tab:equipe} identifica responsabilidades, atividades e período de cada membro; as atividades A1 a A9 estão descritas no item 7c.
+
+{\tablefont
+\begin{xltabular}{\linewidth}{|L{2.6cm}|Y|L{4.1cm}|L{3.7cm}|}
+\caption{Responsabilidades e atividades de cada membro da equipe.}\label{tab:equipe}\\
+\hline\hd
+\textbf{Nome} & \textbf{Responsabilidade} & \textbf{Atividade} & \textbf{Período de execução das atividades}\\\hline
+\endfirsthead
+\hline\hd
+\textbf{Nome} & \textbf{Responsabilidade} & \textbf{Atividade} & \textbf{Período de execução das atividades}\\\hline
+\endhead
+Luiz Felipe Couto de Souza & Pesquisador Responsável: coordenação, arquitetura do protótipo e modelo econômico do HaaS (D6) & A1 Levantamento técnico, regulatório e de patentes (coordena); A7 Integração do protótipo; A8 Piloto em campo; A9 Modelo econômico e relatório final & Coordenação: meses 1 a 9; A1: 1 e 2; A7: 5 e 6; A8: 7 e 8; A9: 6, 8 e 9\\\hline
+Kauã Lima de Souza & Pagamento em dispositivo COTS (D1) e testes de dispositivo para a resiliência (D5) & A1; A2 Bancada de pagamento; A6 Resiliência e gestão de frota; A8 & A1: 1 e 2; A2: 1 a 4; A6: 3 a 5; A8: 7 e 8\\\hline
+Kevin Rodrigues Nunes & Recomendação com poucos dados (D2); supervisão do bolsista TT-4 de recomendação & A1; A3 Motor de recomendação; A8 & A1: 1 e 2; A3: 2 a 8; A8: 7 e 8\\\hline
+Renan Biruel Uema & Interação por voz em ambiente ruidoso (D3); supervisão do bolsista TT-4 de voz & A1; A4 Pedido por voz; A8 & A1: 1 e 2; A4: 2 a 6; A8: 7 e 8\\\hline
+Victor Yodono & Integração com sistemas legados (D4) e gestão de frota (D5) & A1; A5 Integração com sistemas legados; A6 Resiliência e gestão de frota; A8 & A1: 1 e 2; A5: 2 a 5; A6: 3 a 5; A8: 7 e 8\\\hline
+Bolsista TT-4, a selecionar & Experimentos do motor de recomendação (D2), sob supervisão de Kevin Rodrigues Nunes; 40 h/semana & A3: coleta e anonimização de dados, avaliação \textit{offline} de modelos e preparação do teste A/B & Bolsa: meses 1 a 9; A3: 2 a 8\\\hline
+Bolsista TT-4, a selecionar & Pipeline de pedido por voz (D3), sob supervisão de Renan Biruel Uema; 40 h/semana & A4: construção do corpus, do pipeline e dos testes sob ruído & Bolsa: meses 1 a 9; A4: 2 a 6\\\hline
+Bolsista TT-3, a selecionar & Apoio à bancada de pagamento (D1) e aos testes de falha (D5); 20 h/semana; supervisão de Kauã Lima de Souza (\textit{proposta}) & A2: experimentos de leitura e transação; A6: testes de injeção de falha e de substituição de terminal & Bolsa: meses 1 a 9; A2: 1 a 4; A6: 3 a 5\\\hline
+\end{xltabular}}
+
+\pendente{Descrever as qualificações do Pesquisador Responsável que o habilitam a coordenar o projeto e a experiência profissional e a capacitação técnica de cada integrante (disciplinas, projetos, estágios, currículo Lattes). As fontes do grupo só informam que todos são graduandos em Sistemas de Informação na EACH-USP.}
+
+\pendente{Confirmar a distribuição de responsabilidades e atividades (o rascunho a marca como ``a confirmar pela equipe''). A supervisão do bolsista TT-3 por Kauã Lima de Souza é proposta desta revisão, pois o rascunho não a define. As bolsas duram 9 meses, mas A3, A4, A2 e A6 terminam antes (meses 8, 6, 4 e 5): definir as atividades dos bolsistas no restante do período ou ajustar a duração das bolsas e o orçamento.}
+
+% =========================================================
+\section{Revisão da Evolução Científico-Tecnológica Relacionada ao projeto}
+% =========================================================
+
+O desafio do projeto não é inventar cada componente, e sim descobrir se componentes já maduros funcionam juntos sob as restrições de um pequeno estabelecimento: dispositivo barato, pouco histórico de vendas, salão ruidoso, conectividade instável e sistemas de gestão sem API. A Tabela \ref{tab:revisao} organiza as frentes tecnológicas, o que a literatura e a indústria já resolveram e a lacuna que este projeto investiga.
+
+\textbf{Autoatendimento.} Quiosques são tecnologia madura em redes de \textit{fast food} e varejo, mas a oferta nacional concentra-se em totens industriais vendidos como bem de capital; o HaaS deve atingir cerca de 60\% das operações voltadas a PMEs apenas em 2029 \cite{pegn2026, genialtec2026}. Cardápios digitais por QR Code são baratos, mas não fecham o ciclo de pagamento e produção.
+
+\textbf{Pagamento em dispositivos comerciais.} O PCI Security Standards Council publicou o padrão CPoC (2019), para aceitação por aproximação em dispositivos COTS, e o MPoC (2022), que generaliza a abordagem para soluções baseadas em software, incluindo a entrada de PIN no próprio dispositivo \cite{pci_cpoc, pci_mpoc}. Com isso, a segurança deixa de depender de um equipamento dedicado (o PinPad) e passa a depender da atestação do dispositivo e do monitoramento contínuo, funções que ficam com o provedor do SDK. No Brasil, subadquirentes já oferecem \textit{Tap on Phone} em \textit{smartphones}, e o Pix está regulado desde 2020 \cite{bcb_pix}. Do lado do sistema operacional, o Google afirmou ao Cade que as APIs de NFC do Android são públicas, disponíveis globalmente e sem cobrança de licença \cite{folha_cade}. Não há avaliação pública desses SDKs em \textit{tablets} de entrada operando em modo quiosque contínuo, com suporte antifurto, que é a configuração do produto.
+
+\textbf{Recomendação com poucos dados.} A fatoração de matrizes \cite{koren2009} consolidou-se como referência em sistemas de recomendação, mas pressupõe um histórico de interações por usuário identificado. No autoatendimento o cliente costuma ser anônimo e a compra cabe em uma única sessão, o que aproxima o problema da recomendação baseada em sessão: redes recorrentes \cite{hidasi2016} e modelos de autoatenção \cite{kang2018} modelam a sequência de itens da sessão, mas dependem de volume de dados. Heurísticas simples de sessão, como a vizinhança entre sessões, frequentemente competem com essas redes neurais \cite{ludewig2018}, o que torna obrigatórias as linhas de base simples na avaliação. Para o \textit{cold start}, cenário típico de um pequeno restaurante, o meta-aprendizado aprende, a partir de muitas tarefas, a se adaptar a uma nova com poucos exemplos \cite{vartak2017, lee2019}. Esses trabalhos foram avaliados em plataformas de grande escala; seu comportamento com cardápios pequenos, restrições de margem e disponibilidade de itens não está caracterizado. Por fim, a literatura de experimentos controlados \cite{kohavi2020} sustenta que o efeito de uma mudança sobre métricas de negócio deve ser medido por teste A/B em operação real, e não apenas por avaliação \textit{offline}, como previsto no piloto.
+
+\textbf{Voz e linguagem.} Modelos de reconhecimento de fala treinados em larga escala com supervisão fraca \cite{radford2023} são multilíngues e mais robustos a ruído e sotaque que gerações anteriores, e a geração aumentada por recuperação \cite{lewis2020} permite ancorar a interpretação em uma base externa (aqui, o cardápio do estabelecimento), restringindo o pedido a itens que existem. Seu desempenho em ruído de salão, com vocabulário regional e nomes de pratos próprios, não está caracterizado. O teste com protótipo em papel (item 4b) indicou ainda um desafio de interface: o pedido por voz teve a menor nota de facilidade entre as tarefas do totem.
+
+\textbf{Integração com sistemas legados.} Os padrões de integração corporativa \cite{hohpe2003} catalogam soluções conhecidas, como adaptadores de canal, tradutores de mensagem e modelo canônico de dados, mas partem de sistemas que expõem algum ponto de integração. Sistemas locais sem API exigem adaptadores específicos (banco de dados local, importação de arquivo, impressora de comanda), e não se conhece quanto desse esforço pode ser padronizado no pequeno varejo de alimentação.
+
+\textbf{Operação resiliente e frota.} Arquiteturas \textit{offline-first}, com fila local e sincronização posterior, e o gerenciamento remoto de dispositivos móveis (MDM) são práticas consolidadas; falta caracterizar o tempo e a confiabilidade de reprovisionar um terminal de pagamento substituto, enviado pelos correios, sem visita técnica.
+
+\begin{table}[H]
+\centering\tablefont
+\caption{Frentes tecnológicas do projeto: estado atual e lacuna investigada.}
+\label{tab:revisao}
+\begin{tabularx}{\linewidth}{|L{2.9cm}|C{1.6cm}|Y|Y|}
+\hline\hd
+\textbf{Frente} & \textbf{Refs.} & \textbf{Estado atual} & \textbf{Lacuna investigada}\\\hline
+Autoatendimento e HaaS & \cite{pegn2026, genialtec2026} & Totens industriais maduros, vendidos como bem de capital; HaaS ainda complementar à venda direta & Pacote de baixo custo sobre dispositivos COTS e sua viabilidade econômica (D1, D6)\\\hline
+Pagamento em COTS & \cite{pci_cpoc, pci_mpoc, bcb_pix, folha_cade} & Padrões PCI para aceitação em COTS; \textit{Tap on Phone} em \textit{smartphones}; Pix regulado & Desempenho de SDKs em \textit{tablets} de entrada, em modo quiosque e com suporte antifurto (D1)\\\hline
+Recomendação & \cite{koren2009, hidasi2016, kang2018, ludewig2018, vartak2017, lee2019, kohavi2020} & Fatoração de matrizes, modelos de sessão e meta-aprendizado avaliados em plataformas de grande escala & Ganho de ticket médio com cardápio pequeno e histórico curto, medido por teste A/B (D2)\\\hline
+Voz e linguagem & \cite{radford2023, lewis2020} & Reconhecimento de fala robusto e geração ancorada em base externa & Pedido correto sob ruído de salão, restrito ao cardápio (D3)\\\hline
+Integração & \cite{hohpe2003} & Padrões para sistemas com ponto de integração & Adaptadores para sistemas sem API e esforço de implantação (D4)\\\hline
+Resiliência e frota & - & \textit{Offline-first} e MDM consolidados na indústria & Reprovisionamento remoto em menos de 15 minutos, sem perda de pedidos (D5)\\\hline
+\end{tabularx}
+\end{table}
+
+\textbf{Síntese.} Cada componente existe isoladamente, mas nenhuma solução os combina em um pacote de baixo custo e implantação remota; a maturidade das peças indica que o projeto é viável, e as lacunas acima são as incertezas que a Fase 1 precisa reduzir.
+
+\pendente{Identificar os principais grupos de pesquisa no Brasil e no exterior que atuam nas frentes da Tabela \ref{tab:revisao} (recomendação baseada em sessão e \textit{cold start}, reconhecimento de fala em português, pagamentos em dispositivos COTS), como sugere o modelo; as fontes do grupo não trazem essa lista.}
+
+\pendente{Apresentar a lista das principais patentes relacionadas ao projeto (número, titular, título e relação com o projeto), exigida pelo modelo. O rascunho prevê a busca sistemática no INPI, Espacenet e Google Patents na atividade A1; o resultado alimenta os itens 8 e 12b.}
+
+% =========================================================
+\section{Plano de Pesquisa}
+% =========================================================
+
+\subsection{Resultados obtidos na Fase 1}
+
+Não se aplica: esta proposta é submetida à Fase 1. Os estudos preliminares da empresa estão descritos no item 4b.
+
+\subsection{Procedimentos e Métodos}
+
+\textbf{Gestão.} O projeto será conduzido com Scrum \cite{scrum2020}, em \textit{sprints} de duas semanas, e com o ciclo construir, medir e aprender \cite{ries2011}: cada desafio (D1 a D6) é tratado como uma hipótese com critério de sucesso quantitativo definido a priori. Reuniões de revisão ao fim de cada \textit{sprint} decidem se a hipótese foi confirmada, refutada ou precisa ser reformulada. O código ficará em repositório versionado com integração contínua; experimentos serão registrados com dados, parâmetros e resultados, para garantir reprodutibilidade.
+
+\textbf{Arquitetura experimental.} Será construído um protótipo composto por: aplicativo Android em modo quiosque; serviço em nuvem (cardápio, pedidos, recomendação e gestão da frota); agente local opcional para integração com sistemas legados; e painel do lojista. A arquitetura é \textit{offline-first}: o terminal mantém fila local de pedidos e sincroniza quando há conectividade.
+
+\textbf{Técnicas por desafio.}
+\begin{itemize}
+    \item \textbf{D1, pagamento:} bancada com pelo menos seis modelos de dispositivos (\textit{tablets} e \textit{smartphones} de faixas de preço distintas), cartões e carteiras digitais de teste, e o SDK \textit{Tap on Phone} de ao menos dois subadquirentes. Métricas: taxa de sucesso na primeira aproximação, tempo de transação, aquecimento e consumo de bateria em uso contínuo de 8 horas, influência do suporte antifurto (metal, posição da antena) sobre a leitura. Pix será testado via API de cobrança com QR Code dinâmico.
+    \item \textbf{D2, recomendação:} comparação de linhas de base (mais vendidos, regras de associação, vizinhança de sessão) com modelos sequenciais \cite{hidasi2016, kang2018} e uma abordagem hierárquica que compartilha parâmetros entre estabelecimentos e se adapta a cada um com poucos exemplos \cite{vartak2017, lee2019}. Avaliação \textit{offline} com dados históricos dos estabelecimentos parceiros (taxa de acerto e ganho em receita) e \textit{online} por teste A/B no piloto \cite{kohavi2020}, com restrições de margem e de disponibilidade de itens.
+    \item \textbf{D3, voz:} pipeline de reconhecimento de fala \cite{radford2023} seguido de modelo de linguagem com recuperação restrita ao cardápio \cite{lewis2020}, produzindo um pedido estruturado validado por regras (item existe, opcionais compatíveis). Corpus de teste gravado pela equipe e por voluntários, com ruído de salão real e sintético em diferentes níveis. Métricas: taxa de erro de palavras, taxa de pedidos corretos de ponta a ponta e latência.
+    \item \textbf{D4, integração:} levantamento dos sistemas usados pelos estabelecimentos parceiros e classificação por mecanismo de acesso (API, banco de dados local, importação de arquivo, impressora de comanda). Implementação de adaptadores seguindo padrões de integração \cite{hohpe2003} e mapeamento semiautomático de produtos entre cardápio e sistema. Inclui o envio dos dados de venda para emissão de NFC-e pelo emissor fiscal já usado pelo estabelecimento. Métricas: horas de implantação por estabelecimento e percentual de pedidos entregues sem intervenção manual.
+    \item \textbf{D5, resiliência e frota:} testes de injeção de falha (perda de rede, queda de energia, reinício) e ensaio de substituição de terminal com reprovisionamento remoto por gerenciamento de dispositivos móveis (MDM). Métricas: pedidos perdidos (meta zero) e tempo de reprovisionamento.
+    \item \textbf{D6, economia do HaaS:} modelo de fluxo de caixa por terminal (aquisição, logística, suporte, nuvem, receita de assinatura e de pagamentos), calibrado com custos reais e uso medido no piloto, com análise de sensibilidade a cancelamento e a perdas de equipamento.
+\end{itemize}
+
+\textbf{Piloto.} Três estabelecimentos parceiros receberão terminais por 8 semanas. As duas primeiras semanas servem de linha de base; nas seis seguintes, cada sessão de compra é sorteada para exibir ou não recomendações, permitindo estimar o efeito causal sobre o ticket médio. Questões de privacidade seguem a LGPD: não há identificação pessoal obrigatória e os dados de consumo são agregados por sessão.
+
+\pendente{Indicar os três estabelecimentos parceiros do piloto e anexar as cartas de anuência (campo deixado em aberto no rascunho).}
+
+\subsection{Atividades}
+
+As atividades abaixo descrevem incertezas a vencer, e não especificações de produto. A responsabilidade de cada uma está indicada entre colchetes (distribuição a confirmar pela equipe, ver item 5).
+
+\begin{description}[leftmargin=1.1cm, labelindent=0pt, style=sameline]
+    \item[A1.] \textbf{Levantamento técnico, regulatório e de patentes} [Luiz Felipe Couto de Souza, todos]. Revisão de requisitos PCI e do arranjo Pix; seleção de subadquirentes com SDK \textit{Tap on Phone}; busca de anterioridade e análise de liberdade de operação. Incerteza: disponibilidade de SDK que funcione em modo quiosque e em \textit{tablets}.
+    \item[A2.] \textbf{Bancada de pagamento (D1)} [Kauã Lima de Souza]. Experimentos de leitura e transação em diferentes dispositivos e suportes. Incerteza: se dispositivos baratos e o suporte antifurto mantêm a taxa de sucesso exigida; se a atestação de segurança aceita o modo quiosque.
+    \item[A3.] \textbf{Motor de recomendação (D2)} [Kevin Rodrigues Nunes]. Coleta e anonimização de dados históricos; avaliação \textit{offline} de modelos; preparação do teste A/B. Incerteza: se há sinal suficiente em cardápios pequenos para superar a lista de mais vendidos.
+    \item[A4.] \textbf{Pedido por voz (D3)} [Renan Biruel Uema]. Construção do corpus, do pipeline e dos testes sob ruído; avaliação de execução em nuvem versus no dispositivo. Incerteza: acurácia e latência aceitáveis com hardware de baixo custo e conectividade variável.
+    \item[A5.] \textbf{Integração com sistemas legados (D4)} [Victor Yodono]. Mapeamento dos sistemas dos parceiros; adaptadores para ao menos três mecanismos de acesso. Incerteza: se é possível cobrir a maioria dos casos sem desenvolvimento sob medida por cliente.
+    \item[A6.] \textbf{Resiliência e gestão de frota (D5)} [Victor Yodono, Kauã Lima de Souza]. Modo \textit{offline-first}, MDM, modo quiosque e ensaios de substituição. Incerteza: tempo e confiabilidade do reprovisionamento remoto.
+    \item[A7.] \textbf{Integração do protótipo} [Luiz Felipe Couto de Souza]. Unificação dos componentes em um protótipo funcional de ciclo completo: cardápio, pedido, pagamento e envio à produção.
+    \item[A8.] \textbf{Piloto em campo} [todos]. Implantação nos três parceiros, coleta de métricas, teste A/B e entrevistas com lojistas e clientes.
+    \item[A9.] \textbf{Modelo econômico do HaaS (D6) e relatório final} [Luiz Felipe Couto de Souza]. Calibração do modelo com dados do piloto; consolidação dos resultados e plano para a Fase 2.
+\end{description}
+
+\subsection{Cronograma com Métricas de Evolução}
+
+O projeto terá duração de 9 meses. A Tabela \ref{tab:gantt} apresenta o encadeamento das atividades e os marcos (M) de acompanhamento.
+
+\begin{table}[!htb]
+\centering\tablefont
+\caption{Cronograma de execução (meses) e marcos de acompanhamento.}
+\label{tab:gantt}
+\begin{tabular}{|L{6.5cm}|*{9}{C{0.6cm}}|}
+\hline\hd
+\textbf{Atividade} & \textbf{1} & \textbf{2} & \textbf{3} & \textbf{4} & \textbf{5} & \textbf{6} & \textbf{7} & \textbf{8} & \textbf{9}\\\hline
+A1 Levantamento técnico e de patentes & \G & \G & & & & & & & \\\hline
+A2 Bancada de pagamento (D1) & \G & \G & \G & \G & & & & & \\\hline
+A3 Motor de recomendação (D2) & & \G & \G & \G & \G & \G & \G & \G & \\\hline
+A4 Pedido por voz (D3) & & \G & \G & \G & \G & \G & & & \\\hline
+A5 Integração com legados (D4) & & \G & \G & \G & \G & & & & \\\hline
+A6 Resiliência e frota (D5) & & & \G & \G & \G & & & & \\\hline
+A7 Integração do protótipo & & & & & \G & \G & & & \\\hline
+A8 Piloto em campo & & & & & & & \G & \G & \\\hline
+A9 Modelo econômico e relatório & & & & & & \G & & \G & \G\\\hline
+\textbf{Marcos} & & M1 & & M2 & & M3 & & M4 & M5\\\hline
+\end{tabular}
+\end{table}
+
+\begin{itemize}
+    \item \textbf{M1 (mês 2):} relatório de levantamento técnico e de liberdade de operação; subadquirente(s) e dispositivos candidatos selecionados.
+    \item \textbf{M2 (mês 4):} resultado da bancada de pagamento (critério: $\geq$ 98\% de sucesso em ao menos dois dispositivos de baixo custo); recomendação \textit{offline} superando a linha de base; adaptadores para três mecanismos de integração.
+    \item \textbf{M3 (mês 6):} protótipo de ciclo completo funcionando em bancada, incluindo voz ($\geq$ 90\% de pedidos corretos em ruído moderado), operação \textit{offline} sem perda de pedidos e reprovisionamento em menos de 15 minutos. \textit{Ponto de decisão:} autorização para o piloto.
+    \item \textbf{M4 (mês 8):} piloto concluído, com resultado do teste A/B sobre ticket médio.
+    \item \textbf{M5 (mês 9):} modelo econômico calibrado e relatório científico final.
+\end{itemize}
+
+\subsection{Entregáveis}
+
+A Tabela \ref{tab:entregaveis} associa cada entregável à atividade que o produz e ao marco em que é verificado.
+
+{\tablefont
+\begin{xltabular}{\linewidth}{|C{1.3cm}|C{1.8cm}|Y|}
+\caption{Entregáveis por atividade e marco.}\label{tab:entregaveis}\\
+\hline\hd
+\textbf{Marco} & \textbf{Atividade} & \textbf{Entregável}\\\hline
+\endfirsthead
+\hline\hd
+\textbf{Marco} & \textbf{Atividade} & \textbf{Entregável}\\\hline
+\endhead
+M1 & A1 & E1: relatório técnico-regulatório (PCI, Pix, SDKs) e relatório de busca de patentes e liberdade de operação\\\hline
+M2 & A2 & E2: relatório da bancada de pagamento com matriz de dispositivos homologados internamente\\\hline
+M2 & A3 & E3: relatório de avaliação \textit{offline} dos modelos de recomendação\\\hline
+M2 & A5 & E4: biblioteca de adaptadores de integração (três mecanismos) e procedimento de implantação\\\hline
+M3 & A4 & E5: protótipo de pedido por voz e relatório de desempenho sob ruído\\\hline
+M3 & A6 & E6: relatório de testes de falha e de reprovisionamento remoto\\\hline
+M3 & A7 & E7: protótipo integrado (aplicativo de quiosque, serviço em nuvem e painel do lojista)\\\hline
+M4 & A8 & E8: relatório do piloto, com métricas operacionais, teste A/B e avaliação dos usuários\\\hline
+M5 & A9 & E9: modelo econômico do HaaS calibrado e relatório científico final com proposta de Fase 2\\\hline
+\end{xltabular}}
+
+% =========================================================
+\section{Competidores, Propriedade Intelectual e Liberdade de Operação}
+% =========================================================
+
+\textbf{Competidores.} A Tabela \ref{tab:competidores} resume as categorias de concorrentes. Os grandes fornecedores de totens (como a Genialtec \cite{genialtec2026}) oferecem produto maduro, mas com ticket de entrada e prazo de instalação incompatíveis com o comércio de proximidade, e o HaaS ainda é modalidade complementar à venda direta \cite{pegn2026}. Plataformas de cardápio digital e pedidos resolvem a vitrine, mas raramente o pagamento embarcado e a integração com a produção. Sistemas de PDV para restaurantes integram gestão, mas pressupõem atendente e PinPad. Subadquirentes oferecem \textit{Tap on Phone} como serviço de pagamento, não como plataforma de atendimento. Aplicativos de \textit{delivery} transferem margem por comissão e não reduzem custo de salão.
+
+\begin{table}[H]
+\centering\tablefont
+\caption{Categorias de competidores e posição relativa da solução proposta.}
+\label{tab:competidores}
+\begin{tabularx}{\linewidth}{|L{3.6cm}|Y|Y|}
+\hline\hd
+\textbf{Categoria} & \textbf{Limitação para o público-alvo} & \textbf{Vantagem da proposta}\\\hline
+Totens industriais (venda ou locação) & Alto CapEx, instalação presencial, foco em redes & HaaS nativo sobre COTS; troca pelos correios\\\hline
+Cardápio digital por QR Code & Não fecha pagamento nem envio à produção & Ciclo completo no mesmo dispositivo\\\hline
+PDV para restaurantes & Exige atendente e PinPad integrado & Autoatendimento com pagamento embarcado\\\hline
+\textit{Tap on Phone} de subadquirentes & Apenas pagamento, sem pedido nem IA & Pagamento integrado ao pedido e à recomendação\\\hline
+\textit{Delivery} e \textit{marketplaces} & Comissão elevada; não atua no salão & Reduz custo de atendimento presencial\\\hline
+\end{tabularx}
+\end{table}
+
+\pendente{Nomear as principais empresas nacionais e internacionais de cada categoria da Tabela \ref{tab:competidores}, como pede o modelo; as fontes do grupo só nomeiam a Genialtec.}
+
+As vantagens da solução são: entrada sem CapEx; eliminação do PinPad e de seu custo recorrente; IA orientada a receita (ticket médio), e não apenas a economia de mão de obra; implantação e reposição remotas, que permitem atender estabelecimentos fora dos grandes centros.
+
+\textbf{Propriedade intelectual.} Existem famílias de patentes de grandes empresas de pagamento e de fabricantes de dispositivos sobre aceitação de cartão por aproximação e entrada de PIN em dispositivos comerciais. A empresa não pretende desenvolver núcleo (\textit{kernel}) EMV próprio, entrada segura de PIN nem atestação de dispositivo: essas funções serão obtidas por SDK licenciado de subadquirente homologado, que assume a conformidade e a licença das tecnologias protegidas. Isso reduz significativamente o risco de infração. O acesso ao hardware de NFC no Android, por sua vez, se dá por APIs públicas e sem cobrança de licença, segundo o próprio Google \cite{folha_cade}. Recomendação, interação por voz e integração por adaptadores são, em geral, métodos implementados em software, cuja proteção no Brasil se dá principalmente por direito autoral e registro de programa de computador no INPI.
+
+\textbf{Liberdade de operação.} Durante o primeiro mês será realizada busca sistemática no INPI, Espacenet e Google Patents (termos: \textit{self-service kiosk}, \textit{tap on phone}, \textit{contactless COTS}, \textit{menu recommendation}, \textit{voice ordering}), cujo resultado constará do item 12b. O diferencial protegível do projeto está na combinação e nas soluções específicas desenvolvidas (o modelo de recomendação para \textit{cold start} no domínio de cardápios, o pipeline de pedido por voz restrito ao cardápio e os adaptadores de integração), que serão protegidos por registro de software e segredo industrial, avaliando-se pedido de patente caso surja método técnico novo. A lista e a análise das patentes encontradas estão pendentes (ver item 6).
+
+% =========================================================
+\section{Potencial Comercial da Inovação}
+% =========================================================
+
+\textbf{Mercado.} O mercado global de \textit{self-checkout} deve crescer cerca de 11\% ao ano até 2027, atingindo US\$ 6,5 bilhões \cite{pegn2026}. No Brasil, sete em cada dez consumidores já optam por finalizar as compras no autoatendimento, segundo levantamento divulgado pela ABRAS \cite{abras2024}, e uma das fornecedoras nacionais de terminais de autoatendimento projeta crescimento de 32\% em 2026, impulsionada pelo autoatendimento \cite{pegn2026}, o que confirma demanda aquecida. O segmento de pequenos estabelecimentos, porém, é sub-atendido: o HaaS só deve atingir cerca de 60\% das operações voltadas a PMEs em 2029 \cite{pegn2026, genialtec2026}.
+
+\textbf{Gatilho de demanda.} O aumento estimado de até 22\% no custo do trabalho com o fim da escala 6x1 \cite{fecomercio2026, abrasel2026} transforma a automação de item desejável em item necessário para preservar margem, especialmente para negócios que operam todos os dias e precisam cobrir picos e finais de semana.
+
+\textbf{Validação com lojistas.} Nas 75 entrevistas de validação feitas pela equipe com donos, sócios ou gerentes do público-alvo (item 4b), 84\% disseram que a solução resolve o problema total ou parcialmente; 40\% pagariam e outros 40\% talvez pagassem. A demanda se concentrou em lanchonetes, cafeterias, hamburguerias e açaiterias (23 dos 29 entrevistados desses segmentos pagariam), e as objeções técnicas mais citadas foram a integração com sistema de gestão, PDV ou emissão de nota fiscal e a dependência de internet, que correspondem aos desafios D4 e D5.
+
+\pendente{Antes de citar resultados quantitativos das entrevistas com lojistas, confirmar a procedência dos registros (quem conduziu cada entrevista, quando e onde): na versão original, não anonimizada, alguns sobrenomes de entrevistados se repetem entre entrevistas diferentes.}
+
+\textbf{Dimensionamento (hipóteses a validar).} A Tabela \ref{tab:dimensionamento} apresenta um dimensionamento ilustrativo. Os parâmetros são hipóteses de trabalho que serão substituídas por dados levantados em A1 e A8.
+
+\begin{table}[H]
+\centering\tablefont
+\caption{Dimensionamento ilustrativo de mercado (hipóteses a validar).}
+\label{tab:dimensionamento}
+\begin{tabularx}{\linewidth}{|Y|R{3.6cm}|}
+\hline\hd
+\textbf{Parâmetro} & \textbf{Valor}\\\hline
+Estabelecimentos de alimentação fora do lar e proximidade no Estado de SP (fonte prevista: RAIS/CNAE) & \pendentecurto{N}\\\hline
+Parcela com perfil-alvo (operação diária, 2 a 20 funcionários) & 40\%\\\hline
+Mensalidade HaaS por terminal (dispositivo, software e suporte) & R\$ 249\\\hline
+Receita adicional por pagamentos (\textit{spread} sobre MDR, por terminal/mês) & R\$ 60\\\hline
+Receita por terminal/ano & R\$ 3.708\\\hline
+Meta de base instalada ao fim do 3º ano & 2.000 terminais\\\hline
+Receita recorrente anual correspondente & R\$ 7,4 milhões\\\hline
+\end{tabularx}
+\end{table}
+
+\pendente{A mensalidade de R\$ 249 por terminal é a hipótese do rascunho. Nas entrevistas com lojistas (\texttt{docs/entrevistas-lojistas\_EI\_2026.pdf}, Tabela 2), os 60 entrevistados que citaram um valor indicaram média de R\$ 170 e mediana de R\$ 165 por terminal/mês (o texto do relatório informa mediana de R\$ 170; R\$ 165 é o valor recalculado a partir da tabela), e 7 deles citaram R\$ 249 ou mais. O próprio relatório sugere testar um plano de entrada entre R\$ 150 e R\$ 199. Decidir se a hipótese de R\$ 249 se mantém; se mudar, recalcular a Tabela \ref{tab:dimensionamento}, a proposta de valor e o \textit{payback} deste item.}
+
+\pendente{Completar a quantidade de estabelecimentos (N) e estender a projeção aos cinco anos seguintes à implementação, ano a ano (clientes, terminais e receita), como pede o modelo; o rascunho traz apenas a meta do 3º ano.}
+
+\textbf{Proposta de valor quantificável para o cliente.} Para um estabelecimento que cobre o pico de fim de semana com um funcionário adicional em meio período, um ou dois terminais a R\$ 249/mês representam custo inferior ao de um turno, sem encargos e sem investimento inicial. A esse ganho somam-se: a eliminação do aluguel de PinPads; o aumento de ticket médio por recomendação, que será medido no piloto (a hipótese de trabalho é um ganho de 5\% a 10\%); e a redução de erros de pedido pelo envio automático à produção.
+
+\textbf{Competitividade da empresa.} Os resultados do projeto tornam a empresa competitiva em quatro dimensões difíceis de replicar pelos concorrentes atuais: (i) custo de hardware substancialmente menor que o de um totem industrial, viabilizado pela matriz de dispositivos validados (E2); (ii) implantação e reposição sem visita técnica (E6), que reduzem custo de suporte e permitem atender o interior; (iii) IA que se paga em receita para o lojista (E3, E8), que melhora o argumento de venda e reduz cancelamento; e (iv) integração com sistemas legados de baixo custo de implantação (E4), o principal risco técnico identificado.
+
+\textbf{Economia unitária e riscos.} Com custo estimado de R\$ 1.900 por terminal (dispositivo e suporte antifurto) e margem de contribuição de cerca de R\$ 180/mês, o \textit{payback} é de aproximadamente 11 meses (R\$ 1.900 $\div$ R\$ 180). O principal risco é a taxa de cancelamento: com cancelamento mensal de 3\%, a vida média do contrato (cerca de 33 meses) cobre o \textit{payback} com folga; acima de cerca de 8\% ao mês, a vida média cai para perto de 12 meses, praticamente igual ao \textit{payback}, e o modelo deixa de ser viável. Por isso o modelo econômico (D6) é parte da pesquisa, e mitigações como fidelidade mínima, reaproveitamento de dispositivos retornados e cofinanciamento por subadquirentes serão avaliadas.
+
+\textbf{Modelo de negócio.}
+\begin{itemize}
+    \item \textbf{Clientes:} pequenos e médios estabelecimentos de alimentação fora do lar e de comércio de proximidade, com operação diária, no Estado de São Paulo.
+    \item \textbf{Proposta de valor:} autoatendimento completo (pedido, pagamento e envio à produção) sem investimento inicial, sem PinPad e com recomendação que aumenta o ticket médio.
+    \item \textbf{Fontes de receita:} mensalidade por terminal (HaaS e SaaS), participação nas transações de pagamento em acordo com o subadquirente e, futuramente, módulos de análise de vendas.
+    \item \textbf{Custos principais:} aquisição do dispositivo e do suporte antifurto, logística de troca, suporte, nuvem.
+    \item \textbf{Parcerias-chave:} subadquirentes homologados (SDK \textit{Tap on Phone} e possível cofinanciamento dos terminais).
+    \item \textbf{Canais e entrega:} implantação remota e troca expressa do equipamento pelos correios, sem visita técnica.
+    \item \textbf{Captação:} a receita recorrente e previsível favorece a captação de recursos para a Fase 3.
+\end{itemize}
+
+% =========================================================
+\section{Orçamento detalhado e justificado}
+% =========================================================
+
+O orçamento foi dimensionado exclusivamente para as atividades de pesquisa A1 a A9. A Tabela \ref{tab:orcamento} consolida os valores por rubrica, separando o que é solicitado à FAPESP da contrapartida da empresa; a Tabela \ref{tab:memoria} traz a memória de cálculo de cada item, com as atividades que o justificam. Não há itens solicitados nas rubricas de material permanente importado, material de consumo importado e serviços de terceiros no exterior.
+
+\begin{table}[H]
+\centering\tablefont
+\caption{Orçamento consolidado da Fase 1 (valores em R\$).}
+\label{tab:orcamento}
+\begin{tabularx}{\linewidth}{|Y|R{2.4cm}|R{2.6cm}|R{2.4cm}|}
+\hline\hd
+\textbf{Rubrica} & \textbf{FAPESP} & \textbf{Contrapartida} & \textbf{Total}\\\hline
+Material permanente nacional & 56.900,00 & - & 56.900,00\\\hline
+Material de consumo nacional & 6.600,00 & - & 6.600,00\\\hline
+Serviços de terceiros no país & 88.500,00 & 2.700,00 & 91.200,00\\\hline
+Diárias e transporte & 5.000,00 & - & 5.000,00\\\hline
+Bolsas de capacitação técnica & 114.300,00 & - & 114.300,00\\\hline
+Horas dos sócios & - & 97.500,00 & 97.500,00\\\hline
+Espaço físico e conectividade & - & 7.200,00 & 7.200,00\\\hline
+\textbf{Total} & \textbf{271.300,00} & \textbf{107.400,00} & \textbf{378.700,00}\\\hline
+\end{tabularx}
+\end{table}
+
+Serviços de terceiros solicitados à FAPESP correspondem a 32,6\% do valor solicitado, abaixo do limite de 1/3 do orçamento da Fase 1.
+
+{\tablefont
+\begin{xltabular}{\linewidth}{|Y|C{1.9cm}|R{1.0cm}|R{1.9cm}|R{2.1cm}|}
+\caption{Memória de cálculo por rubrica (valores em R\$).}\label{tab:memoria}\\
+\hline\hd
+\textbf{Item} & \textbf{Atividades} & \textbf{Qtd.} & \textbf{Unitário} & \textbf{Total}\\\hline
+\endfirsthead
+\hline\hd
+\textbf{Item} & \textbf{Atividades} & \textbf{Qtd.} & \textbf{Unitário} & \textbf{Total}\\\hline
+\endhead
+\multicolumn{5}{|l|}{\cellcolor{fapesplight!50}\textbf{Material permanente nacional (FAPESP)}}\\\hline
+\textit{Tablet} Android com NFC, faixa de entrada & A2, A8 & 6 & 1.400,00 & 8.400,00\\\hline
+\textit{Tablet} Android com NFC, faixa intermediária & A2, A8 & 4 & 2.500,00 & 10.000,00\\\hline
+\textit{Smartphone} Android com NFC, faixas variadas & A2, A6 & 4 & 1.800,00 & 7.200,00\\\hline
+Suporte antifurto de mesa e balcão & A2, A8 & 10 & 450,00 & 4.500,00\\\hline
+Impressora térmica de comanda & A5 & 3 & 900,00 & 2.700,00\\\hline
+Microfone de referência e caixa de som para ruído & A4 & 1 & 2.100,00 & 2.100,00\\\hline
+Estação de trabalho com GPU para treinamento & A3, A4 & 2 & 11.000,00 & 22.000,00\\\hline
+\multicolumn{4}{|r|}{\textbf{Subtotal}} & \textbf{56.900,00}\\\hline
+\multicolumn{5}{|l|}{\cellcolor{fapesplight!50}\textbf{Material de consumo nacional (FAPESP)}}\\\hline
+Conjunto de cartões e carteiras de teste por aproximação & A2 & 1 & 2.500,00 & 2.500,00\\\hline
+Chips e pacotes de dados móveis, 10 linhas por 4 meses & A6, A8 & 40 & 60,00 & 2.400,00\\\hline
+Bobinas térmicas, cabos, carregadores e \textit{hubs} & A5, A8 & 1 & 1.700,00 & 1.700,00\\\hline
+\multicolumn{4}{|r|}{\textbf{Subtotal}} & \textbf{6.600,00}\\\hline
+\multicolumn{5}{|l|}{\cellcolor{fapesplight!50}\textbf{Serviços de terceiros no país (FAPESP)}}\\\hline
+Infraestrutura em nuvem (meses) & A3 a A8 & 9 & 2.000,00 & 18.000,00\\\hline
+APIs de reconhecimento de fala e modelos de linguagem (meses) & A4 & 9 & 1.500,00 & 13.500,00\\\hline
+Consultoria em segurança de pagamentos (PCI) & A2 & 1 & 25.000,00 & 25.000,00\\\hline
+Teste de intrusão do aplicativo e da API & A7 & 1 & 18.000,00 & 18.000,00\\\hline
+Assessoria em propriedade intelectual e busca de anterioridade & A1 & 1 & 14.000,00 & 14.000,00\\\hline
+\multicolumn{4}{|r|}{\textbf{Subtotal}} & \textbf{88.500,00}\\\hline
+\multicolumn{5}{|l|}{\cellcolor{fapesplight!50}\textbf{Diárias e transporte (FAPESP)}}\\\hline
+Deslocamentos para implantação e acompanhamento do piloto & A8 & 40 & 80,00 & 3.200,00\\\hline
+Deslocamentos para coleta de ruído em campo & A4 & 10 & 80,00 & 800,00\\\hline
+Diárias para implantação em parceiro fora da capital & A8 & 2 & 500,00 & 1.000,00\\\hline
+\multicolumn{4}{|r|}{\textbf{Subtotal}} & \textbf{5.000,00}\\\hline
+\multicolumn{5}{|l|}{\cellcolor{fapesplight!50}\textbf{Bolsas de capacitação técnica (FAPESP; quantidade em meses, valor unitário mensal)}}\\\hline
+TT-4, motor de recomendação, 40 h/semana & A3 & 9 & 5.100,00 & 45.900,00\\\hline
+TT-4, pedido por voz, 40 h/semana & A4 & 9 & 5.100,00 & 45.900,00\\\hline
+TT-3, bancada e testes de falha, 20 h/semana & A2, A6 & 9 & 2.500,00 & 22.500,00\\\hline
+\multicolumn{4}{|r|}{\textbf{Subtotal}} & \textbf{114.300,00}\\\hline
+\multicolumn{5}{|l|}{\cellcolor{fapesplight!50}\textbf{Contrapartida da empresa}}\\\hline
+Horas dos sócios (5 sócios, 20 h/semana, 39 semanas; quantidade em horas) & A1 a A9 & 3.900 & 25,00 & 97.500,00\\\hline
+Espaço físico e conectividade (meses) & A1 a A9 & 9 & 800,00 & 7.200,00\\\hline
+Contabilidade e serviços administrativos (meses) & A1 a A9 & 9 & 300,00 & 2.700,00\\\hline
+\multicolumn{4}{|r|}{\textbf{Subtotal}} & \textbf{107.400,00}\\\hline
+\end{xltabular}}
+
+
+
+\textbf{Material permanente.} Os \textit{tablets} e \textit{smartphones} de diferentes faixas de preço são o objeto dos experimentos de D1, D3 e D5: o desafio central é justamente descobrir quais dispositivos baratos atendem aos requisitos, o que só se determina testando-os. Parte deles será usada no piloto (A8). Os suportes antifurto são necessários porque o metal e a geometria do suporte afetam a leitura NFC (A2). Impressoras térmicas de comanda reproduzem o ambiente de produção dos estabelecimentos (A5). Microfone e caixa de som de referência são usados para gravar o corpus e reproduzir ruído controlado (A4). Duas estações de trabalho atendem ao treinamento dos modelos de recomendação e voz.
+
+\textbf{Material de consumo.} Cartões e carteiras de teste, chips de dados móveis para os terminais do piloto (testes de conectividade intermitente) e insumos de impressão e cabeamento.
+
+\textbf{Serviços de terceiros no país.} (i) Infraestrutura em nuvem: hospedagem do serviço, banco de dados e treinamento de modelos, contratada de provedor de nuvem pública por uso. (ii) APIs de reconhecimento de fala e de modelos de linguagem: necessárias para comparar execução em nuvem e local em D3, contratadas por consumo. (iii) Consultoria em segurança de pagamentos: profissional ou empresa com certificação reconhecida pelo PCI SSC (QSA ou equivalente) para revisar a arquitetura de D1 e o uso do SDK em modo quiosque. (iv) Teste de intrusão do aplicativo de quiosque e da API, por empresa especializada com profissionais certificados (por exemplo, OSCP). (v) Assessoria em propriedade intelectual: escritório com agente da propriedade industrial habilitado no INPI para a busca de anterioridade (A1) e registro de software. O total de serviços de terceiros respeita o limite de 1/3 do orçamento da Fase 1.
+
+\pendente{Indicar a empresa e as qualificações da consultoria em segurança de pagamentos, a empresa do teste de intrusão e o escritório de propriedade intelectual (campos deixados em aberto no rascunho).}
+
+\textbf{Diárias e transporte.} Deslocamentos para implantação e acompanhamento do piloto nos três estabelecimentos e para coleta de ruído real em campo.
+
+\textbf{Bolsas.} Os bolsistas serão selecionados entre profissionais sem vínculo societário com a empresa. Duas bolsas de Treinamento Técnico nível TT-4, para profissionais de TI que desenvolverão atividades de TI: uma no motor de recomendação (A3), sob supervisão de Kevin Rodrigues Nunes, e outra no pipeline de voz (A4), sob supervisão de Renan Biruel Uema, ambas com 40 horas semanais por 9 meses. Elas se justificam porque os experimentos de D2 e D3 exigem dedicação contínua e conhecimento de aprendizado de máquina que os sócios, em regime parcial, não conseguem suprir sozinhos. Uma bolsa TT-3, com 20 horas semanais, apoiará a bancada de pagamento e os testes de falha (A2, A6). Um plano de atividades independente para cada bolsa será apresentado em separado.
+
+\pendente{Conferir os valores mensais das bolsas TT-4 e TT-3 na tabela vigente da FAPESP e as regras de Treinamento Técnico em \url{https://fapesp.br/tt} antes da submissão; atualizar os demais valores com cotações (o rascunho os trata como valores de referência).}
+
+
+
+% =========================================================
+% ITEM 11 (landscape page, as in the template)
+% =========================================================
+
+\begin{landscape}
+\section{Cronograma Físico-Financeiro}
+
+A Tabela \ref{tab:fisicofinanceiro} resume as atividades do item 7c com responsável, itens orçamentários do item 10, custo e meses de execução.
+
+\pendente{A distribuição dos custos por atividade é proposta desta revisão (o rascunho só indica as atividades de cada item): itens de mais de uma atividade ficaram na primeira citada (\textit{tablets} e suportes em A2, chips em A6, bolsa TT-3 em A2), exceto as estações de trabalho (uma em A3, outra em A4) e a nuvem (A3 a A8 no rascunho), alocada a A7. Confirmar ou redistribuir.}
+
+{\scriptsize\setstretch{1.0}\setlength{\tabcolsep}{2.5pt}\renewcommand{\arraystretch}{1.1}
+\begin{xltabular}{\linewidth}{|C{0.4cm}|L{3.7cm}|L{3.0cm}|Y|R{2.0cm}|*{12}{C{0.4cm}}|}
+\caption{Cronograma físico-financeiro (custo em R\$).}\label{tab:fisicofinanceiro}\\
+\hline\hd
+\multicolumn{17}{|c|}{\textbf{CRONOGRAMA FÍSICO-FINANCEIRO}}\\\hline\hd
+& \textbf{Descrição da atividade} & \textbf{Responsável} & \textbf{Item Orçamentário} & \textbf{Custo} & \multicolumn{12}{c|}{\textbf{Meses}}\\\cline{6-17}\hd
+& & \textbf{(membro da equipe)} & & & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 & 12\\\hline
+\endfirsthead
+\hline\hd
+& \textbf{Descrição da atividade} & \textbf{Responsável (membro da equipe)} & \textbf{Item Orçamentário} & \textbf{Custo} & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 & 12\\\hline
+\endhead
+1 & A1 Levantamento técnico, regulatório e de patentes & Luiz Felipe Couto de Souza (todos) & Serviços: assessoria em propriedade intelectual e busca de anterioridade (14.000,00) & R\$ 14.000,00 & \G & \G & & & & & & & & & & \\\hline
+2 & A2 Bancada de pagamento (D1) & Kauã Lima de Souza; bolsista TT-3 & Permanente: 10 \textit{tablets}, 4 \textit{smartphones} e 10 suportes antifurto (30.100,00); consumo: cartões de teste (2.500,00); serviços: consultoria em segurança de pagamentos (25.000,00); bolsa TT-3 (22.500,00) & R\$ 80.100,00 & \G & \G & \G & \G & & & & & & & & \\\hline
+3 & A3 Motor de recomendação (D2) & Kevin Rodrigues Nunes; bolsista TT-4 & Permanente: 1 estação de trabalho com GPU (11.000,00); bolsa TT-4 (45.900,00) & R\$ 56.900,00 & & \G & \G & \G & \G & \G & \G & \G & & & & \\\hline
+4 & A4 Pedido por voz (D3) & Renan Biruel Uema; bolsista TT-4 & Permanente: 1 estação de trabalho com GPU, microfone e caixa de som (13.100,00); serviços: APIs de fala e de modelos de linguagem (13.500,00); transporte: coleta de ruído (800,00); bolsa TT-4 (45.900,00) & R\$ 73.300,00 & & \G & \G & \G & \G & \G & & & & & & \\\hline
+5 & A5 Integração com sistemas legados (D4) & Victor Yodono & Permanente: 3 impressoras térmicas (2.700,00); consumo: bobinas, cabos, carregadores e \textit{hubs} (1.700,00) & R\$ 4.400,00 & & \G & \G & \G & \G & & & & & & & \\\hline
+6 & A6 Resiliência e gestão de frota (D5) & Victor Yodono, Kauã Lima de Souza; bolsista TT-3 & Consumo: chips e pacotes de dados móveis (2.400,00) & R\$ 2.400,00 & & & \G & \G & \G & & & & & & & \\\hline
+7 & A7 Integração do protótipo & Luiz Felipe Couto de Souza & Serviços: infraestrutura em nuvem por 9 meses (18.000,00); teste de intrusão (18.000,00) & R\$ 36.000,00 & & & & & \G & \G & & & & & & \\\hline
+8 & A8 Piloto em campo & Todos & Diárias e transporte: deslocamentos do piloto (3.200,00); diárias fora da capital (1.000,00) & R\$ 4.200,00 & & & & & & & \G & \G & & & & \\\hline
+9 & A9 Modelo econômico do HaaS (D6) e relatório final & Luiz Felipe Couto de Souza & Sem item solicitado à FAPESP (horas dos sócios, na contrapartida) & R\$ 0,00 & & & & & & \G & & \G & \G & & & \\\hline
+10 & Contrapartida da empresa (todas as atividades) & Sócios & Horas dos sócios (97.500,00); espaço físico e conectividade (7.200,00); contabilidade e serviços administrativos (2.700,00) & R\$ 107.400,00 & \G & \G & \G & \G & \G & \G & \G & \G & \G & & & \\\hline
+\hd & \textbf{Total} & & FAPESP: R\$ 271.300,00 (linhas 1 a 9); contrapartida: R\$ 107.400,00 (linha 10) & \textbf{R\$ 378.700,00} & & & & & & & & & & & & \\\hline
+\end{xltabular}}
+
+\end{landscape}
+
+% =========================================================
+\section{Bibliografia}
+% =========================================================
+
+\subsection{Artigos Científicos e Técnicos}
+
+{\setstretch{1.2}\raggedright
+\begin{thebibliography}{99}
+
+\bibitem{pegn2026}
+GENIALTEC projeta crescer 32\% em 2026 impulsionada pela expansão do autoatendimento no Brasil. \textbf{Revista Pequenas Empresas \& Grandes Negócios}, São Paulo, jun. 2026. Conteúdo de Marca / Pressworks. Disponível em: \url{https://revistapegn.globo.com/conteudo-de-marca/pressworks/noticia/2026/06/genialtec-projeta-crescer-32-em-2026-impulsionada-pela-expansao-do-autoatendimento-no-brasil-1.ghtml}. Acesso em: 16 ago. 2026.
+
+\bibitem{genialtec2026}
+GENIALTEC TECNOLOGIA. \textbf{Soluções em tecnologia e terminais de autoatendimento}. Balneário Camboriú, 2026. Disponível em: \url{https://www.genialtec.com.br/}. Acesso em: 16 ago. 2026.
+
+\bibitem{fecomercio2026}
+FECOMERCIO-SP. \textbf{Custo do trabalho aumentaria 22\% com fim da escala 6x1}. Notícias FecomercioSP, São Paulo, 12 fev. 2026. Disponível em: \url{https://www.fecomercio.com.br/noticia/custo-do-trabalho-aumentaria-22-com-fim-da-escala-6x1}. Acesso em: 16 ago. 2026.
+
+\bibitem{abrasel2026}
+ABRASEL - ASSOCIAÇÃO BRASILEIRA DE BARES E RESTAURANTES. \textbf{Fim da escala 6x1: impactos econômicos e operacionais da mudança na jornada no setor de alimentação}. Análise Institucional Abrasel / CNN Brasil, 18 abr. 2026. Disponível em: \url{https://www.cnnbrasil.com.br/economia/macroeconomia/abrasel-fim-da-escala-6x1-avanca-por-interesse-eleitoral-e-de-modo-acodado/}. Acesso em: 16 ago. 2026.
+
+\bibitem{pci_cpoc}
+PCI SECURITY STANDARDS COUNCIL. \textbf{Contactless Payments on COTS (CPoC)}: Security and Test Requirements, v1.0. Wakefield, 2019.
+
+\bibitem{pci_mpoc}
+PCI SECURITY STANDARDS COUNCIL. \textbf{Mobile Payments on COTS (MPoC) Standard}, v1.0. Wakefield, 2022.
+
+\bibitem{bcb_pix}
+BANCO CENTRAL DO BRASIL. \textbf{Resolução BCB nº 1, de 12 de agosto de 2020}. Institui o arranjo de pagamentos Pix e aprova o seu Regulamento. Brasília, 2020.
+
+\bibitem{koren2009}
+KOREN, Y.; BELL, R.; VOLINSKY, C. Matrix factorization techniques for recommender systems. \textbf{Computer}, v. 42, n. 8, p. 30-37, 2009.
+
+\bibitem{hidasi2016}
+HIDASI, B.; KARATZOGLOU, A.; BALTRUNAS, L.; TIKK, D. Session-based recommendations with recurrent neural networks. In: \textbf{International Conference on Learning Representations (ICLR)}, 2016.
+
+\bibitem{kang2018}
+KANG, W.-C.; McAULEY, J. Self-attentive sequential recommendation. In: \textbf{IEEE International Conference on Data Mining (ICDM)}, 2018, p. 197-206.
+
+\bibitem{ludewig2018}
+LUDEWIG, M.; JANNACH, D. Evaluation of session-based recommendation algorithms. \textbf{User Modeling and User-Adapted Interaction}, v. 28, p. 331-390, 2018.
+
+\bibitem{vartak2017}
+VARTAK, M.; THIAGARAJAN, A.; MIRANDA, C.; BRATMAN, J.; LAROCHELLE, H. A meta-learning perspective on cold-start recommendations for items. In: \textbf{Advances in Neural Information Processing Systems (NeurIPS)}, 2017.
+
+\bibitem{lee2019}
+LEE, H.; IM, J.; JANG, S.; CHO, H.; CHUNG, S. MeLU: meta-learned user preference estimator for cold-start recommendation. In: \textbf{ACM SIGKDD Conference on Knowledge Discovery and Data Mining}, 2019, p. 1073-1082.
+
+\bibitem{radford2023}
+RADFORD, A.; KIM, J. W.; XU, T.; BROCKMAN, G.; McLEAVEY, C.; SUTSKEVER, I. Robust speech recognition via large-scale weak supervision. In: \textbf{International Conference on Machine Learning (ICML)}, 2023.
+
+\bibitem{lewis2020}
+LEWIS, P. et al. Retrieval-augmented generation for knowledge-intensive NLP tasks. In: \textbf{Advances in Neural Information Processing Systems (NeurIPS)}, 2020.
+
+\bibitem{kohavi2020}
+KOHAVI, R.; TANG, D.; XU, Y. \textbf{Trustworthy online controlled experiments}: a practical guide to A/B testing. Cambridge: Cambridge University Press, 2020.
+
+\bibitem{hohpe2003}
+HOHPE, G.; WOOLF, B. \textbf{Enterprise integration patterns}: designing, building, and deploying messaging solutions. Boston: Addison-Wesley, 2003.
+
+\bibitem{scrum2020}
+SCHWABER, K.; SUTHERLAND, J. \textbf{The Scrum Guide}. 2020. Disponível em: \url{https://scrumguides.org}.
+
+\bibitem{ries2011}
+RIES, E. \textbf{The lean startup}. New York: Crown Business, 2011.
+
+\bibitem{abras2024}
+ABRAS - ASSOCIAÇÃO BRASILEIRA DE SUPERMERCADOS. 70\% dos brasileiros priorizam o self-checkout para finalizar suas compras. \textbf{Clipping ABRAS}, Tecnologia, 29 nov. 2024. Disponível em: \pendentecurto{URL e data de acesso}.
+
+\bibitem{folha_cade}
+GOOGLE diz ao Cade que Android libera pagamento por aproximação sem taxas. \textbf{Folha de S.Paulo}, São Paulo, coluna Painel S.A. \pendentecurto{data, URL e data de acesso}.
+
+\end{thebibliography}}
+
+\subsection{Patentes e outros documentos de Propriedade Intelectual}
+
+A busca sistemática de patentes está prevista na atividade A1 (INPI, Espacenet e Google Patents). A análise preliminar do item 8 indica que as patentes sobre aceitação por aproximação e entrada de PIN em dispositivos comerciais pertencem a empresas de pagamento e fabricantes, e que seu uso pelo projeto se dará por SDK licenciado de subadquirente homologado; a existência dessas famílias de patentes e dos padrões CPoC e MPoC \cite{pci_cpoc, pci_mpoc} confirma o interesse da indústria e a viabilidade técnica da aceitação de cartões em dispositivos comerciais, premissa central desta proposta.
+
+\pendente{Listar as patentes encontradas (número, titular, título e relação com o projeto), demonstrando que os resultados almejados não são cobertos por patentes existentes ou que há patentes que indicam o interesse e a viabilidade da proposta.}
+
+\end{document}
