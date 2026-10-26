@@ -23,4 +23,11 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Painel do lojista' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Comer aqui/ })).not.toBeInTheDocument()
   })
+
+  it('opens the phone app on the sticker reader instead of the kiosk', () => {
+    render(<App adapters={createAdapters(undefined)} phone />)
+
+    expect(screen.getByRole('main')).toContainElement(screen.getByRole('button', { name: 'Aproximar do totem' }))
+    expect(screen.queryByText('Peça aqui. Pague aqui.')).not.toBeInTheDocument()
+  })
 })

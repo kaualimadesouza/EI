@@ -32,3 +32,8 @@ __pycache__/
 !.env.example
 .playwright-mcp/
 .import_linter_cache/
+
+# native apps (Tauri): Rust and Android build outputs
+topa/web/src-tauri/target/
+topa/web/src-tauri/gen/android/.gradle/
+topa/web/src-tauri/gen/android/**/build/

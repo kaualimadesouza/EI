@@ -1,8 +1,8 @@
 name: release-please
 
 # Keeps a release PR open on main from the conventional commits that touch topa/. Merging it
-# tags, publishes the GitHub Release and topa/CHANGELOG.md, then calls web.yml for PROD:
-# a release created with GITHUB_TOKEN never triggers other workflows on its own.
+# tags, publishes the GitHub Release and topa/CHANGELOG.md, then calls web.yml for PROD and
+# native.yml for the apps: a release created with GITHUB_TOKEN never triggers other workflows.
 
 on:
   push:
@@ -38,3 +38,12 @@ jobs:
     with:
       environment: prod
     secrets: inherit # pragma: allowlist secret
+
+  native-apps:
+    needs: release-please
+    if: needs.release-please.outputs.releases_created == 'true'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/native.yml
+    with:
+      tag: ${{ needs.release-please.outputs.tag_name }}
