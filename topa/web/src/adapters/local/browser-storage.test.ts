@@ -41,9 +41,44 @@ describe('StoredValue', () => {
     }
     const value = new StoredValue<number>(broken, 'k', 0)
 
+    expect(value.read()).toBe(0)
     value.write(5)
 
     expect(value.read()).toBe(5)
+  })
+
+  it('stops trusting storage once a later write hits quota, instead of reading stale data back', () => {
+    let stored: string | null = null
+    let full = false
+    const quotaStorage = {
+      getItem: () => stored,
+      setItem: (_key: string, next: string) => {
+        if (full) throw new Error('QuotaExceededError')
+        stored = next
+      },
+    }
+    const value = new StoredValue<number[]>(quotaStorage, 'k', [])
+
+    value.write([1])
+    full = true
+    value.write([1, 2])
+
+    expect(value.read()).toEqual([1, 2])
+  })
+
+  it('ignores valid JSON whose shape does not match the initial value', () => {
+    const storage = new MemoryStorage()
+
+    storage.setItem('list', 'null')
+    expect(new StoredValue<string[]>(storage, 'list', []).read()).toEqual([])
+    storage.setItem('list', '{}')
+    expect(new StoredValue<string[]>(storage, 'list', []).read()).toEqual([])
+    storage.setItem('list', '42')
+    expect(new StoredValue<string[]>(storage, 'list', []).read()).toEqual([])
+    storage.setItem('record', 'null')
+    expect(new StoredValue<{ ok: boolean }>(storage, 'record', { ok: true }).read()).toEqual({ ok: true })
+    storage.setItem('count', '[]')
+    expect(new StoredValue<number>(storage, 'count', 0).read()).toBe(0)
   })
 })
 

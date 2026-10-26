@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { itemCount, totalCents } from '../../domain/cart'
 import { findProduct, formatBRL, type Product } from '../../domain/menu'
+import { phoneMenuUrl } from '../../domain/store'
 import { bannerFor } from '../../domain/suggest'
 import type { Adapters } from '../../ports/adapters'
 import { OrderRejectedError } from '../../ports/orders'
@@ -52,11 +53,12 @@ export function KioskApp({ adapters, now = () => new Date() }: KioskAppProps) {
   const waitingPix = state.screen === 'payment' && state.paymentMethod === 'pix' && state.payment === 'choosing'
   // a touch must not stretch the wait past the Pix code, so it only restarts other timers
   const idleSeconds = waitingPix ? PIX_SECONDS : IDLE_SECONDS
+  const idleReset = waitingPix ? 0 : touches
   useEffect(() => {
     if (!idleWatch) return
     const timer = setTimeout(() => setState((s) => flow.openSheet(s, 'idle')), idleSeconds * 1000)
     return () => clearTimeout(timer)
-  }, [idleWatch, idleSeconds, waitingPix ? 0 : touches, state.screen])
+  }, [idleWatch, idleSeconds, idleReset, state.screen])
 
   const reset = () => setState(flow.START)
 
@@ -98,7 +100,7 @@ export function KioskApp({ adapters, now = () => new Date() }: KioskAppProps) {
           onQueue={() => setState(flow.openQueue())}
         />
       )}
-      {state.screen === 'queue' && <QueueScreen menuUrl={`${window.location.origin}${import.meta.env.BASE_URL}`} onOrderHere={reset} />}
+      {state.screen === 'queue' && <QueueScreen menuUrl={phoneMenuUrl(window.location.origin, import.meta.env.BASE_URL)} onOrderHere={reset} />}
       {state.screen === 'done' && <DoneScreen placed={state.placed!} onNewOrder={reset} />}
       {shopping && (
         <KioskHeader

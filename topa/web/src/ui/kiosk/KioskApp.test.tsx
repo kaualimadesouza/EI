@@ -8,6 +8,7 @@ import type { Product } from '../../domain/menu'
 import type { OrderDraft, PlacedOrder } from '../../domain/order'
 import { OrderRejectedError } from '../../ports/orders'
 import { KioskApp } from './KioskApp'
+import { Qr } from './Qr'
 
 interface Fakes {
   adapters: Adapters
@@ -454,10 +455,12 @@ describe('KioskApp', () => {
     await user.click(button('A fila está grande? Peça pelo celular'))
     expect(screen.getByRole('heading', { name: 'A fila está grande' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Aproxime o celular' })).toHaveTextContent('Encoste o celular no adesivo TOPA ao lado da tela.')
-    expect(screen.getByRole('region', { name: 'Aponte a câmera' })).toContainElement(
-      screen.getByRole('img', { name: 'Código para abrir o cardápio no celular' }),
+    const qr = screen.getByRole('img', { name: 'Código para abrir o cardápio no celular' })
+    expect(screen.getByRole('region', { name: 'Aponte a câmera' })).toContainElement(qr)
+    const { container } = render(
+      <Qr value="https://topa-totem.vercel.app/?loja=lanchonete-bem-te-vi" size={200} label="expected" />,
     )
-    expect(screen.getByRole('img', { name: 'Código para abrir o cardápio no celular' })).toBeInTheDocument()
+    expect(qr.querySelector('path')?.getAttribute('d')).toBe(container.querySelector('path')?.getAttribute('d'))
     await user.click(button('Pedir no totem'))
 
     expect(screen.getByRole('heading', { name: 'Peça aqui. Pague aqui.' })).toBeInTheDocument()

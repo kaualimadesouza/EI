@@ -34,7 +34,7 @@ export function MenuScreen(props: MenuScreenProps) {
               type="button"
               aria-pressed={c.id === category}
               onClick={() => onCategory(c.id)}
-              className={`flex h-28 flex-none flex-col items-center justify-center gap-2 rounded-[24px] text-[18px] short:h-20 short:gap-1 max-sm:h-12 max-sm:flex-row max-sm:rounded-full max-sm:px-4 max-sm:text-[16px] ${
+              className={`flex h-28 flex-none flex-col items-center justify-center gap-2 rounded-[24px] text-[18px] short:h-20 short:gap-1 max-sm:h-16 max-sm:flex-row max-sm:rounded-full max-sm:px-4 max-sm:text-[16px] ${
                 c.id === category ? 'bg-teal font-semibold text-white' : 'font-medium text-ink'
               }`}
             >

@@ -106,6 +106,27 @@ describe('LocalOrders', () => {
     await expect(orders.setStatus('nope', 'preparing')).rejects.toEqual(new OrderRejectedError('Pedido não encontrado.'))
   })
 
+  it('keeps numbering orders sequentially when storage fills up after the first order', async () => {
+    const storage = new MemoryStorage()
+    const menu = new LocalMenu(storage)
+    let full = false
+    const quotaStorage = {
+      getItem: (key: string) => storage.getItem(key),
+      setItem: (key: string, value: string) => {
+        if (full) throw new Error('QuotaExceededError')
+        storage.setItem(key, value)
+      },
+    }
+    const orders = new LocalOrders(menu, quotaStorage, monday)
+
+    const first = await orders.place(draft)
+    full = true
+    const second = await orders.place(draft)
+    const third = await orders.place(draft)
+
+    expect([first.number, second.number, third.number]).toEqual([1, 2, 3])
+  })
+
   it('uses the browser storage and clock by default', async () => {
     localStorage.clear()
 

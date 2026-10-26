@@ -60,7 +60,7 @@ interface HeaderProps {
 
 export function KioskHeader({ dineIn, cartEmpty, locked, onCancel }: HeaderProps) {
   return (
-    <header className="flex h-[104px] flex-none items-center gap-4 border-b border-line bg-white px-12 short:h-20 max-sm:h-[72px] max-sm:gap-3 max-sm:px-4">
+    <header className="flex h-[104px] flex-none items-center gap-4 border-b border-line bg-white px-12 short:h-20 max-sm:h-20 max-sm:gap-3 max-sm:px-4">
       <span className="flex-none max-sm:hidden">
         <StoreMark size={48} />
       </span>
@@ -75,7 +75,7 @@ export function KioskHeader({ dineIn, cartEmpty, locked, onCancel }: HeaderProps
         type="button"
         onClick={onCancel}
         disabled={locked}
-        className="flex h-16 flex-none items-center gap-2 rounded-[16px] px-3 text-[22px] font-semibold text-slate disabled:opacity-40 max-sm:h-12 max-sm:gap-1 max-sm:px-1 max-sm:text-[16px]"
+        className="flex h-16 flex-none items-center gap-2 rounded-[16px] px-3 text-[22px] font-semibold text-slate disabled:opacity-40 max-sm:gap-1 max-sm:px-2 max-sm:text-[16px]"
       >
         <CloseIcon size={28} />
         {cartEmpty ? 'Voltar ao início' : 'Cancelar pedido'}

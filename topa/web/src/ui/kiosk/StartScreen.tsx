@@ -84,7 +84,7 @@ export function StartScreen({ mode, connection, onBegin, onQueue }: StartScreenP
         <button
           type="button"
           onClick={onQueue}
-          className="min-h-16 self-start text-left text-[22px] font-medium underline underline-offset-4 short:min-h-12 short:text-[20px] max-sm:text-[18px]"
+          className="min-h-16 self-start text-left text-[22px] font-medium underline underline-offset-4 short:text-[20px] max-sm:text-[18px]"
         >
           A fila está grande? Peça pelo celular
         </button>
