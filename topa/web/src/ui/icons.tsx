@@ -62,9 +62,6 @@ export const ContactlessIcon = (props: IconProps) => (
     {...props}
   />
 )
-export const PhoneIcon = (props: IconProps) => (
-  <Stroke d="M7 2h10v20H7zM11 18h2" {...props} />
-)
 
 export function StoreMark({ size = 40 }: { size?: number }) {
   return (

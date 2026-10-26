@@ -322,6 +322,10 @@ describe('KioskApp', () => {
 
     await user.click(button('A fila está grande? Peça pelo celular'))
     expect(screen.getByRole('heading', { name: 'A fila está grande' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Aproxime o celular' })).toHaveTextContent('Encoste o celular no adesivo TOPA ao lado da tela.')
+    expect(screen.getByRole('region', { name: 'Aponte a câmera' })).toContainElement(
+      screen.getByRole('img', { name: 'Código para abrir o cardápio no celular' }),
+    )
     expect(screen.getByRole('img', { name: 'Código para abrir o cardápio no celular' })).toBeInTheDocument()
     await user.click(button('Pedir no totem'))
 
