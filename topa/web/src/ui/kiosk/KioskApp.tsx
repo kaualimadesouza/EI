@@ -149,9 +149,9 @@ export function KioskApp({ adapters, now = () => new Date() }: KioskAppProps) {
             <CheckIcon size={24} />
             {findProduct(products, state.justAdded!)!.name} adicionado
           </p>
-          <img src={photoOf(state.upsell.productId)} alt="" className="h-[300px] w-full rounded-[24px] object-cover max-sm:h-48" />
-          <h2 className="text-[32px] leading-tight font-bold">{state.upsell.question}</h2>
-          <p className="text-[22px] text-muted">{state.upsell.reason}</p>
+          <img src={photoOf(state.upsell.productId)} alt="" className="h-[300px] w-full rounded-[24px] object-cover short:h-48 max-sm:h-44" />
+          <h2 className="text-[32px] leading-tight font-bold max-sm:text-[24px]">{state.upsell.question}</h2>
+          <p className="text-[22px] text-muted max-sm:text-[18px]">{state.upsell.reason}</p>
           <ChoiceButtons
             secondary="Não, obrigado"
             primary={`Adicionar por ${formatBRL(findProduct(products, state.upsell.productId)!.priceCents)}`}
@@ -162,8 +162,8 @@ export function KioskApp({ adapters, now = () => new Date() }: KioskAppProps) {
       )}
       {state.sheet === 'cancel' && (
         <Sheet title="Cancelar o pedido?">
-          <h2 className="text-[32px] font-bold">Cancelar o pedido?</h2>
-          <p className="text-[22px] text-muted">
+          <h2 className="text-[32px] font-bold max-sm:text-[24px]">Cancelar o pedido?</h2>
+          <p className="text-[22px] text-muted max-sm:text-[18px]">
             {count === 1 ? 'O item escolhido será removido.' : `Os ${count} itens escolhidos serão removidos.`}
           </p>
           <ChoiceButtons
@@ -183,8 +183,8 @@ function IdleSheet({ onStay, onLeave }: { onStay: () => void; onLeave: () => voi
   const left = useCountdown(IDLE_WARNING_SECONDS, onLeave)
   return (
     <Sheet title="Você ainda está aí?">
-      <h2 className="text-[32px] font-bold">Você ainda está aí?</h2>
-      <p className="text-[22px] text-muted tabular-nums">O pedido será cancelado em {left} s.</p>
+      <h2 className="text-[32px] font-bold max-sm:text-[24px]">Você ainda está aí?</h2>
+      <p className="text-[22px] text-muted tabular-nums max-sm:text-[18px]">O pedido será cancelado em {left} s.</p>
       <ChoiceButtons secondary="Recomeçar" primary="Continuar" onSecondary={onLeave} onPrimary={onStay} />
     </Sheet>
   )

@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 
+/* a landscape tablet or a laptop: wide enough for the kiosk layout but short on height */
+@custom-variant short (@media (min-width: 640px) and (max-height: 820px));
+
 /* TOPA tokens: logo colors plus black and white; the single source for every screen.
    The default palette is reset, so a class outside these tokens (bg-blue-500) compiles to nothing. */
 @theme {
@@ -23,7 +26,7 @@
 
 body {
   margin: 0;
-  background: var(--color-ink);
+  background: var(--color-cream);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }

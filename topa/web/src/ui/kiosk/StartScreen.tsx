@@ -45,29 +45,29 @@ export function StartScreen({ mode, connection, onBegin, onQueue }: StartScreenP
   const look = lookOf(mode === 'demo' ? 'demo' : reachability)
 
   return (
-    <section className="flex flex-1 flex-col bg-teal text-white">
-      <div className="relative h-[clamp(14rem,36dvh,28rem)] flex-none">
+    <section className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-teal text-white lg:landscape:flex-row">
+      <div className="relative h-[clamp(14rem,36dvh,28rem)] flex-none max-sm:h-48 lg:landscape:h-auto lg:landscape:w-[46%] short:lg:landscape:w-[38%]">
         <img src="/photos/xsalada.jpg" alt="" className="absolute inset-0 size-full object-cover" />
         <div className="absolute inset-x-[clamp(1rem,6vw,3rem)] top-[clamp(1rem,5vw,2.5rem)] flex items-center">
-          <span className="flex h-14 items-center gap-3 rounded-full bg-white pr-5 pl-2 text-[clamp(1rem,2.5vw,1.375rem)] font-semibold text-ink">
+          <span className="flex h-14 items-center gap-3 rounded-full bg-white pr-5 pl-2 text-[clamp(1rem,2.5vw,1.375rem)] font-semibold whitespace-nowrap text-ink">
             <StoreMark />
             Lanchonete Bem-te-vi
           </span>
         </div>
       </div>
-      <div className="flex flex-1 flex-col gap-6 p-[clamp(1rem,6vw,3rem)]">
-        <h1 className="text-[clamp(3rem,11vw,5.5rem)] leading-[0.95] font-bold tracking-[-0.04em]">
+      <div className="flex flex-1 flex-col gap-6 p-[clamp(1rem,6vw,3rem)] short:gap-3 max-sm:gap-4 lg:landscape:justify-center-safe lg:landscape:overflow-y-auto lg:landscape:p-16 short:lg:landscape:p-10">
+        <h1 className="text-[clamp(3rem,11vw,5.5rem)] leading-[0.95] font-bold tracking-[-0.04em] lg:landscape:text-[clamp(2.5rem,min(5.5vw,9dvh),5.5rem)]">
           Peça aqui. Pague aqui.
         </h1>
-        <p className="max-w-[600px] text-[clamp(1.125rem,3.25vw,1.625rem)] leading-[1.35] text-on-teal">
+        <p className="max-w-[600px] text-[clamp(1.125rem,3.25vw,1.625rem)] leading-[1.35] text-on-teal short:text-[20px]">
           Monte o pedido, pague por aproximação ou Pix e retire no balcão.
         </p>
-        <p className="mt-auto text-[32px] font-semibold">Onde você vai comer?</p>
+        <p className="mt-auto text-[32px] font-semibold short:text-[26px] max-sm:text-[24px] lg:landscape:mt-6 short:lg:landscape:mt-2">Onde você vai comer?</p>
         <div className="grid grid-cols-2 gap-6 max-sm:gap-3">
           <button
             type="button"
             onClick={() => onBegin(true)}
-            className="flex h-40 flex-col items-start justify-between rounded-[32px] bg-white p-6 text-left text-[32px] font-semibold text-ink max-sm:text-[22px]"
+            className="flex min-h-40 flex-col items-start justify-between gap-3 rounded-[32px] bg-white p-6 text-left text-[32px] leading-tight font-semibold text-ink short:min-h-32 short:text-[26px] max-sm:min-h-32 max-sm:p-4 max-sm:text-[22px]"
           >
             <DineInIcon size={44} className="text-teal" />
             Comer aqui
@@ -75,7 +75,7 @@ export function StartScreen({ mode, connection, onBegin, onQueue }: StartScreenP
           <button
             type="button"
             onClick={() => onBegin(false)}
-            className="flex h-40 flex-col items-start justify-between rounded-[32px] bg-white p-6 text-left text-[32px] font-semibold text-ink max-sm:text-[22px]"
+            className="flex min-h-40 flex-col items-start justify-between gap-3 rounded-[32px] bg-white p-6 text-left text-[32px] leading-tight font-semibold text-ink short:min-h-32 short:text-[26px] max-sm:min-h-32 max-sm:p-4 max-sm:text-[22px]"
           >
             <TakeAwayIcon size={44} className="text-teal" />
             Levar para viagem
@@ -84,7 +84,7 @@ export function StartScreen({ mode, connection, onBegin, onQueue }: StartScreenP
         <button
           type="button"
           onClick={onQueue}
-          className="min-h-16 self-start text-[22px] font-medium underline underline-offset-4"
+          className="min-h-16 self-start text-left text-[22px] font-medium underline underline-offset-4 short:min-h-12 short:text-[20px] max-sm:text-[18px]"
         >
           A fila está grande? Peça pelo celular
         </button>
