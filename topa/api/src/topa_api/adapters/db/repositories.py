@@ -2,17 +2,15 @@ import uuid
 from collections.abc import Collection
 from datetime import date
 
-from psycopg.errors import UniqueViolation
 from sqlalchemy import func, select, update
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from topa_api.adapters.db.models import OrderItemRow, OrderRow, ProductRow
 from topa_api.domain.catalog import Category, Product
-from topa_api.domain.errors import OrderNumberTakenError
 from topa_api.domain.orders import Order, OrderItem, OrderStatus, PaymentMethod
 
-ORDER_NUMBER_CONSTRAINT = "uq_orders_business_date_number"
+# namespace of the per-day number lock, so it never meets another advisory lock
+ORDER_NUMBER_LOCK = 1
 
 # items in a second query, not a join: Postgres refuses FOR UPDATE on an outer join
 WITH_ITEMS = selectinload(OrderRow.items).joinedload(OrderItemRow.product)
@@ -43,6 +41,10 @@ class SqlAlchemyOrderRepository:
         self._session = session
 
     def next_number(self, business_date: date) -> int:
+        # held until the transaction ends: the next kiosk reads the max only after this commit
+        self._session.execute(
+            select(func.pg_advisory_xact_lock(ORDER_NUMBER_LOCK, business_date.toordinal()))
+        )
         highest = self._session.scalar(
             select(func.max(OrderRow.number)).where(OrderRow.business_date == business_date)
         )
@@ -67,14 +69,7 @@ class SqlAlchemyOrderRepository:
                 for item in order.items
             ],
         )
-        try:
-            # a savepoint: a failed INSERT aborts the whole Postgres transaction otherwise
-            with self._session.begin_nested():
-                self._session.add(row)
-        except IntegrityError as error:
-            if not _violates(error, ORDER_NUMBER_CONSTRAINT):
-                raise
-            raise OrderNumberTakenError from error
+        self._session.add(row)
 
     def list_for_day(self, business_date: date) -> list[Order]:
         rows = self._session.scalars(
@@ -93,11 +88,6 @@ class SqlAlchemyOrderRepository:
         self._session.execute(
             update(OrderRow).where(OrderRow.id == order_id).values(status=status.value)
         )
-
-
-def _violates(error: IntegrityError, constraint: str) -> bool:
-    cause = error.orig
-    return isinstance(cause, UniqueViolation) and cause.diag.constraint_name == constraint
 
 
 def _product_of(row: ProductRow) -> Product:

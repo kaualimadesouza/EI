@@ -10,11 +10,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, func, select
 from sqlalchemy.orm import Session
 
-from tests.fakes import FixedClock, InMemoryOrderRepository
+from tests.fakes import FixedClock
 from topa_api.adapters.db.models import OrderItemRow, OrderRow
 from topa_api.adapters.db.session import get_engine
 from topa_api.entrypoints.rest_application import create_app, get_session
-from topa_api.presentation.fastapi.dependencies import get_order_repository
 
 INVALID_REQUEST = "Não foi possível processar a solicitação. Tente de novo."
 QUANTITY_OUT_OF_RANGE = "Escolha de 1 a 20 unidades de cada produto."
@@ -190,17 +189,6 @@ def test_a_body_that_is_not_json_gets_the_generic_message(client: TestClient) ->
 
     assert response.status_code == 422
     assert response.json() == {"detail": INVALID_REQUEST}
-
-
-def test_losing_the_number_race_twice_asks_the_customer_to_try_again(
-    app: FastAPI, client: TestClient
-) -> None:
-    app.dependency_overrides[get_order_repository] = lambda: InMemoryOrderRepository(collisions=2)
-
-    response = client.post("/orders", json=_order(("cafe", 1)))
-
-    assert response.status_code == 409
-    assert response.json() == {"detail": "Não foi possível registrar o pedido. Tente de novo."}
 
 
 def test_without_an_injected_clock_orders_carry_the_server_time(db_engine: Engine) -> None:

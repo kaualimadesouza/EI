@@ -35,13 +35,11 @@ class ProductRepository(Protocol):
 
 class OrderRepository(Protocol):
     def next_number(self, business_date: date) -> int:
-        """One past the highest number of that day, read inside the caller's transaction."""
+        """One past the highest number of that day. Holds a per-day lock until the
+        caller's transaction ends, so concurrent orders never share a number."""
         ...
 
-    def add(self, order: Order) -> None:
-        """Raises OrderNumberTakenError when another order stored that number first,
-        leaving the transaction usable so the caller can ask for a new number."""
-        ...
+    def add(self, order: Order) -> None: ...
 
     def list_for_day(self, business_date: date) -> list[Order]:
         """That business day's orders, by number."""

@@ -27,13 +27,6 @@ class ProductUnavailableError(DomainError):
         super().__init__(f"{product_name} esgotou.")
 
 
-class OrderNumberTakenError(DomainError):
-    """Another kiosk stored the same number first; worth one retry before the customer sees it."""
-
-    def __init__(self) -> None:
-        super().__init__("Não foi possível registrar o pedido. Tente de novo.")
-
-
 class OrderNotFoundError(DomainError):
     def __init__(self) -> None:
         super().__init__("Pedido não encontrado.")
