@@ -1,6 +1,6 @@
 import { formatBRL } from '../../domain/menu'
 import { displayNumber, type PlacedOrder } from '../../domain/order'
-import { CheckIcon, PhoneIcon } from './icons'
+import { CheckIcon, PhoneIcon } from '../icons'
 import { useCountdown } from './use-countdown'
 import { Qr } from './Qr'
 

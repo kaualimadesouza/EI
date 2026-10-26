@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import type { ConnectionPort } from '../../ports/connection'
-import { DineInIcon, StoreMark, TakeAwayIcon } from './icons'
+import { DineInIcon, StoreMark, TakeAwayIcon } from '../icons'
 
 interface StartScreenProps {
   mode: 'api' | 'demo'

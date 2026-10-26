@@ -1,6 +1,6 @@
 import { itemCount, totalCents, type CartLine } from '../../domain/cart'
 import { findProduct, formatBRL, type Product } from '../../domain/menu'
-import { MinusIcon, PlusIcon, TrashIcon } from './icons'
+import { MinusIcon, PlusIcon, TrashIcon } from '../icons'
 import { photoOf } from './photo'
 
 interface BagScreenProps {

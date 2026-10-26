@@ -1,7 +1,7 @@
 import { itemCount, quantityOf, totalCents, type CartLine } from '../../domain/cart'
 import { CATEGORIES, findProduct, formatBRL, type Product } from '../../domain/menu'
 import type { Suggestion } from '../../domain/suggest'
-import { CategoryIcon, MinusIcon, PlusIcon } from './icons'
+import { CategoryIcon, MinusIcon, PlusIcon } from '../icons'
 import { photoOf } from './photo'
 
 interface MenuScreenProps {
