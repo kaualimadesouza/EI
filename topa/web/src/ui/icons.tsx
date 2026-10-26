@@ -58,7 +58,7 @@ export const PixIcon = (props: IconProps) => (
 )
 export const ContactlessIcon = (props: IconProps) => (
   <Stroke
-    d="M7 9c1.5 1.8 1.5 4.2 0 6M10.5 7c2.6 2.9 2.6 7.1 0 10M14 5c3.6 4 3.6 10 0 14M17.5 3c4.6 5.2 4.6 12.8 0 18"
+    d="M5 9c1.5 1.8 1.5 4.2 0 6M8.5 7c2.6 2.9 2.6 7.1 0 10M12 5c3.6 4 3.6 10 0 14M15.5 3c4.6 5.2 4.6 12.8 0 18"
     {...props}
   />
 )
