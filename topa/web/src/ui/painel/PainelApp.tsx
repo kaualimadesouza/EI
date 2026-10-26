@@ -163,7 +163,7 @@ export function PainelApp({ adapters, now = () => new Date() }: PainelAppProps) 
           ))}
         </nav>
         <a
-          href="/"
+          href={import.meta.env.BASE_URL}
           aria-label="Abrir o totem"
           className="mt-auto flex h-12 items-center gap-3 rounded-[12px] px-3 text-[15px] font-medium text-teal hover:bg-white max-xl:justify-center"
         >

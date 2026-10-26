@@ -85,7 +85,7 @@ export function KioskApp({ adapters, now = () => new Date() }: KioskAppProps) {
           onQueue={() => setState(flow.openQueue())}
         />
       )}
-      {state.screen === 'queue' && <QueueScreen menuUrl={`${window.location.origin}/`} onOrderHere={reset} />}
+      {state.screen === 'queue' && <QueueScreen menuUrl={`${window.location.origin}${import.meta.env.BASE_URL}`} onOrderHere={reset} />}
       {state.screen === 'done' && <DoneScreen placed={state.placed!} onNewOrder={reset} />}
       {shopping && (
         <KioskHeader

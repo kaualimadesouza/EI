@@ -9,6 +9,8 @@ export default defineConfig(({ mode }) => {
   const target = env.API_PROXY_TARGET || 'http://localhost:8000'
 
   return {
+    // GitHub Pages serves the repo under /EI/; Vercel and dev serve from the root
+    base: env.BASE_PATH || '/',
     plugins: [react(), tailwindcss()],
     server: {
       proxy: {

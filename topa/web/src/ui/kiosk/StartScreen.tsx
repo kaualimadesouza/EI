@@ -47,7 +47,7 @@ export function StartScreen({ mode, connection, onBegin, onQueue }: StartScreenP
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-teal text-white lg:landscape:flex-row">
       <div className="relative h-[clamp(14rem,36dvh,28rem)] flex-none max-sm:h-48 lg:landscape:h-auto lg:landscape:w-[46%] short:lg:landscape:w-[38%]">
-        <img src="/photos/xsalada.jpg" alt="" className="absolute inset-0 size-full object-cover" />
+        <img src={`${import.meta.env.BASE_URL}photos/xsalada.jpg`} alt="" className="absolute inset-0 size-full object-cover" />
         <div className="absolute inset-x-[clamp(1rem,6vw,3rem)] top-[clamp(1rem,5vw,2.5rem)] flex items-center">
           <span className="flex h-14 items-center gap-3 rounded-full bg-white pr-5 pl-2 text-[clamp(1rem,2.5vw,1.375rem)] font-semibold whitespace-nowrap text-ink">
             <StoreMark />
@@ -94,7 +94,7 @@ export function StartScreen({ mode, connection, onBegin, onQueue }: StartScreenP
             {look.label}
           </p>
           <p className="flex items-center gap-2 text-[18px] font-medium">
-            <img src="/topa-mark.png" alt="" className="h-6 w-auto brightness-0 invert" />
+            <img src={`${import.meta.env.BASE_URL}topa-mark.png`} alt="" className="h-6 w-auto brightness-0 invert" />
             por TOPA
           </p>
         </div>
