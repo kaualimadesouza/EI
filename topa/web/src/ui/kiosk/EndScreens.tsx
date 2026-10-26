@@ -1,6 +1,6 @@
 import { formatBRL } from '../../domain/menu'
 import { displayNumber, type PlacedOrder } from '../../domain/order'
-import { CheckIcon, PhoneIcon } from './icons'
+import { CheckIcon, ContactlessIcon } from '../icons'
 import { useCountdown } from './use-countdown'
 import { Qr } from './Qr'
 
@@ -39,32 +39,35 @@ interface QueueScreenProps {
   onOrderHere: () => void
 }
 
+/** Two ways to move the order to the customer's phone: tap the NFC sticker or scan the QR. */
 export function QueueScreen({ menuUrl, onOrderHere }: QueueScreenProps) {
   return (
-    <section className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto bg-teal px-12 py-14 text-white short:py-8 max-sm:gap-6 max-sm:px-4 max-sm:py-8 lg:landscape:grid lg:landscape:grid-cols-2 lg:landscape:content-center lg:landscape:gap-x-16 lg:landscape:px-16">
-      <h1 className="text-[56px] leading-tight font-bold max-sm:text-[40px] lg:landscape:col-start-1">A fila está grande</h1>
-      <p className="text-[26px] text-on-teal max-sm:text-[20px] lg:landscape:col-start-1">Peça pelo celular e retire no balcão, sem esperar o totem.</p>
-      <dl className="grid grid-cols-2 gap-6 max-sm:gap-3 lg:landscape:col-start-1">
-        <div className="rounded-[24px] bg-white/10 p-6 max-sm:p-4">
-          <dt className="text-[22px] text-on-teal max-sm:text-[18px]">No totem</dt>
-          <dd className="text-[44px] font-bold tabular-nums max-sm:text-[32px]">~8 min</dd>
-        </div>
-        <div className="rounded-[24px] bg-white p-6 text-ink max-sm:p-4">
-          <dt className="text-[22px] text-muted max-sm:text-[18px]">Pelo celular</dt>
-          <dd className="text-[44px] font-bold tabular-nums max-sm:text-[32px]">~2 min</dd>
-        </div>
-      </dl>
-      <div className="flex items-center gap-8 rounded-[32px] bg-ink p-8 max-sm:flex-col max-sm:gap-5 max-sm:p-5 lg:landscape:col-start-2 lg:landscape:row-span-4 lg:landscape:row-start-1 lg:landscape:flex-col lg:landscape:self-center">
-        <Qr value={menuUrl} size={240} label="Código para abrir o cardápio no celular" />
-        <div className="flex flex-col gap-4">
-          <p className="text-[26px] font-semibold max-sm:text-[20px]">Aponte a câmera do celular para o código.</p>
-          <p className="flex items-start gap-3 text-[22px] text-on-teal max-sm:text-[18px]">
-            <PhoneIcon size={32} className="flex-none" />
-            Tem o app TOPA? Aproxime o celular do adesivo TOPA ao lado da tela.
-          </p>
-        </div>
+    <section className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto bg-teal px-12 py-14 text-white short:gap-5 short:py-8 max-sm:gap-6 max-sm:px-4 max-sm:py-8">
+      <div className="flex flex-col gap-3">
+        <h1 className="text-[56px] leading-tight font-bold short:text-[44px] max-sm:text-[36px]">A fila está grande</h1>
+        <p className="text-[26px] text-on-teal short:text-[22px] max-sm:text-[19px]">
+          Peça pelo seu celular e retire no balcão. Escolha um dos jeitos:
+        </p>
       </div>
-      <button type="button" onClick={onOrderHere} className="mt-auto h-24 flex-none rounded-[24px] border-2 border-white text-[26px] font-semibold short:h-20 max-sm:h-20 max-sm:text-[22px] lg:landscape:col-start-1 lg:landscape:mt-0">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-5 max-sm:grid-cols-1 max-sm:gap-3">
+        <section aria-labelledby="queue-nfc" className="flex flex-col items-center gap-5 rounded-[32px] bg-white p-8 text-center text-ink short:gap-3 short:p-6 max-sm:p-5">
+          <span className="flex size-[200px] items-center justify-center rounded-full bg-sage-tint text-teal short:size-[150px] max-sm:size-28">
+            <ContactlessIcon size={110} />
+          </span>
+          <h2 id="queue-nfc" className="text-[30px] font-bold max-sm:text-[24px]">Aproxime o celular</h2>
+          <p className="text-[22px] text-muted max-sm:text-[18px]">Encoste o celular no adesivo TOPA ao lado da tela.</p>
+        </section>
+        <span aria-hidden="true" className="flex items-center justify-center text-[22px] font-semibold text-on-teal max-sm:py-1">
+          ou
+        </span>
+        <section aria-labelledby="queue-qr" className="flex flex-col items-center gap-5 rounded-[32px] bg-white p-8 text-center text-ink short:gap-3 short:p-6 max-sm:p-5">
+          <Qr value={menuUrl} size={200} label="Código para abrir o cardápio no celular" />
+          <h2 id="queue-qr" className="text-[30px] font-bold max-sm:text-[24px]">Aponte a câmera</h2>
+          <p className="text-[22px] text-muted max-sm:text-[18px]">Leia o código com a câmera do celular.</p>
+        </section>
+      </div>
+      <p className="text-center text-[20px] text-on-teal max-sm:text-[17px]">Os dois abrem o cardápio no celular, sem instalar nada.</p>
+      <button type="button" onClick={onOrderHere} className="mt-auto h-24 flex-none rounded-[24px] border-2 border-white text-[26px] font-semibold short:h-20 max-sm:h-20 max-sm:text-[22px]">
         Pedir no totem
       </button>
     </section>

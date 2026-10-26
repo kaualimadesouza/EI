@@ -28,4 +28,21 @@ describe('HttpMenu', () => {
 
     await expect(menu.list()).rejects.toThrow('GET /products answered 500')
   })
+
+  it('marks a product sold out and returns it in the domain shape', async () => {
+    const fetchSpy = json({ id: 'suco', name: 'Suco de laranja', description: 'Natural, 300 ml.', category: 'bebidas', price_cents: 990, available: false })
+
+    const product = await new HttpMenu(new HttpClient('/api')).setAvailability('suco', false)
+
+    expect(fetchSpy).toHaveBeenCalledWith('/api/products/suco', expect.objectContaining({ method: 'PATCH', body: '{"available":false}' }))
+    expect(product).toMatchObject({ id: 'suco', priceCents: 990, available: false })
+  })
+
+  it('fails loudly when the availability change is refused', async () => {
+    json({ detail: 'Produto não encontrado.' }, 404)
+
+    await expect(new HttpMenu(new HttpClient('/api')).setAvailability('gone', true)).rejects.toThrow(
+      'PATCH /products/gone answered 404',
+    )
+  })
 })

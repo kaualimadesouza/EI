@@ -10,7 +10,7 @@ import { DoneScreen, QueueScreen } from './EndScreens'
 import * as flow from './flow'
 import { MenuScreen } from './MenuScreen'
 import { ChoiceButtons, KioskHeader, Sheet } from './parts'
-import { CheckIcon } from './icons'
+import { CheckIcon } from '../icons'
 import { PaymentScreen } from './PaymentScreen'
 import { StartScreen } from './StartScreen'
 import { photoOf } from './photo'
@@ -85,7 +85,7 @@ export function KioskApp({ adapters, now = () => new Date() }: KioskAppProps) {
           onQueue={() => setState(flow.openQueue())}
         />
       )}
-      {state.screen === 'queue' && <QueueScreen menuUrl={`${window.location.origin}/`} onOrderHere={reset} />}
+      {state.screen === 'queue' && <QueueScreen menuUrl={`${window.location.origin}${import.meta.env.BASE_URL}`} onOrderHere={reset} />}
       {state.screen === 'done' && <DoneScreen placed={state.placed!} onNewOrder={reset} />}
       {shopping && (
         <KioskHeader

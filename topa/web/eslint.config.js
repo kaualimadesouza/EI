@@ -36,10 +36,11 @@ export default tseslint.config(
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
-  // the hexagon: outside the adapters themselves, only the composition root may import one
+  // the hexagon: outside the adapters themselves, only the composition root may import one;
+  // tests may, to drive a screen with the real demo adapters
   {
     files: ['src/**'],
-    ignores: ['src/adapters/**', 'src/composition.ts', 'src/composition.test.ts', 'src/main.tsx'],
+    ignores: ['src/adapters/**', 'src/composition.ts', 'src/main.tsx', 'src/**/*.test.{ts,tsx}'],
     rules: forbid(noAdapters),
   },
   { files: ['src/domain/**'], rules: forbid(noAdapters, noUi, noReact) },

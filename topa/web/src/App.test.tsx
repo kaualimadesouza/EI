@@ -16,4 +16,11 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'Lanches' })).toBeInTheDocument()
   })
+
+  it('opens the merchant dashboard under /painel', async () => {
+    render(<App adapters={createAdapters(undefined)} path="/painel" />)
+
+    expect(await screen.findByRole('heading', { name: 'Painel do lojista' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Comer aqui/ })).not.toBeInTheDocument()
+  })
 })

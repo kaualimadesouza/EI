@@ -1,6 +1,7 @@
 """The pure order rules (domain/orders.py): lines, prices and the business day."""
 
 import uuid
+from dataclasses import replace
 from datetime import UTC, date, datetime
 
 import pytest
@@ -10,10 +11,12 @@ from topa_api.domain.errors import (
     EmptyOrderError,
     ProductUnavailableError,
     QuantityOutOfRangeError,
+    StatusChangeNotAllowedError,
     UnknownProductError,
 )
 from topa_api.domain.orders import (
     MAX_QUANTITY,
+    STATUS_LABELS,
     Order,
     OrderItem,
     OrderLine,
@@ -166,3 +169,117 @@ def test_order_total_is_the_sum_of_its_items() -> None:
     )
 
     assert order.total_cents == 2 * 2290 + 3 * 690
+
+
+def _order_in(status: OrderStatus, number: int = 47) -> Order:
+    return Order(
+        id=uuid.uuid4(),
+        number=number,
+        business_date=date(2026, 10, 26),
+        status=status,
+        dine_in=False,
+        payment_method=PaymentMethod.CARD,
+        items=(
+            OrderItem(product_id="refri", name="Refrigerante", quantity=1, unit_price_cents=690),
+        ),
+        created_at=datetime(2026, 10, 26, 15, 0, tzinfo=UTC),
+    )
+
+
+class TestStatusChange:
+    @pytest.mark.parametrize(
+        ("current", "requested"),
+        [
+            (OrderStatus.RECEIVED, OrderStatus.PREPARING),
+            (OrderStatus.PREPARING, OrderStatus.READY),
+            (OrderStatus.READY, OrderStatus.DELIVERED),
+        ],
+        ids=["start-preparing", "mark-ready", "deliver"],
+    )
+    def test_moves_one_step_forward(self, current: OrderStatus, requested: OrderStatus) -> None:
+        order = _order_in(current)
+
+        assert order.moved_to(requested) == replace(order, status=requested)
+
+    @pytest.mark.parametrize(
+        ("current", "requested"),
+        [
+            (OrderStatus.PREPARING, OrderStatus.RECEIVED),
+            (OrderStatus.READY, OrderStatus.PREPARING),
+            (OrderStatus.DELIVERED, OrderStatus.READY),
+        ],
+        ids=["undo-preparing", "undo-ready", "undo-delivered"],
+    )
+    def test_moves_one_step_back_so_the_dashboard_can_undo(
+        self, current: OrderStatus, requested: OrderStatus
+    ) -> None:
+        order = _order_in(current)
+
+        assert order.moved_to(requested) == replace(order, status=requested)
+
+    @pytest.mark.parametrize(
+        ("current", "requested", "message"),
+        [
+            (
+                OrderStatus.RECEIVED,
+                OrderStatus.READY,
+                "O pedido 047 não pode passar de recebido para pronto.",
+            ),
+            (
+                OrderStatus.RECEIVED,
+                OrderStatus.DELIVERED,
+                "O pedido 047 não pode passar de recebido para entregue.",
+            ),
+            (
+                OrderStatus.PREPARING,
+                OrderStatus.DELIVERED,
+                "O pedido 047 não pode passar de em preparo para entregue.",
+            ),
+            (
+                OrderStatus.READY,
+                OrderStatus.RECEIVED,
+                "O pedido 047 não pode passar de pronto para recebido.",
+            ),
+            (
+                OrderStatus.DELIVERED,
+                OrderStatus.PREPARING,
+                "O pedido 047 não pode passar de entregue para em preparo.",
+            ),
+            (
+                OrderStatus.DELIVERED,
+                OrderStatus.RECEIVED,
+                "O pedido 047 não pode passar de entregue para recebido.",
+            ),
+            (
+                OrderStatus.PREPARING,
+                OrderStatus.PREPARING,
+                "O pedido 047 não pode passar de em preparo para em preparo.",
+            ),
+        ],
+        ids=[
+            "skip-preparing",
+            "skip-to-delivered",
+            "skip-ready",
+            "two-back",
+            "two-back-from-delivered",
+            "three-back",
+            "same-status",
+        ],
+    )
+    def test_refuses_anything_else_naming_the_order_and_both_statuses(
+        self, current: OrderStatus, requested: OrderStatus, message: str
+    ) -> None:
+        with pytest.raises(StatusChangeNotAllowedError) as raised:
+            _order_in(current).moved_to(requested)
+
+        assert str(raised.value) == message
+
+    def test_a_number_past_three_digits_is_shown_whole(self) -> None:
+        with pytest.raises(StatusChangeNotAllowedError) as raised:
+            _order_in(OrderStatus.RECEIVED, number=1203).moved_to(OrderStatus.DELIVERED)
+
+        assert str(raised.value) == "O pedido 1203 não pode passar de recebido para entregue."
+
+    def test_every_status_has_a_label(self) -> None:
+        """A status without one would turn a refused change into a 500."""
+        assert set(STATUS_LABELS) == set(OrderStatus)

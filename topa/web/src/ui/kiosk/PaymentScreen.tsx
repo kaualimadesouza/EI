@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react'
 
 import { formatBRL } from '../../domain/menu'
 import type { KioskState } from './flow'
-import { ArrowDownIcon, CardIcon, CheckIcon, ContactlessIcon, PixIcon } from './icons'
+import { ArrowDownIcon, CardIcon, CheckIcon, ContactlessIcon, PixIcon } from '../icons'
 import { useCountdown } from './use-countdown'
 import { Qr } from './Qr'
 

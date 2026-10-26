@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { CloseIcon, DineInIcon, StoreMark, TakeAwayIcon } from './icons'
+import { CloseIcon, DineInIcon, StoreMark, TakeAwayIcon } from '../icons'
 
 interface SheetProps {
   title: string

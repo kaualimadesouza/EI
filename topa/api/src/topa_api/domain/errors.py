@@ -1,5 +1,5 @@
-"""Business-rule violations. The message is what the customer reads at the kiosk,
-so it is pt-BR copy; presentation only picks the HTTP status."""
+"""Business-rule violations. The message is what the customer reads at the kiosk, or the
+lojista on the dashboard, so it is pt-BR copy; presentation only picks the HTTP status."""
 
 
 class DomainError(Exception):
@@ -32,3 +32,18 @@ class OrderNumberTakenError(DomainError):
 
     def __init__(self) -> None:
         super().__init__("Não foi possível registrar o pedido. Tente de novo.")
+
+
+class OrderNotFoundError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Pedido não encontrado.")
+
+
+class ProductNotFoundError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Produto não encontrado.")
+
+
+class StatusChangeNotAllowedError(DomainError):
+    def __init__(self, number: int, current: str, requested: str) -> None:
+        super().__init__(f"O pedido {number:03d} não pode passar de {current} para {requested}.")

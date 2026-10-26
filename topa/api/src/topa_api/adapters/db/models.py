@@ -76,3 +76,5 @@ class OrderItemRow(Base):
     quantity: Mapped[int] = mapped_column(Integer)
     # a snapshot: the product's price may change, what this customer paid does not
     unit_price_cents: Mapped[int] = mapped_column(Integer)
+
+    product: Mapped[ProductRow] = relationship()

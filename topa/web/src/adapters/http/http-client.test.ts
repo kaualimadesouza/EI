@@ -24,4 +24,16 @@ describe('HttpClient', () => {
       body: '{"dine_in":true}',
     })
   })
+
+  it('patches JSON', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}'))
+
+    await new HttpClient('/api').patch('/products/suco', { available: false })
+
+    expect(fetchSpy).toHaveBeenCalledWith('/api/products/suco', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{"available":false}',
+    })
+  })
 })

@@ -1,4 +1,4 @@
-import type { Product } from '../../domain/menu'
+import type { Product } from '../domain/menu'
 
 interface IconProps {
   size?: number
@@ -62,9 +62,6 @@ export const ContactlessIcon = (props: IconProps) => (
     {...props}
   />
 )
-export const PhoneIcon = (props: IconProps) => (
-  <Stroke d="M7 2h10v20H7zM11 18h2" {...props} />
-)
 
 export function StoreMark({ size = 40 }: { size?: number }) {
   return (
@@ -76,3 +73,13 @@ export function StoreMark({ size = 40 }: { size?: number }) {
     </svg>
   )
 }
+
+export const ClockIcon = (props: IconProps) => <Stroke d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2" {...props} />
+export const UndoIcon = (props: IconProps) => <Stroke d="M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" {...props} />
+export const AlertIcon = (props: IconProps) => (
+  <Stroke d="M12 3l10 18H2zM12 10v5M12 18v.01" {...props} />
+)
+export const BoardIcon = (props: IconProps) => <Stroke d="M4 4h4v16H4zM10 4h4v10h-4zM16 4h4v13h-4z" {...props} />
+export const ChartIcon = (props: IconProps) => <Stroke d="M4 20h16M7 16v-4M12 16V7M17 16v-7" {...props} />
+export const ListIcon = (props: IconProps) => <Stroke d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" {...props} />
+export const ExternalIcon = (props: IconProps) => <Stroke d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6" {...props} />

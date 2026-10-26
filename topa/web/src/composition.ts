@@ -18,5 +18,6 @@ export function createAdapters(apiUrl: string | undefined): Adapters {
       orders: new HttpOrders(client),
     }
   }
-  return { mode: 'demo', connection: new LocalConnection(), menu: new LocalMenu(), orders: new LocalOrders() }
+  const menu = new LocalMenu()
+  return { mode: 'demo', connection: new LocalConnection(), menu, orders: new LocalOrders(menu) }
 }

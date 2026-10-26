@@ -11,6 +11,17 @@ interface ProductJson {
   available: boolean
 }
 
+function toProduct(row: ProductJson): Product {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    category: row.category,
+    priceCents: row.price_cents,
+    available: row.available,
+  }
+}
+
 export class HttpMenu implements MenuPort {
   private readonly client: HttpClient
 
@@ -21,14 +32,12 @@ export class HttpMenu implements MenuPort {
   async list(): Promise<Product[]> {
     const response = await this.client.get('/products')
     if (!response.ok) throw new Error(`GET /products answered ${response.status}`)
-    const rows = (await response.json()) as ProductJson[]
-    return rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      description: row.description,
-      category: row.category,
-      priceCents: row.price_cents,
-      available: row.available,
-    }))
+    return ((await response.json()) as ProductJson[]).map(toProduct)
+  }
+
+  async setAvailability(productId: string, available: boolean): Promise<Product> {
+    const response = await this.client.patch(`/products/${encodeURIComponent(productId)}`, { available })
+    if (!response.ok) throw new Error(`PATCH /products/${productId} answered ${response.status}`)
+    return toProduct((await response.json()) as ProductJson)
   }
 }

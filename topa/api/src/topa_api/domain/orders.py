@@ -1,8 +1,9 @@
 import uuid
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime
 from enum import StrEnum
+from typing import Self
 from zoneinfo import ZoneInfo
 
 from topa_api.domain.catalog import Product
@@ -10,6 +11,7 @@ from topa_api.domain.errors import (
     EmptyOrderError,
     ProductUnavailableError,
     QuantityOutOfRangeError,
+    StatusChangeNotAllowedError,
     UnknownProductError,
 )
 
@@ -21,7 +23,23 @@ BUSINESS_TIMEZONE = ZoneInfo("America/Sao_Paulo")
 
 
 class OrderStatus(StrEnum):
+    """Declared in the order an order walks through them, from the kiosk to the counter."""
+
     RECEIVED = "received"
+    PREPARING = "preparing"
+    READY = "ready"
+    DELIVERED = "delivered"
+
+
+# how the lojista reads each status; the wire keeps the English values
+STATUS_LABELS = {
+    OrderStatus.RECEIVED: "recebido",
+    OrderStatus.PREPARING: "em preparo",
+    OrderStatus.READY: "pronto",
+    OrderStatus.DELIVERED: "entregue",
+}
+
+LIFECYCLE = tuple(OrderStatus)
 
 
 class PaymentMethod(StrEnum):
@@ -65,6 +83,14 @@ class Order:
     @property
     def total_cents(self) -> int:
         return sum(item.quantity * item.unit_price_cents for item in self.items)
+
+    def moved_to(self, status: OrderStatus) -> Self:
+        """One step forward, or one back so a misplaced card on the dashboard can be undone."""
+        if abs(LIFECYCLE.index(status) - LIFECYCLE.index(self.status)) != 1:
+            raise StatusChangeNotAllowedError(
+                self.number, STATUS_LABELS[self.status], STATUS_LABELS[status]
+            )
+        return replace(self, status=status)
 
 
 def merge_lines(lines: Sequence[OrderLine]) -> tuple[OrderLine, ...]:

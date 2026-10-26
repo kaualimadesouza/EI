@@ -11,8 +11,16 @@ export class HttpClient {
   }
 
   post(path: string, body: object): Promise<Response> {
+    return this.send('POST', path, body)
+  }
+
+  patch(path: string, body: object): Promise<Response> {
+    return this.send('PATCH', path, body)
+  }
+
+  private send(method: 'POST' | 'PATCH', path: string, body: object): Promise<Response> {
     return fetch(`${this.baseUrl}${path}`, {
-      method: 'POST',
+      method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
