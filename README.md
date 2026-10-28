@@ -64,24 +64,25 @@ Como o sistema fica quando sair do modo demonstração, do usuário até o banco
 até lá, fase por fase, está em [`docs/caminho-para-producao.md`](docs/caminho-para-producao.md).
 
 ```mermaid
+%%{init: {"htmlLabels": false, "flowchart": {"htmlLabels": false}}}%%
 flowchart TB
     cliente(["Cliente"])
     lojista(["Lojista"])
 
-    totem["Totem na loja<br/>pedido, pagamento e recomendação"]
+    totem["Totem na loja<br/>pedido, pagamento<br/>e recomendação"]
     celular["Celular do cliente<br/>navegador ou app"]
     painel["Painel do lojista<br/>pedidos e cardápio"]
 
-    servidor["Servidor TOPA<br/>regras de cardápio, pedido e pagamento"]
+    servidor["Servidor TOPA<br/>cardápio, pedidos<br/>e pagamentos"]
     banco["Banco de dados"]
 
     subgraph parceiros["Parceiros"]
-        pagamentos["Pagamentos<br/>cartão por aproximação e Pix"]
-        fiscal["Fiscal e ERP da loja<br/>a definir"]
+        pagamentos["Pagamentos<br/>cartão e Pix"]
+        fiscal["Fiscal e ERP<br/>a definir"]
     end
 
     cliente -- "pede no totem" --> totem
-    cliente -- "fila grande: pede pelo celular" --> celular
+    cliente -- "fila grande" --> celular
     totem -. "NFC ou QR Code" .-> celular
     lojista --> painel
 
