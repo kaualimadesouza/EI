@@ -467,15 +467,30 @@ describe('KioskApp', () => {
     expect(screen.getByRole('heading', { name: 'Peça aqui. Pague aqui.' })).toBeInTheDocument()
   })
 
-  it('serves the phone menu link as its own NFC tag while it runs', async () => {
+  it('serves the phone menu link as its own NFC tag on the start and queue screens only', async () => {
     const f = fakes()
     const tag = { available: true, publish: vi.fn(), withdraw: vi.fn() }
     const { user } = setup({ ...f, adapters: { ...f.adapters, tag } })
 
     expect(tag.publish).toHaveBeenLastCalledWith(PHONE_MENU_URL)
     await user.click(button('A fila está grande? Peça pelo celular'))
-
     expect(screen.getByRole('region', { name: 'Aproxime o celular' })).toHaveTextContent('Encoste o celular atrás do totem.')
+    await user.click(button('Pedir no totem'))
+    expect(tag.withdraw).not.toHaveBeenCalled()
+    await startOrder(user)
+
+    // the payment screen asks for a card on the same spot, so the tag must be gone by then
+    expect(tag.withdraw).toHaveBeenCalledOnce()
+    expect(tag.publish).toHaveBeenCalledOnce()
+  })
+
+  it('on the customer phone it serves no tag and offers no queue', () => {
+    const f = fakes()
+    const tag = { available: true, publish: vi.fn(), withdraw: vi.fn() }
+    render(<KioskApp adapters={{ ...f.adapters, tag }} now={morning} onCustomerPhone />)
+
+    expect(tag.publish).not.toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: 'A fila está grande? Peça pelo celular' })).not.toBeInTheDocument()
   })
 
   it('stops serving the tag when the kiosk closes', () => {

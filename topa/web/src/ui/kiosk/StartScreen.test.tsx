@@ -1,6 +1,6 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { ConnectionPort } from '../../ports/connection'
 import { StartScreen } from './StartScreen'
@@ -87,43 +87,6 @@ describe('StartScreen', () => {
   it('shows the app version, so staff can tell which build a totem runs', () => {
     renderStart('demo', pending)
 
-    expect(screen.getByText(`v${__APP_VERSION__}`)).toBeInTheDocument()
-  })
-
-  describe('on a device marked as totem', () => {
-    beforeEach(() => vi.useFakeTimers())
-    afterEach(() => vi.useRealTimers())
-
-    function renderTotem() {
-      const onLeaveTotem = vi.fn()
-      const view = render(
-        <StartScreen mode="demo" connection={pending} onBegin={vi.fn()} onQueue={vi.fn()} onLeaveTotem={onLeaveTotem} />,
-      )
-      return { onLeaveTotem, view, mark: screen.getByText('por TOPA') }
-    }
-
-    it('goes back to the phone app when staff hold the TOPA mark for 3 s', () => {
-      const { onLeaveTotem, mark } = renderTotem()
-
-      fireEvent.pointerDown(mark)
-      act(() => vi.advanceTimersByTime(2999))
-      expect(onLeaveTotem).not.toHaveBeenCalled()
-      act(() => vi.advanceTimersByTime(1))
-
-      expect(onLeaveTotem).toHaveBeenCalledOnce()
-    })
-
-    it('ignores a short press and a hold cut by leaving the screen', () => {
-      const { onLeaveTotem, mark, view } = renderTotem()
-
-      fireEvent.pointerDown(mark)
-      act(() => vi.advanceTimersByTime(1000))
-      fireEvent.pointerUp(mark)
-      fireEvent.pointerDown(mark)
-      view.unmount()
-      act(() => vi.advanceTimersByTime(5000))
-
-      expect(onLeaveTotem).not.toHaveBeenCalled()
-    })
+    expect(screen.getByText('por TOPA')).toHaveTextContent(`v${__APP_VERSION__}`)
   })
 })

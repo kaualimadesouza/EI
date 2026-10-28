@@ -1,3 +1,4 @@
+import { storeFromUrl } from './domain/store'
 import type { Adapters } from './ports/adapters'
 import { KioskApp } from './ui/kiosk/KioskApp'
 import { PainelApp } from './ui/painel/PainelApp'
@@ -7,24 +8,25 @@ interface AppProps {
   adapters: Adapters
   path?: string
   phone?: boolean
-  onUseAsTotem: () => void
-  /** Only on a device marked as totem. */
-  onLeaveTotem?: () => void
+  /** The staff gesture on the TOPA mark; only the Android app has a role to switch. */
+  onSwitchRole?: () => void
 }
 
 /** The phone app reads a totem and opens its store; /painel (under the base path) is the dashboard; the rest is the kiosk. */
-export function App({ adapters, path = window.location.pathname, phone = false, onUseAsTotem, onLeaveTotem }: AppProps) {
+export function App({ adapters, path = window.location.pathname, phone = false, onSwitchRole }: AppProps) {
   if (phone) {
     return (
       <main className="flex min-h-dvh flex-col">
-        <PhoneApp adapters={adapters} onUseAsTotem={onUseAsTotem} />
+        <PhoneApp adapters={adapters} onSwitchRole={onSwitchRole} />
       </main>
     )
   }
   if (path.startsWith(`${import.meta.env.BASE_URL}painel`)) return <PainelApp adapters={adapters} />
+  // a store link comes from the totem's QR or tag, so this browser is already the customer's phone
+  const onCustomerPhone = storeFromUrl(window.location.href) !== null
   return (
     <main className="flex h-dvh flex-col overflow-hidden">
-      <KioskApp adapters={adapters} onLeaveTotem={onLeaveTotem} />
+      <KioskApp adapters={adapters} onSwitchRole={onSwitchRole} onCustomerPhone={onCustomerPhone} />
     </main>
   )
 }

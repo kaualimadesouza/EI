@@ -17,7 +17,7 @@ function phoneAdapters(): Adapters {
 describe('PhoneApp', () => {
   it('opens the store by itself once the totem is read, and goes back to reading on request', async () => {
     const adapters = phoneAdapters()
-    render(<PhoneApp adapters={adapters} onUseAsTotem={vi.fn()} />)
+    render(<PhoneApp adapters={adapters} />)
 
     await userEvent.click(screen.getByRole('button', { name: 'Aproximar do totem' }))
 

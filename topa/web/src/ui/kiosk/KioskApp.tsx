@@ -20,16 +20,16 @@ import { useCountdown } from './use-countdown'
 interface KioskAppProps {
   adapters: Adapters
   now?: () => Date
-  /** Only on a device marked as totem. */
-  onLeaveTotem?: () => void
-  /** The store opened on the customer's own phone: no tag to serve, no queue to send away. */
-  inPhoneApp?: boolean
+  /** The staff gesture on the TOPA mark; only the Android app has a role to switch. */
+  onSwitchRole?: () => void
+  /** The kiosk on the customer's own phone (phone app or store link): no tag to serve, no queue to send away. */
+  onCustomerPhone?: boolean
 }
 
 const IDLE_SECONDS = 45
 const IDLE_WARNING_SECONDS = 15
 
-export function KioskApp({ adapters, now = () => new Date(), onLeaveTotem, inPhoneApp = false }: KioskAppProps) {
+export function KioskApp({ adapters, now = () => new Date(), onSwitchRole, onCustomerPhone = false }: KioskAppProps) {
   const [state, setState] = useState<flow.KioskState>(flow.START)
   const [products, setProducts] = useState<Product[]>([])
   const [menuState, setMenuState] = useState<'loading' | 'ready' | 'error'>('loading')
@@ -53,11 +53,13 @@ export function KioskApp({ adapters, now = () => new Date(), onLeaveTotem, inPho
   }, [state.screen, loadMenu])
 
   const menuUrl = phoneMenuUrl(window.location.origin, import.meta.env.BASE_URL)
+  // only where a phone is invited to tap: from the menu on, that spot takes the payment card
+  const servesTag = !onCustomerPhone && (state.screen === 'start' || state.screen === 'queue')
   useEffect(() => {
-    if (inPhoneApp) return
+    if (!servesTag) return
     adapters.tag.publish(menuUrl)
     return () => adapters.tag.withdraw()
-  }, [adapters.tag, menuUrl, inPhoneApp])
+  }, [adapters.tag, menuUrl, servesTag])
 
   const shopping = ['menu', 'bag', 'payment'].includes(state.screen)
   const idleWatch = shopping && state.sheet !== 'idle' && state.payment !== 'processing'
@@ -108,8 +110,8 @@ export function KioskApp({ adapters, now = () => new Date(), onLeaveTotem, inPho
           mode={adapters.mode}
           connection={adapters.connection}
           onBegin={(dineIn) => setState(flow.begin(dineIn))}
-          onQueue={inPhoneApp ? undefined : () => setState(flow.openQueue())}
-          onLeaveTotem={onLeaveTotem}
+          onQueue={onCustomerPhone ? undefined : () => setState(flow.openQueue())}
+          onSwitchRole={onSwitchRole}
         />
       )}
       {state.screen === 'queue' && <QueueScreen menuUrl={menuUrl} totemIsTag={adapters.tag.available} onOrderHere={reset} />}

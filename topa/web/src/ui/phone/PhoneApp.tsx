@@ -8,26 +8,26 @@ import { PhoneHome } from './PhoneHome'
 
 interface PhoneAppProps {
   adapters: Adapters
-  onUseAsTotem: () => void
+  onSwitchRole?: () => void
 }
 
 /** The phone app: plain TOPA until a totem is read, then that store's ordering screens, with a way back. */
-export function PhoneApp({ adapters, onUseAsTotem }: PhoneAppProps) {
+export function PhoneApp({ adapters, onSwitchRole }: PhoneAppProps) {
   const [store, setStore] = useState<StoreRef | null>(null)
 
-  if (!store) return <PhoneHome nfc={adapters.nfc} onStore={setStore} onUseAsTotem={onUseAsTotem} />
+  if (!store) return <PhoneHome nfc={adapters.nfc} onStore={setStore} onSwitchRole={onSwitchRole} />
   // demo mode serves one catalog whatever the slug; the API will pick the store's menu from it
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
       <button
         type="button"
         onClick={() => setStore(null)}
-        className="flex min-h-16 flex-none items-center gap-3 bg-ink px-5 text-lg font-semibold text-white"
+        className="flex min-h-16 flex-none items-center gap-3 border-b border-line bg-cream px-5 text-lg font-semibold text-slate"
       >
         <ArrowLeftIcon size={24} />
         Ler outro totem
       </button>
-      <KioskApp adapters={adapters} inPhoneApp />
+      <KioskApp adapters={adapters} onCustomerPhone />
     </div>
   )
 }

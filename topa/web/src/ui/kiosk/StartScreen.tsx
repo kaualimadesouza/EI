@@ -1,17 +1,16 @@
 import { useEffect, useState } from 'react'
 
 import type { ConnectionPort } from '../../ports/connection'
+import { BrandMark } from '../BrandMark'
 import { DineInIcon, StoreMark, TakeAwayIcon } from '../icons'
-import { useHold } from '../use-hold'
 
 interface StartScreenProps {
   mode: 'api' | 'demo'
   connection: ConnectionPort
   onBegin: (dineIn: boolean) => void
-  /** Absent in the phone app, which is already the customer's phone. */
+  /** Absent on the customer's own phone, where there is no queue to send away. */
   onQueue?: () => void
-  /** Only on a device marked as totem: staff hold the TOPA mark to get the phone app back. */
-  onLeaveTotem?: () => void
+  onSwitchRole?: () => void
 }
 
 interface StatusLook {
@@ -32,9 +31,8 @@ function lookOf(status: 'checking' | 'demo' | 'online' | 'offline'): StatusLook 
   }
 }
 
-export function StartScreen({ mode, connection, onBegin, onQueue, onLeaveTotem }: StartScreenProps) {
+export function StartScreen({ mode, connection, onBegin, onQueue, onSwitchRole }: StartScreenProps) {
   const [reachability, setReachability] = useState<'checking' | 'online' | 'offline'>('checking')
-  const holdToLeave = useHold(onLeaveTotem)
 
   useEffect(() => {
     let current = true
@@ -100,11 +98,7 @@ export function StartScreen({ mode, connection, onBegin, onQueue, onLeaveTotem }
             <span aria-hidden="true" className={`size-3 rounded-full ${look.dot}`} />
             {look.label}
           </p>
-          <p {...holdToLeave} className="flex items-center gap-2 text-[18px] font-medium select-none">
-            <img src={`${import.meta.env.BASE_URL}topa-mark.png`} alt="" className="h-6 w-auto brightness-0 invert" />
-            por TOPA
-            <span className="text-[14px] tabular-nums">v{__APP_VERSION__}</span>
-          </p>
+          <BrandMark label="por TOPA" className="text-[18px] font-medium" onStaffTaps={onSwitchRole} />
         </div>
       </div>
     </section>

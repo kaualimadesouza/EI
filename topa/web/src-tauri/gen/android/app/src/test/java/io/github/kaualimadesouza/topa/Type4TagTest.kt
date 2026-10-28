@@ -56,6 +56,27 @@ class Type4TagTest {
         assertArrayEquals(OK, cc.status())
         assertArrayEquals(hex("000F 20 003B 0034 0406 E104"), cc.data().copyOfRange(0, 11))
         assertArrayEquals(hex("00 FF"), cc.data().copyOfRange(13, 15))
+        // the max NDEF size covers NLEN plus the record, or readers reject the tag
+        val ndefSize = 2 + readMessage(Type4Tag(), URL).size
+        assertArrayEquals(byteArrayOf((ndefSize shr 8).toByte(), ndefSize.toByte()), cc.data().copyOfRange(11, 13))
+    }
+
+    @Test
+    fun keepsTheUrlItHadWhenTheReaderSelectedTheApplication() {
+        val tag = Type4Tag()
+        tag.respond(SELECT_APP, URL)
+        tag.respond(SELECT_NDEF, "https://example.com/?loja=outra")
+
+        val nlen = tag.respond(read(0, 2), "https://example.com/?loja=outra").data()
+
+        assertEquals(readMessage(Type4Tag(), URL).size, ((nlen[0].toInt() and 0xFF) shl 8) or (nlen[1].toInt() and 0xFF))
+    }
+
+    @Test
+    fun switchesToTheLongRecordFormPast255PayloadBytes() {
+        // the payload is the prefix code plus the URL, so 254 characters fill a short record exactly
+        assertEquals(0xD1.toByte(), readMessage(Type4Tag(), "topa:" + "a".repeat(249))[0])
+        assertEquals(0xC1.toByte(), readMessage(Type4Tag(), "topa:" + "a".repeat(250))[0])
     }
 
     @Test
@@ -93,16 +114,19 @@ class Type4TagTest {
 
         assertArrayEquals(hex("6A82"), tag.respond(read(0, 2), URL))
         assertArrayEquals(hex("6A82"), tag.respond(hex("00A4000C02E105"), URL))
+        assertArrayEquals(hex("6A82"), tag.respond(hex("00A4000C01E1"), URL))
     }
 
     @Test
-    fun refusesAReadPastTheEndAndUnknownInstructions() {
+    fun refusesAReadFromTheEndOnAndUnknownOrForeignInstructions() {
         val tag = Type4Tag()
         tag.respond(SELECT_APP, URL)
         tag.respond(SELECT_CC, URL)
 
-        assertArrayEquals(hex("6B00"), tag.respond(read(16, 1), URL))
+        assertArrayEquals(hex("6B00"), tag.respond(read(15, 1), URL))
         assertArrayEquals(hex("6D00"), tag.respond(hex("00D6000001FF"), URL))
+        assertArrayEquals(hex("6D00"), tag.respond(hex("80B0000002"), URL))
+        assertArrayEquals(hex("6D00"), tag.respond(hex("00B0"), URL))
     }
 
     @Test

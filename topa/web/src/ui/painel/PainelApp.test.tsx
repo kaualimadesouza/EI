@@ -8,7 +8,7 @@ import type { Adapters } from '../../ports/adapters'
 import { OrderRejectedError } from '../../ports/orders'
 import { LocalMenu } from '../../adapters/local/local-menu'
 import { LocalOrders } from '../../adapters/local/local-orders'
-import { NoTag } from '../../adapters/unavailable/no-tag'
+import { UnavailableTag } from '../../adapters/unavailable/unavailable-tag'
 import { PainelApp, POLL_MS, UNDO_MS } from './PainelApp'
 
 class MemoryStorage {
@@ -38,7 +38,7 @@ function demoStore() {
     menu,
     orders: ordersAt(() => NOW),
     nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
-    tag: new NoTag(),
+    tag: new UnavailableTag(),
   }
   return { adapters, menu, ordersAt }
 }
@@ -274,7 +274,7 @@ describe('PainelApp', () => {
       menu: { list: () => Promise.reject(new Error('down')), setAvailability: vi.fn() },
       orders: { place: vi.fn(), list: () => Promise.reject(new Error('down')), setStatus: vi.fn() },
       nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
-      tag: new NoTag(),
+      tag: new UnavailableTag(),
     }
 
     renderPainel(failing)
@@ -308,7 +308,7 @@ describe('PainelApp', () => {
       menu: { list: () => Promise.resolve([suco]), setAvailability: () => Promise.reject(new Error('network')) },
       orders: { place: vi.fn(), list: () => Promise.resolve([order]), setStatus },
       nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
-      tag: new NoTag(),
+      tag: new UnavailableTag(),
     }
     renderPainel(adapters)
 

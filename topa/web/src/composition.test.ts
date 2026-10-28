@@ -10,7 +10,7 @@ import { TauriNfc } from './adapters/tauri/tauri-nfc'
 import { UnavailableNfc } from './adapters/unavailable/unavailable-nfc'
 import { WebNfc } from './adapters/web/web-nfc'
 import type { NdefReader } from './adapters/web/web-nfc'
-import { createAdapters, detectRuntime, isPhoneApp, type Runtime, setTotem } from './composition'
+import { createAdapters, detectRuntime, isPhoneApp, roleSwitch, type Runtime } from './composition'
 
 const browser: Runtime = { tauri: false, mobile: false, totem: false, ndefReader: undefined, tagBridge: undefined }
 const androidApp: Runtime = { ...browser, tauri: true, mobile: true }
@@ -122,14 +122,6 @@ describe('detectRuntime', () => {
     expect(detectRuntime().tagBridge).toBe(tagBridge)
   })
 
-  it('remembers a device marked as totem across starts, until it is unmarked', () => {
-    setTotem(true)
-    expect(detectRuntime().totem).toBe(true)
-
-    setTotem(false)
-    expect(detectRuntime().totem).toBe(false)
-  })
-
   it('sees the Tauri app on an Android phone', () => {
     vi.stubGlobal('isTauri', true)
     vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
@@ -143,6 +135,37 @@ describe('detectRuntime', () => {
     vi.stubGlobal('NDEFReader', FakeNdefReader)
 
     expect(detectRuntime().ndefReader).toBe(FakeNdefReader)
+  })
+})
+
+describe('roleSwitch', () => {
+  afterEach(() => localStorage.clear())
+
+  it('turns the Android phone app into a totem from the next start, withdrawing any tag first', () => {
+    const tagBridge = { publish: vi.fn(), withdraw: vi.fn() }
+    const reload = vi.fn()
+
+    roleSwitch({ ...androidApp, tagBridge }, reload)!()
+
+    expect(detectRuntime().totem).toBe(true)
+    expect(tagBridge.withdraw).toHaveBeenCalledOnce()
+    expect(reload).toHaveBeenCalledOnce()
+  })
+
+  it('turns a totem back into the phone app, so it stops answering as a tag after the reload', () => {
+    const tagBridge = { publish: vi.fn(), withdraw: vi.fn() }
+    roleSwitch(androidApp, vi.fn())!()
+
+    roleSwitch({ ...androidApp, totem: true, tagBridge }, vi.fn())!()
+
+    expect(detectRuntime().totem).toBe(false)
+    expect(tagBridge.withdraw).toHaveBeenCalledOnce()
+  })
+
+  it('has nothing to switch in a browser or the desktop app', () => {
+    expect(roleSwitch(browser, vi.fn())).toBeUndefined()
+    expect(roleSwitch({ ...browser, mobile: true }, vi.fn())).toBeUndefined()
+    expect(roleSwitch(desktopApp, vi.fn())).toBeUndefined()
   })
 })
 

@@ -10,8 +10,8 @@ import { LocalMenu } from './adapters/local/local-menu'
 import { LocalOrders } from './adapters/local/local-orders'
 import { TauriNfc } from './adapters/tauri/tauri-nfc'
 import { type TagBridge, TauriTag } from './adapters/tauri/tauri-tag'
-import { NoTag } from './adapters/unavailable/no-tag'
 import { UnavailableNfc } from './adapters/unavailable/unavailable-nfc'
+import { UnavailableTag } from './adapters/unavailable/unavailable-tag'
 import { type NdefReader, WebNfc } from './adapters/web/web-nfc'
 import type { Adapters } from './ports/adapters'
 import type { NfcPort } from './ports/nfc'
@@ -20,7 +20,7 @@ import type { NfcPort } from './ports/nfc'
 export interface Runtime {
   tauri: boolean
   mobile: boolean
-  /** Someone turned this device into a totem from the phone app. */
+  /** Staff turned this Android device into a totem (see `roleSwitch`). */
   totem: boolean
   ndefReader: (new () => NdefReader) | undefined
   tagBridge: TagBridge | undefined
@@ -38,9 +38,15 @@ export function detectRuntime(): Runtime {
   }
 }
 
-/** From the next start on, this device runs the kiosk (true) or the phone app (false). */
-export function setTotem(totem: boolean): void {
-  totemFlag().write(totem)
+/** The staff gesture on the Android app: flip phone and totem across a reload. Nothing to flip elsewhere. */
+export function roleSwitch(runtime: Runtime, reload: () => void): (() => void) | undefined {
+  if (!(runtime.tauri && runtime.mobile)) return undefined
+  return () => {
+    totemFlag().write(!runtime.totem)
+    // a reload skips React cleanups, while the published URL lives on in the Android process
+    runtime.tagBridge?.withdraw()
+    reload()
+  }
 }
 
 /** The phone app is the Tauri build on a phone not marked as totem; every other runtime shows the kiosk. */
@@ -59,7 +65,7 @@ function nfcFor(runtime: Runtime): NfcPort {
 /** The only place that picks adapters: an API URL means the local backend, none means demo mode. */
 export function createAdapters(apiUrl: string | undefined, runtime: Runtime = detectRuntime()): Adapters {
   const nfc = nfcFor(runtime)
-  const tag = runtime.tagBridge ? new TauriTag(runtime.tagBridge) : new NoTag()
+  const tag = runtime.tagBridge ? new TauriTag(runtime.tagBridge) : new UnavailableTag()
   if (apiUrl) {
     const client = new HttpClient(apiUrl)
     return {
