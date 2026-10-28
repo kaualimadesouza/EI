@@ -1,12 +1,7 @@
 name: API
 
+# main gets this through api-deploy.yml, which runs it before every deploy
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - topa/api/**
-      - .github/workflows/api.yml
   pull_request:
     branches:
       - main
@@ -14,6 +9,7 @@ on:
       - topa/api/**
       - .github/workflows/api.yml
   workflow_dispatch:
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -53,3 +49,7 @@ jobs:
       - run: make lint
       - name: Test (100% coverage, migration roundtrip included)
         run: make test
+      # the deploy builds it anyway, so only a pull request needs the check
+      - name: Build the Lambda image
+        if: github.event_name == 'pull_request'
+        run: docker build -f Dockerfile.lambda .

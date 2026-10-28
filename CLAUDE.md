@@ -15,8 +15,9 @@ and UI copy is in Portuguese; code is in English.
   (pure rules), `src/ports` (interfaces, plus the `Adapters` the UI receives: the mode and its ports),
   `src/adapters/http` (the API), `src/adapters/local` (demo mode, no backend) and `src/ui`.
   `src/composition.ts` is the only place that picks adapters:
-  `VITE_API_URL` set means the API, unset means demo mode. It must be same-origin (`/api`, proxied by
-  Vite) because the API sends no CORS headers. `eslint.config.js` enforces the layer boundaries.
+  `VITE_API_URL` set means the API, unset means demo mode. Locally it is `/api`, proxied by Vite; a
+  deployed build takes the API's full URL, which answers CORS only for the origins in
+  `topa/api/infrastructure/main.tf`. `eslint.config.js` enforces the layer boundaries.
   Tokens live in the `@theme` block of `src/index.css`, which resets Tailwind's default palette.
   `npm run check` runs lint, typecheck, tests (100% coverage) and build, as CI does.
 - `topa/api/`: FastAPI + SQLAlchemy 2 + Alembic + Postgres, managed with uv. Hexagonal; import-linter
@@ -29,8 +30,11 @@ and UI copy is in Portuguese; code is in English.
   (http://localhost:5180, proxying `/api` to the api container). `make test` and `make lint` cover both
   sides and run on the host (only the api tests' Postgres comes from compose): Node 24 (or
   `npx -y npm@11 ci` in `topa/web` on older Node) plus uv.
-  Both CIs demand 100% coverage. The backend runs only locally for now; `.github/workflows/web.yml`
-  checks the web app and deploys it to the Vercel project `topa-totem` in demo mode (a preview per
+  Both CIs demand 100% coverage. The API deploys to AWS Lambda behind API Gateway, with Postgres on
+  Neon, through `.github/workflows/api-deploy.yml`: straight to prod on every push to main that
+  touches the API (setup in `topa/api/infrastructure/README.md`). AWS commands always take
+  `--profile argumenta-ai`, the owner's personal account: the machine's default profile is the work
+  account. `.github/workflows/web.yml` checks the web app and deploys it to the Vercel project `topa-totem` in demo mode (a preview per
   PR, the DEV alias on push to main, PROD when release-please cuts a release) once the repo holds
   the Vercel secrets; until then the deploy job is skipped and PROD goes out by hand with the
   Vercel CLI.

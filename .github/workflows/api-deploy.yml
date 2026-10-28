@@ -1,0 +1,113 @@
+name: API deploy
+
+# Builds topa/api as a Lambda image and applies topa/api/infrastructure with Terraform, straight
+# to PROD on every push to main that touches the API (there is no other stage). Stays dormant until
+# the AWS secrets exist; the one-time setup is in topa/api/infrastructure/README.md.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - topa/api/**
+      - .github/workflows/api.yml
+      - .github/workflows/api-deploy.yml
+  workflow_dispatch:
+
+# one deploy at a time, never cancelled halfway through a migration
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # the only CI main gets for the API: api.yml itself runs on pull requests
+  ci:
+    uses: ./.github/workflows/api.yml
+
+  # a job-level `if` cannot read secrets, so this decides once whether the deploy runs
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - id: check
+        env:
+          READY: ${{ secrets.AWS_ACCESS_KEY_ID != '' && secrets.AWS_SECRET_ACCESS_KEY != '' && vars.TF_STATE_BUCKET != '' }}
+        run: |
+          if [ "$GITHUB_REF" != refs/heads/main ]; then
+            echo "::error::the API deploys only from main, not $GITHUB_REF"
+            exit 1
+          fi
+          if [ "$READY" != true ]; then
+            echo "::warning::deploy skipped: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY or TF_STATE_BUCKET is missing"
+          fi
+          echo "ready=$READY" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: [ci, preflight]
+    if: needs.preflight.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }} # pragma: allowlist secret
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # pragma: allowlist secret
+          aws-region: us-east-1
+
+      - id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-buildx-action@v3
+
+      # a rerun of the same commit reuses the image it already pushed
+      - name: Build and push the Lambda image
+        working-directory: topa/api
+        env:
+          IMAGE: ${{ steps.ecr-login.outputs.registry }}/topa-api:${{ github.sha }}
+        run: |
+          if aws ecr describe-images --repository-name topa-api --image-ids imageTag="$GITHUB_SHA" >/dev/null 2>&1; then
+            echo "image for $GITHUB_SHA already in ECR"
+          else
+            docker buildx build --platform linux/amd64 --provenance=false --push -f Dockerfile.lambda -t "$IMAGE" .
+          fi
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: 0.9.26
+
+      # before the new image serves, so a migration must work with the code still running;
+      # the direct URL, because Neon's pooler cannot hold the session a migration needs
+      - name: Migrate the database
+        working-directory: topa/api
+        env:
+          TOPA_DATABASE_URL: ${{ secrets.TOPA_DATABASE_URL_DIRECT }}
+        run: |
+          uv sync --locked --no-dev
+          uv run --no-dev alembic upgrade head
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        working-directory: topa/api/infrastructure
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=topa-api/app/terraform.tfstate" \
+            -backend-config="region=us-east-1"
+
+      - name: Terraform apply
+        working-directory: topa/api/infrastructure
+        env:
+          TF_VAR_image_uri: ${{ steps.ecr-login.outputs.registry }}/topa-api:${{ github.sha }}
+          TF_VAR_topa_database_url: ${{ secrets.TOPA_DATABASE_URL }}
+        run: terraform apply -auto-approve -input=false
+
+      - name: Show the API URL
+        working-directory: topa/api/infrastructure
+        run: |
+          echo "API: $(terraform output -raw api_url)" >> "$GITHUB_STEP_SUMMARY"
