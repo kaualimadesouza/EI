@@ -2,7 +2,7 @@ name: Web
 
 # Checks topa/web, then deploys it with the Vercel CLI (the git integration stays off in
 # vercel.json): a preview per PR, DEV on push to main, PROD from release-please or by hand.
-# DEV and PROD talk to the API through topa/web/.env.production; a PR preview runs in demo mode.
+# Every deploy talks to the API named in topa/web/.env.production (see topa/web/README.md).
 on:
   push:
     branches:
@@ -116,18 +116,15 @@ jobs:
       - run: npm ci
       - run: npm i -g vercel@59.10.0
       - run: vercel pull --yes --environment="$VERCEL_ENV" --token="$VERCEL_TOKEN"
-      # PROD_FLAG is unquoted on purpose: empty outside prod, it must vanish from the command.
-      # The API's CORS list holds the DEV and PROD aliases, not a preview's own URL, so a preview
-      # builds with an empty VITE_API_URL (it beats .env.production) and runs in demo mode.
+      # PROD_FLAG is unquoted on purpose: empty outside prod, it must vanish from the command
       - run: |
-          if [ "$ENV_NAME" = pr ]; then export VITE_API_URL=; fi
           # shellcheck disable=SC2086
           vercel build $PROD_FLAG --token="$VERCEL_TOKEN"
 
       - name: Deploy
         id: deploy
         env:
-          DEV_ALIAS: ${{ vars.VERCEL_DEV_ALIAS || 'topa-totem-dev.vercel.app' }}
+          DEV_ALIAS: topa-totem-dev.vercel.app
         run: |
           # shellcheck disable=SC2086
           URL=$(vercel deploy --prebuilt $PROD_FLAG --token="$VERCEL_TOKEN")
