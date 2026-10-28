@@ -60,18 +60,19 @@ Na nuvem, o front está publicado em modo demonstração, sem API, em
 
 ## Arquitetura final
 
-Como o sistema fica quando sair do modo demonstração, do usuário até o banco de dados. O caminho
-até lá, fase por fase, está em [`docs/caminho-para-producao.md`](docs/caminho-para-producao.md).
+Como o sistema fica no fim, depois de todas as fases e apostas, do usuário até o banco de dados.
+O caminho até lá, fase por fase, está em [`docs/caminho-para-producao.md`](docs/caminho-para-producao.md).
 
 ```mermaid
 %%{init: {"htmlLabels": false, "flowchart": {"htmlLabels": false}}}%%
 flowchart TB
-    cliente(["Cliente"])
+    %% SVG labels on purpose: GitHub clips the default HTML labels
     lojista(["Lojista"])
+    cliente(["Cliente"])
 
     subgraph loja["Na loja"]
-        totem["Totem<br/>pedido, pagamento,<br/>recomendação<br/>e cópia local"]
         painel["Painel do lojista<br/>pedidos e cardápio"]
+        totem["Totem<br/>pedido, pagamento,<br/>recomendação<br/>e cópia local"]
     end
 
     celular["Celular do cliente<br/>navegador ou app"]
@@ -84,27 +85,24 @@ flowchart TB
         fiscal["Fiscal e ERP<br/>a definir"]
     end
 
+    lojista --> painel
     cliente -- "pede no totem" --> totem
     cliente -- "fila grande" --> celular
-    totem -. "NFC ou QR Code" .-> celular
-    lojista --> painel
+    totem -. "link da loja por<br/>NFC ou QR Code" .-> celular
 
-    totem <-- "Wi-Fi da loja" --> painel
+    painel <-- "direto, sem internet" --> totem
+    painel <-- "sincroniza quando<br/>há internet" --> servidor
     totem <-- "sincroniza quando<br/>há internet" --> servidor
     celular -- "internet do celular" --> servidor
     servidor --> banco
 
-    totem -- "cartão" --> pagamentos
-    servidor -- "Pix" --> pagamentos
     servidor --> fiscal
+    servidor -- "Pix" --> pagamentos
+    totem -- "cartão" --> pagamentos
 ```
 
-A seta tracejada não é uma conexão de rede: é o link da loja que o totem passa ao celular do
-cliente, por NFC ou QR Code, quando a fila está grande.
-
-Sem internet, a loja continua vendendo. O totem guarda uma cópia local do cardápio, dos esgotados
-e da fila de pedidos, fala com o painel pelo Wi-Fi da loja e sincroniza com o servidor quando a
-conexão volta. O que muda no pagamento e nos pedidos pelo celular nesse período está em
+Sem internet, a loja continua vendendo: o totem e o painel trabalham sobre uma cópia local e
+sincronizam com o servidor quando a conexão volta. O desenho está em
 [Vender sem internet](docs/caminho-para-producao.md#vender-sem-internet).
 
 ## Como compilar os documentos

@@ -70,9 +70,8 @@ the MVP monorepo (`topa/web/`, `topa/api/`). The repo is public.
    on the PR timeline is the confirmation.
 10. CI green, squash-merge, delete the branch, move the card to **Done**
     (`Closes #<n>` closes the issue). Merging the release-please PR cuts a
-    release with the installers and the APK. The Vercel deploys (DEV on a merge
-    to main, PROD on a release) run only once the repo holds the Vercel secrets;
-    until then PROD (`topa-totem.vercel.app`) goes out by hand with the Vercel CLI.
+    release; what each merge deploys, and what still goes out by hand, is in
+    `CLAUDE.md`.
 
 ## Board operations
 
