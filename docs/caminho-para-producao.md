@@ -50,21 +50,10 @@ a fase 2.
    - sugestões configuráveis: as regras de `topa/web/src/domain/suggest.ts` citam produtos do
      cardápio de demonstração pelo id, e um texto depende dos preços dele ("Sai R$ 1,90 mais
      barato que separado").
-6. **Dois apps: o da loja e o do cliente** (issue #36). Hoje é um APK só: ele abre como app do
-   cliente, e 5 toques na marca TOPA transformam o aparelho em totem (`roleSwitch` em
-   `topa/web/src/composition.ts`); o painel existe só na web (`/painel`). Qualquer cliente que
-   instale o app consegue virar totem. A decisão de 28/10/2026 é gerar dois apps do mesmo código:
-   - **app da loja:** o totem (com a etiqueta NFC e o modo quiosque) e o painel, atrás do login
-     do item 4;
-   - **app do cliente:** só ler o totem e pedir, sem login. Continua opcional, porque a promessa
-     do pitch é pedir sem instalar nada: o caminho principal do cliente é o link no navegador.
-
-   Cada app tem nome de pacote, ícone e assinatura próprios, e o CI passa a gerar os dois APKs.
-   Como gerar as duas variantes pelo Tauri ainda precisa ser verificado.
 
 Pronto quando: um pedido feito no celular aparece no painel de outro aparelho; um esgotado
 marcado no painel aparece esgotado no celular; o lojista cadastra um produto e ele aparece no
-totem; sem login, ninguém altera o cardápio nem lê os pedidos; e só o app da loja vira totem.
+totem; e, sem login, ninguém altera o cardápio nem lê os pedidos.
 
 ## Fase 2: várias lojas
 
@@ -100,6 +89,9 @@ taxas, contrato e o SDK para Android. Hoje o pagamento é simulado: o QR do Pix 
 ## Fase 4: operação
 
 - **APK:**
+  - dois apps do mesmo código (issue #36): o da loja, com o totem e o painel atrás do login do
+    lojista, e o do cliente, que só lê o totem e pede. Hoje um APK só abre como cliente, e 5
+    toques rápidos na marca TOPA transformam o celular em totem;
   - uma keystore fixa guardada como secret. Hoje cada build do CI assina com uma chave de debug
     nova, e o Android recusa instalar um APK por cima de outro assinado com chave diferente;
   - build de release em vez de debug. O debug usa o id `...topa.debug`, então o de release se
