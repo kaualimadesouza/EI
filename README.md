@@ -55,9 +55,81 @@ dentro de `topa/web`) e do [uv](https://docs.astral.sh/uv/) para a API.
 O front encontra a API por `VITE_API_URL`, que precisa ser do mesmo domínio (`/api`, repassado pelo
 servidor do Vite), porque a API não libera CORS. Sem essa variável, o front abre em modo demonstração.
 
-Na nuvem, o front é publicado na Vercel em modo demonstração, sem API:
-[topa-totem-dev.vercel.app](https://topa-totem-dev.vercel.app) recebe cada push na `main`, e
-[topa-totem.vercel.app](https://topa-totem.vercel.app) recebe cada release.
+Na nuvem, o front está publicado na Vercel em modo demonstração, sem API, em
+[topa-totem.vercel.app](https://topa-totem.vercel.app). Por enquanto a publicação é manual, pela
+Vercel CLI: o deploy automático do CI (prévia por PR, DEV a cada push na `main` e produção a cada
+release) só roda quando o repositório tiver os secrets da Vercel.
+
+## Arquitetura final
+
+Como o sistema fica quando sair do modo demonstração, do usuário até o banco de dados. Hoje só
+o front está publicado, em modo demonstração; a API e o Postgres rodam apenas na máquina
+local. O caminho até lá, fase por fase, está em
+[`docs/caminho-para-producao.md`](docs/caminho-para-producao.md).
+
+```mermaid
+flowchart TB
+    cliente(["Cliente"])
+    lojista(["Lojista"])
+
+    subgraph celular["Celular do cliente"]
+        site["Site TOPA no navegador<br/>sem instalar nada"]
+        appcliente["App do cliente<br/>opcional"]
+    end
+
+    subgraph loja["App da loja"]
+        totem["Modo totem<br/>tablet ou celular Android<br/>NFC e QR Code com o link da loja<br/>fila local quando a internet cai"]
+        painel["Modo painel<br/>pedidos, esgotados e cardápio"]
+    end
+
+    subgraph nuvem["Nuvem"]
+        vercel["Vercel<br/>site estático e rewrite de /api"]
+        subgraph api["API TOPA em FastAPI"]
+            rotas["Rotas REST<br/>login do lojista e token do totem"]
+            casos["Casos de uso<br/>fazer pedido, mover status, esgotar produto"]
+            dominio["Domínio<br/>regras de cardápio e pedido"]
+            repos["Repositórios<br/>SQLAlchemy"]
+        end
+        db[("Postgres gerenciado<br/>lojas, produtos e pedidos")]
+    end
+
+    subgraph externos["Serviços externos"]
+        credenciadora["Credenciadora<br/>cartão por aproximação"]
+        psp["Provedor Pix<br/>QR dinâmico e webhook"]
+        fiscal["ERP e NFC-e da loja"]
+    end
+
+    cliente -- "fila grande: usa o próprio celular" --> celular
+    cliente -- "pede no totem" --> totem
+    lojista --> painel
+    totem -. "NFC ou QR: link da loja" .-> celular
+
+    site --> vercel
+    vercel -- "/api/*" --> rotas
+    appcliente -- "HTTPS" --> rotas
+    totem -- "HTTPS + token do totem" --> rotas
+    painel -- "HTTPS + login" --> rotas
+
+    rotas --> casos
+    casos --> dominio
+    casos --> repos
+    repos --> db
+
+    totem -- "SDK Tap on Phone" --> credenciadora
+    casos -- "cria a cobrança Pix" --> psp
+    psp -- "webhook: pago" --> rotas
+    casos -. "a definir" .-> fiscal
+```
+
+- **Cliente:** pede no totem ou, com fila, no próprio celular: encosta no totem (NFC) ou lê o QR
+  Code, e a loja abre no navegador, sem instalar nada. O app do cliente é opcional.
+- **Lojista:** usa o app da loja, que tem o modo totem e o modo painel, este com login.
+- **API:** segue a arquitetura hexagonal do MVP. As rotas chamam os casos de uso, que aplicam as
+  regras do domínio e gravam no Postgres pelos repositórios.
+- **Pagamento:** o cartão passa pelo SDK *Tap on Phone* da credenciadora, no próprio totem; o Pix
+  é cobrado pela API, e o provedor confirma o pagamento por webhook.
+- **Setas tracejadas:** não são chamadas de rede. Uma é o link que o totem entrega ao celular; a
+  outra, a integração fiscal com o ERP da loja, que ainda está a definir.
 
 ## Como compilar os documentos
 
