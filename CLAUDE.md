@@ -31,7 +31,9 @@ and UI copy is in Portuguese; code is in English.
   `npx -y npm@11 ci` in `topa/web` on older Node) plus uv.
   Both CIs demand 100% coverage. The backend runs only locally for now; `.github/workflows/web.yml`
   checks the web app and deploys it to the Vercel project `topa-totem` in demo mode (a preview per
-  PR, the DEV alias on push to main, PROD when release-please cuts a release).
+  PR, the DEV alias on push to main, PROD when release-please cuts a release) once the repo holds
+  the Vercel secrets; until then the deploy job is skipped and PROD goes out by hand with the
+  Vercel CLI. `docs/caminho-para-producao.md` lists what leaving demo mode takes.
 - release-please versions the `topa` package only, so only commits touching `topa/` release; it bumps
   every version file listed in `.github/release-please-config.json` and writes `topa/CHANGELOG.md`.
   A lock entry there filters on `@.name.value`: release-please wraps TOML values, so `@.name` matches
@@ -46,7 +48,8 @@ upsell recommendations, queue overflow to the customer's phone via QR/NFC (no ap
 sales via edge computing. `docs/situacoes_EI_2026.pdf` (proposal) and `docs/Logo - Startup TOPA.pdf`
 (pitch slides) are the source of truth for product claims; do not invent numbers beyond them.
 
-- `docs/`: reference material already delivered (proposal with its `.tex`, pitch slides).
+- `docs/`: reference material already delivered (proposal with its `.tex`, pitch slides), plus
+  `caminho-para-producao.md`, the phased plan from demo mode to production.
 - `entrevistas-prototipo/`: the user-interview assignment (given 21/09/2026). Each of the 5 members
   interviews 15 **end users** (whoever places the order, not the merchant) using Victor's 3-screen,
   9-question script, approved by the group on 28/09. Its `README.md` holds the task rules and pending
