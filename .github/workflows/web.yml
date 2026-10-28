@@ -2,7 +2,7 @@ name: Web
 
 # Checks topa/web, then deploys it with the Vercel CLI (the git integration stays off in
 # vercel.json): a preview per PR, DEV on push to main, PROD from release-please or by hand.
-# No VITE_API_URL in the cloud: the deployed app runs in demo mode.
+# Every deploy talks to the API named in topa/web/.env.production (see topa/web/README.md).
 on:
   push:
     branches:
@@ -124,7 +124,7 @@ jobs:
       - name: Deploy
         id: deploy
         env:
-          DEV_ALIAS: ${{ vars.VERCEL_DEV_ALIAS || 'topa-totem-dev.vercel.app' }}
+          DEV_ALIAS: topa-totem-dev.vercel.app
         run: |
           # shellcheck disable=SC2086
           URL=$(vercel deploy --prebuilt $PROD_FLAG --token="$VERCEL_TOKEN")

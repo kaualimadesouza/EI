@@ -43,3 +43,17 @@ def test_cors_origins_come_as_a_json_list(monkeypatch: pytest.MonkeyPatch) -> No
     )
 
     assert Settings().cors_origins == ["https://topa-totem.vercel.app", "tauri://localhost"]
+
+
+def test_no_origin_pattern_is_allowed_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("TOPA_CORS_ORIGIN_REGEX", raising=False)
+
+    assert Settings().cors_origin_regex is None
+
+
+def test_the_origin_pattern_follows_the_topa_prefixed_variable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("TOPA_CORS_ORIGIN_REGEX", "^https://topa-totem[.]vercel[.]app$")
+
+    assert Settings().cors_origin_regex == "^https://topa-totem[.]vercel[.]app$"

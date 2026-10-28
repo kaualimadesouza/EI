@@ -15,9 +15,10 @@ and UI copy is in Portuguese; code is in English.
   (pure rules), `src/ports` (interfaces, plus the `Adapters` the UI receives: the mode and its ports),
   `src/adapters/http` (the API), `src/adapters/local` (demo mode, no backend) and `src/ui`.
   `src/composition.ts` is the only place that picks adapters:
-  `VITE_API_URL` set means the API, unset means demo mode. Locally it is `/api`, proxied by Vite; a
-  deployed build takes the API's full URL, which answers CORS only for the origins in
-  `topa/api/infrastructure/main.tf`. `eslint.config.js` enforces the layer boundaries.
+  `VITE_API_URL` set means the API, unset or empty means demo mode: `/api` under `make run`, the
+  deployed API in every production build, read from `topa/web/.env.production` (one environment;
+  see "Which API a build talks to" in `topa/web/README.md`). `eslint.config.js` enforces the layer
+  boundaries.
   Tokens live in the `@theme` block of `src/index.css`, which resets Tailwind's default palette.
   `npm run check` runs lint, typecheck, tests (100% coverage) and build, as CI does.
 - `topa/api/`: FastAPI + SQLAlchemy 2 + Alembic + Postgres, managed with uv. Hexagonal; import-linter
@@ -34,10 +35,10 @@ and UI copy is in Portuguese; code is in English.
   Neon, through `.github/workflows/api-deploy.yml`: straight to prod on every push to main that
   touches the API (setup in `topa/api/infrastructure/README.md`). AWS commands always take
   `--profile argumenta-ai`, the owner's personal account: the machine's default profile is the work
-  account. `.github/workflows/web.yml` checks the web app and deploys it to the Vercel project `topa-totem` in demo mode (a preview per
-  PR, the DEV alias on push to main, PROD when release-please cuts a release) once the repo holds
-  the Vercel secrets; until then the deploy job is skipped and PROD goes out by hand with the
-  Vercel CLI.
+  account. `.github/workflows/web.yml` checks the web app and deploys it to the Vercel project
+  `topa-totem` (a preview per PR, the DEV alias on push to main, PROD when release-please cuts a
+  release) once the repo holds the Vercel secrets; until then the deploy job is skipped and PROD
+  goes out by hand with the Vercel CLI (recipe in `topa/web/README.md`).
 - release-please versions the `topa` package only, so only commits touching `topa/` release; it bumps
   every version file listed in `.github/release-please-config.json` and writes `topa/CHANGELOG.md`.
   A lock entry there filters on `@.name.value`: release-please wraps TOML values, so `@.name` matches

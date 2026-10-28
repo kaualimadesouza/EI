@@ -1,8 +1,7 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  // `/api` locally, proxied by Vite; a deployed build takes the API's full URL, whose CORS list
-  // (topa/api/infrastructure/main.tf) must include the origin the build is served from
+  // `/api` under `make run`; production builds read the deployed API's URL from .env.production
   readonly VITE_API_URL?: string
 }
 

@@ -75,7 +75,7 @@ describe('PainelApp', () => {
     expect(within(tiles).getByText('Sem base para comparar com ontem')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Painel do lojista' })).toBeInTheDocument()
     expect(screen.getByText('Segunda-feira, 26 de outubro', { exact: false })).toBeInTheDocument()
-    expect(screen.getByText('Modo demonstração: dados deste navegador, atualiza a cada 3 s')).toBeInTheDocument()
+    expect(screen.getByText('Modo demonstração: dados deste navegador, atualizados a cada 3 s')).toBeInTheDocument()
   })
 
   it('says a flat day is flat and leaves the take-away share without a good side', async () => {
@@ -286,9 +286,9 @@ describe('PainelApp', () => {
     renderPainel(failing)
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'O servidor local não responde. Os números abaixo podem estar desatualizados.',
+      'O servidor não responde. Os números abaixo podem estar desatualizados.',
     )
-    expect(screen.getByText('Servidor local, atualiza a cada 3 s')).toBeInTheDocument()
+    expect(screen.getByText('Dados do servidor, atualizados a cada 3 s')).toBeInTheDocument()
   })
 
   it('shows why a move or a toggle failed, in words for the merchant', async () => {

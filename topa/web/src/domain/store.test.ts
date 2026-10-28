@@ -48,7 +48,7 @@ describe('storeFromUrl', () => {
 })
 
 describe('phoneMenuUrl', () => {
-  it('points to the hosted demo when the totem runs on loopback, a wildcard bind, or an opaque origin', () => {
+  it('points to the hosted site when the totem runs on loopback, a wildcard bind, or an opaque origin', () => {
     for (const origin of [
       'http://localhost:5180',
       'http://localhost.:5180',

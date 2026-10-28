@@ -30,6 +30,8 @@ __pycache__/
 .env
 .env.*
 !.env.example
+# the web build's public VITE_ settings; private overrides go in .env.production.local
+!topa/web/.env.production
 .playwright-mcp/
 .import_linter_cache/
 
