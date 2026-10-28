@@ -33,7 +33,7 @@ and UI copy is in Portuguese; code is in English.
   checks the web app and deploys it to the Vercel project `topa-totem` in demo mode (a preview per
   PR, the DEV alias on push to main, PROD when release-please cuts a release).
 - release-please versions the `topa` package only, so only commits touching `topa/` release; it bumps
-  `web/package.json`, `web/package-lock.json` and `api/pyproject.toml` and writes `topa/CHANGELOG.md`.
+  `web/package.json`, `web/package-lock.json`, `api/pyproject.toml` and `api/uv.lock` and writes `topa/CHANGELOG.md`.
 - Skills in `.claude/skills/` (card-workflow, design-tokens, portuguese-copy, tdd,
   thermo-nuclear-code-quality-review) hold the working conventions; follow them.
 
