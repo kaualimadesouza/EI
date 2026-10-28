@@ -2,6 +2,7 @@ from collections.abc import Iterator
 from typing import Annotated
 
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
@@ -17,6 +18,7 @@ from topa_api.presentation.fastapi.errors import install_error_handlers
 from topa_api.presentation.fastapi.health import router as health_router
 from topa_api.presentation.fastapi.orders import router as orders_router
 from topa_api.presentation.fastapi.products import router as products_router
+from topa_api.settings import Settings
 
 
 def get_session(engine: Annotated[Engine, Depends(get_engine)]) -> Iterator[Session]:
@@ -41,6 +43,13 @@ def order_repository(
 def create_app() -> FastAPI:
     """Composition root: the one place that picks the adapter behind each port."""
     app = FastAPI(title="TOPA API")
+    # the site and the apps' webviews call from other origins; every JSON body is preflighted
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=Settings().cors_origins,
+        allow_methods=["GET", "POST", "PATCH"],
+        allow_headers=["content-type"],
+    )
     install_error_handlers(app)
     probe = DatabaseReadinessProbe(get_engine())
     app.dependency_overrides.update(

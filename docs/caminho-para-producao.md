@@ -12,25 +12,23 @@ e guarda pedidos e esgotados no `localStorage` de cada aparelho, sem sincronizar
 ## Fase 1: uma loja de verdade
 
 Objetivo: a Lanchonete Bem-te-vi com dados num servidor, e totem, celular, site e painel vendo
-os mesmos pedidos e esgotados. A issue #32 já cobre parte desta fase (itens 1 a 3) junto com
+os mesmos pedidos e esgotados. A issue #32 já cobre parte desta fase (itens 1 e 2) junto com
 a fase 2.
 
-1. **Publicar a API e o banco.** A API roda só na máquina local, e o `topa/api/Dockerfile` é
-   uma imagem de desenvolvimento (`uvicorn --reload`), não de produção. Falta:
-   - uma imagem de produção da API;
-   - um servidor para ela e um Postgres gerenciado (a escolha do provedor está em aberto);
-   - rodar `alembic upgrade head` a cada deploy, com `TOPA_DATABASE_URL` como secret;
+1. **Publicar a API e o banco.** A API vai para a AWS Lambda (imagem
+   `topa/api/Dockerfile.lambda`), atrás de um API Gateway, com o Postgres no Neon, no mesmo
+   molde do kbjmodas-api. O deploy (`.github/workflows/api-deploy.yml`) roda
+   `alembic upgrade head` antes de cada versão. Falta:
+   - a configuração única do dono: projeto no Neon, bootstrap na AWS e secrets no GitHub
+     (`topa/api/infrastructure/README.md`);
    - monitorar pelo `/health/ready`, que já existe.
-2. **Ligar o site à API.** Um rewrite na Vercel de `/api/*` para a API, tirando o prefixo
-   `/api` (as rotas da API ficam na raiz, como mostra o proxy em `topa/web/vite.config.ts`).
-   Ele precisa vir antes do rewrite que manda tudo para `index.html` em
-   `topa/web/vercel.json`: hoje `/api/health` responde 200 com a página do app, e o app
-   acharia que a API está no ar. `VITE_API_URL=/api` entra nas variáveis do projeto na Vercel.
-   Como o site e a API ficam na mesma origem, a API continua sem precisar de CORS.
-3. **Ligar o app à API.** As telas do app rodam em outra origem (`http://tauri.localhost` no
-   Android e no Windows, `tauri://localhost` no macOS e no Linux), e a API não envia cabeçalhos
-   de CORS. Duas saídas: a API libera CORS só para essas origens, ou o app faz as chamadas pelo
-   plugin HTTP do Tauri. O build do APK recebe `VITE_API_URL` com o endereço completo da API.
+2. **Ligar o site e o app à API.** A API libera CORS para o site de cada ambiente e para as
+   origens do app (`http://tauri.localhost` no Android e no Windows, `tauri://localhost` no
+   macOS e no Linux), em `topa/api/infrastructure/main.tf`. Falta o build do site e o do APK
+   receberem `VITE_API_URL` com o endereço da API, que o primeiro deploy mostra.
+3. **Partida a frio.** A primeira requisição depois de um tempo parado leva alguns segundos,
+   e a pílula de status do servidor desiste em 3 s (`topa/web/src/adapters/http/http-connection.ts`).
+   Um agendamento que chama a API a cada poucos minutos a mantém quente.
 4. **Autenticação.** A API não tem login. Quem souber o endereço:
    - marca produto esgotado (`PATCH /products/{id}`);
    - muda o status de um pedido (`PATCH /orders/{id}`);
@@ -104,8 +102,7 @@ taxas, contrato e o SDK para Android. Hoje o pagamento é simulado: o QR do Pix 
 - **Deploy automático:**
   - os secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID` e `VERCEL_PROJECT_ID` no repo. Sem eles o job de
     deploy do `web.yml` é pulado e a produção sai à mão pela Vercel CLI;
-  - o secret `RP_TOKEN`, para o PR de release rodar o CI antes do merge;
-  - o deploy da API a cada release.
+  - o secret `RP_TOKEN`, para o PR de release rodar o CI antes do merge.
 - **Monitoramento:** logs, rastreamento de erros e alerta de queda no `/health/ready`.
 - **Backup** do banco.
 
