@@ -2,14 +2,12 @@ locals {
   # the deployer's policy in bootstrap/ is scoped to exactly this function and role
   name = "topa-api"
 
-  # The site's PROD and DEV aliases (keep DEV in step with web.yml's VERCEL_DEV_ALIAS) and the
-  # apps' webviews: http://tauri.localhost on Android and Windows, tauri://localhost elsewhere.
-  cors_origins = [
-    "https://topa-totem.vercel.app",
-    "https://topa-totem-dev.vercel.app",
-    "http://tauri.localhost",
-    "tauri://localhost",
-  ]
+  # The apps' webviews: http://tauri.localhost on Android and Windows, tauri://localhost elsewhere.
+  cors_origins = ["http://tauri.localhost", "tauri://localhost"]
+
+  # The Vercel project's URLs: the PROD and DEV aliases, each deployment and each branch preview.
+  # Another project named topa-totem* would match too; harmless while the API has no auth.
+  cors_origin_regex = "^https://topa-totem(-dev|-[a-z0-9]{9}-[a-z0-9-]+|-git-[a-z0-9-]+)?[.]vercel[.]app$"
 }
 
 data "aws_iam_policy_document" "lambda_assume_role" {
@@ -46,8 +44,9 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      TOPA_DATABASE_URL = var.topa_database_url
-      TOPA_CORS_ORIGINS = jsonencode(local.cors_origins)
+      TOPA_DATABASE_URL      = var.topa_database_url
+      TOPA_CORS_ORIGINS      = jsonencode(local.cors_origins)
+      TOPA_CORS_ORIGIN_REGEX = local.cors_origin_regex
     }
   }
 }

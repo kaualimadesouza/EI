@@ -52,12 +52,16 @@ the rest with a warning.
 
 In order: the API's CI, the image pushed to ECR tagged with the commit (a rerun reuses it),
 `alembic upgrade head` on the direct URL, then `terraform apply` with state under
-`topa-api/app/`. The run summary prints the API URL, which is what the web build takes as
-`VITE_API_URL`. `gh workflow run api-deploy.yml` deploys main again by hand.
+`topa-api/app/`. The run summary prints the API URL, which `topa/web/.env.production` holds as
+`VITE_API_URL`: if it ever changes, update that file. `gh workflow run api-deploy.yml` deploys
+main again by hand.
 
 A failed migration leaves the old image serving. A failed apply after a migration leaves the
 new schema under the old image, so migrations must work with the code still running.
 
-The function answers CORS for the site's PROD and DEV aliases and the apps' webviews
-(`main.tf`); Vercel previews are not in the list and stay blocked. A cold start (first request
-after a deploy or an idle spell) takes seconds, not milliseconds.
+The function answers CORS for every URL of the site's Vercel project, previews included, and
+for the apps' webviews (`main.tf`). Another Vercel project whose name starts with `topa-totem`
+would pass the pattern too; that is harmless only while the API has no auth and uses no
+cookies.
+
+A cold start (first request after a deploy or an idle spell) takes seconds, not milliseconds.

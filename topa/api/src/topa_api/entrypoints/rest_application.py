@@ -43,11 +43,13 @@ def order_repository(
 def create_app() -> FastAPI:
     """Composition root: the one place that picks the adapter behind each port."""
     app = FastAPI(title="TOPA API")
-    # the site and the apps' webviews call from other origins; the origin list is the gate,
+    settings = Settings()
+    # the site and the apps' webviews call from other origins; the origins are the gate,
     # so any method or header a route adds later passes the preflight
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=Settings().cors_origins,
+        allow_origins=settings.cors_origins,
+        allow_origin_regex=settings.cors_origin_regex,
         allow_methods=["*"],
         allow_headers=["*"],
     )

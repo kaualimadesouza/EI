@@ -7,8 +7,10 @@ class Settings(BaseSettings):
 
     # host port 5435 is the compose Postgres; inside compose TOPA_DATABASE_URL points at db:5432
     database_url: str = "postgresql+psycopg://topa:topa@localhost:5435/topa"
-    # browser origins allowed to call the API: the deployed site and the apps' webviews
+    # browser origins allowed to call the API: exact ones (the apps' webviews) and a pattern
+    # (the site's Vercel URLs, previews included); both are set in infrastructure/main.tf
     cors_origins: list[str] = []
+    cors_origin_regex: str | None = None
 
     @field_validator("database_url")
     @classmethod

@@ -19,8 +19,10 @@ make run        # http://localhost:8000/health and /health/ready
 `TOPA_DATABASE_URL` overrides the database (default
 `postgresql+psycopg://topa:topa@localhost:5435/topa`).
 
-`TOPA_CORS_ORIGINS` is a JSON list of the browser origins allowed to call the API (none by
-default; the local web app goes through the Vite proxy and needs none).
+`TOPA_CORS_ORIGINS` (a JSON list) and `TOPA_CORS_ORIGIN_REGEX` (a pattern the whole origin must
+match) name the browser origins allowed to call the API. Both are empty by default: the local web
+app goes through the Vite proxy and needs none. The deployed values live in
+`infrastructure/main.tf`.
 
 ## Deploy
 
