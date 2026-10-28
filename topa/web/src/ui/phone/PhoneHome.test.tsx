@@ -30,20 +30,22 @@ async function tapToScan() {
 }
 
 describe('PhoneHome', () => {
-  it('invites the customer to order from the phone through the totem sticker', () => {
+  it('opens on plain TOPA, with no store and no staff option in sight', () => {
     render(<PhoneHome nfc={pendingReader().nfc} onStore={vi.fn()} />)
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Peça pelo celular.')
-    expect(screen.getByRole('button', { name: 'Aproximar do totem' })).toBeInTheDocument()
+    expect(screen.getByText(`v${__APP_VERSION__}`)).toBeInTheDocument()
+    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['Aproximar do totem'])
+    expect(screen.queryByText(/Bem-te-vi/)).not.toBeInTheDocument()
   })
 
-  it('asks for the phone on the sticker while it scans', async () => {
+  it('asks for the phone on the totem while it scans', async () => {
     render(<PhoneHome nfc={pendingReader().nfc} onStore={vi.fn()} />)
 
     await tapToScan()
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Encoste o celular no adesivo TOPA ao lado da tela do totem.',
+      'Encoste o celular atrás do totem ou no adesivo TOPA.',
     )
     expect(screen.queryByRole('button', { name: 'Aproximar do totem' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument()
@@ -108,7 +110,7 @@ describe('PhoneHome', () => {
 
     await tapToScan()
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Adesivo não reconhecido.')
+    expect(screen.getByRole('alert')).toHaveTextContent('Não é um totem TOPA.')
     expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeInTheDocument()
   })
 
@@ -118,7 +120,7 @@ describe('PhoneHome', () => {
 
     await tapToScan()
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Adesivo não reconhecido.')
+    expect(screen.getByRole('alert')).toHaveTextContent('Não é um totem TOPA.')
     expect(onStore).not.toHaveBeenCalled()
   })
 
@@ -127,7 +129,7 @@ describe('PhoneHome', () => {
 
     await tapToScan()
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível ler o adesivo.')
+    expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível ler o totem.')
     expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeInTheDocument()
   })
 

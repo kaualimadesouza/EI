@@ -83,4 +83,10 @@ describe('StartScreen', () => {
     expect(screen.getByRole('status')).toHaveTextContent(OFFLINE)
     expect(screen.queryByText(ONLINE)).not.toBeInTheDocument()
   })
+
+  it('shows the app version, so staff can tell which build a totem runs', () => {
+    renderStart('demo', pending)
+
+    expect(screen.getByText('por TOPA')).toHaveTextContent(`v${__APP_VERSION__}`)
+  })
 })

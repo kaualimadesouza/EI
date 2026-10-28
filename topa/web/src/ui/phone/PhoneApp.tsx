@@ -1,18 +1,33 @@
 import { useState } from 'react'
 
 import type { StoreRef } from '../../domain/store'
-import type { NfcPort } from '../../ports/nfc'
+import type { Adapters } from '../../ports/adapters'
+import { ArrowLeftIcon } from '../icons'
+import { KioskApp } from '../kiosk/KioskApp'
 import { PhoneHome } from './PhoneHome'
-import { StoreFound } from './StoreFound'
 
 interface PhoneAppProps {
-  nfc: NfcPort
+  adapters: Adapters
+  onSwitchRole?: () => void
 }
 
-/** The phone app: read a totem's sticker, then show that store (the menu replaces StoreFound later). */
-export function PhoneApp({ nfc }: PhoneAppProps) {
+/** The phone app: plain TOPA until a totem is read, then that store's ordering screens, with a way back. */
+export function PhoneApp({ adapters, onSwitchRole }: PhoneAppProps) {
   const [store, setStore] = useState<StoreRef | null>(null)
 
-  if (store) return <StoreFound store={store} onScanAgain={() => setStore(null)} />
-  return <PhoneHome nfc={nfc} onStore={setStore} />
+  if (!store) return <PhoneHome nfc={adapters.nfc} onStore={setStore} onSwitchRole={onSwitchRole} />
+  // demo mode serves one catalog whatever the slug; the API will pick the store's menu from it
+  return (
+    <div className="flex h-dvh flex-col overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setStore(null)}
+        className="flex min-h-16 flex-none items-center gap-3 border-b border-line bg-cream px-5 text-lg font-semibold text-slate"
+      >
+        <ArrowLeftIcon size={24} />
+        Ler outro totem
+      </button>
+      <KioskApp adapters={adapters} onCustomerPhone />
+    </div>
+  )
 }

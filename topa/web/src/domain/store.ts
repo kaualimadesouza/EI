@@ -1,4 +1,4 @@
-/** A store the phone app can open, read from the NFC sticker next to its totem. */
+/** A store the phone app can open, read from its totem's NFC tag (the totem itself or its sticker). */
 export interface StoreRef {
   slug: string
   url: string
@@ -8,7 +8,7 @@ const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const PUBLIC_ORIGIN = 'https://topa-totem.vercel.app'
 const DEMO_STORE_SLUG = 'lanchonete-bem-te-vi'
 
-/** The sticker holds the store's web URL; anything without a valid `loja` slug is not ours. */
+/** The tag holds the store's web URL; anything without a valid `loja` slug is not ours. */
 export function storeFromUrl(text: string): StoreRef | null {
   let url: URL
   try {

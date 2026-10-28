@@ -3,6 +3,9 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
 
+// release-please bumps package.json with tauri.conf.json, so the screens show the APK's own version
+import { version } from './package.json'
+
 // compose points the proxy at the api container; outside it, `make run` in topa/api serves on 8000
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -13,6 +16,7 @@ export default defineConfig(({ mode }) => {
   return {
     // GitHub Pages serves the repo under /EI/; Vercel and dev serve from the root
     base: env.BASE_PATH || '/',
+    define: { __APP_VERSION__: JSON.stringify(version) },
     plugins: [react(), tailwindcss()],
     server: {
       host: tauriHost || false,

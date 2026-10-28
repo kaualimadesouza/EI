@@ -77,6 +77,11 @@ jobs:
       - name: Build the APK
         run: NDK_HOME="$ANDROID_NDK_LATEST_HOME" npx tauri android build --debug --apk --target aarch64
 
+      # the totem's NFC tag answers on the JVM; the build above generated the Gradle files they need
+      - name: Kotlin unit tests
+        working-directory: topa/web/src-tauri/gen/android
+        run: NDK_HOME="$ANDROID_NDK_LATEST_HOME" ./gradlew :app:testUniversalDebugUnitTest
+
       - uses: actions/upload-artifact@v4
         with:
           name: topa-android-debug-apk

@@ -10,11 +10,11 @@ import { TauriNfc } from './adapters/tauri/tauri-nfc'
 import { UnavailableNfc } from './adapters/unavailable/unavailable-nfc'
 import { WebNfc } from './adapters/web/web-nfc'
 import type { NdefReader } from './adapters/web/web-nfc'
-import { createAdapters, detectRuntime, isPhoneApp, type Runtime } from './composition'
+import { createAdapters, detectRuntime, isPhoneApp, roleSwitch, type Runtime } from './composition'
 
-const browser: Runtime = { tauri: false, mobile: false, ndefReader: undefined }
-const androidApp: Runtime = { tauri: true, mobile: true, ndefReader: undefined }
-const desktopApp: Runtime = { tauri: true, mobile: false, ndefReader: undefined }
+const browser: Runtime = { tauri: false, mobile: false, totem: false, ndefReader: undefined, tagBridge: undefined }
+const androidApp: Runtime = { ...browser, tauri: true, mobile: true }
+const desktopApp: Runtime = { ...browser, tauri: true }
 
 /** Chrome's NDEFReader as far as composition cares: it gets constructed when a scan starts. */
 class FakeNdefReader implements NdefReader {
@@ -85,11 +85,41 @@ describe('createAdapters', () => {
   it('detects the runtime itself when none is given', () => {
     expect(createAdapters(undefined).nfc).toBeInstanceOf(UnavailableNfc)
   })
+
+  it('serves the totem tag through the Android bridge when the app has one', () => {
+    const tagBridge = { publish: vi.fn(), withdraw: vi.fn() }
+    const { tag } = createAdapters(undefined, { ...androidApp, tagBridge })
+
+    tag.publish('https://topa-totem.vercel.app/?loja=padaria-sol')
+    tag.withdraw()
+
+    expect(tag.available).toBe(true)
+    expect(tagBridge.publish).toHaveBeenCalledWith('https://topa-totem.vercel.app/?loja=padaria-sol')
+    expect(tagBridge.withdraw).toHaveBeenCalledOnce()
+  })
+
+  it('has no tag to serve without the bridge, and publishing is harmless', () => {
+    const { tag } = createAdapters('/api', browser)
+
+    tag.publish('https://topa-totem.vercel.app/?loja=padaria-sol')
+    tag.withdraw()
+
+    expect(tag.available).toBe(false)
+  })
 })
 
 describe('detectRuntime', () => {
+  afterEach(() => localStorage.clear())
+
   it('sees a plain desktop browser in the test DOM', () => {
     expect(detectRuntime()).toEqual(browser)
+  })
+
+  it('picks up the tag bridge the Android app puts on window', () => {
+    const tagBridge = { publish: vi.fn(), withdraw: vi.fn() }
+    vi.stubGlobal('TopaTag', tagBridge)
+
+    expect(detectRuntime().tagBridge).toBe(tagBridge)
   })
 
   it('sees the Tauri app on an Android phone', () => {
@@ -108,6 +138,37 @@ describe('detectRuntime', () => {
   })
 })
 
+describe('roleSwitch', () => {
+  afterEach(() => localStorage.clear())
+
+  it('turns the Android phone app into a totem from the next start, withdrawing any tag first', () => {
+    const tagBridge = { publish: vi.fn(), withdraw: vi.fn() }
+    const reload = vi.fn()
+
+    roleSwitch({ ...androidApp, tagBridge }, reload)!()
+
+    expect(detectRuntime().totem).toBe(true)
+    expect(tagBridge.withdraw).toHaveBeenCalledOnce()
+    expect(reload).toHaveBeenCalledOnce()
+  })
+
+  it('turns a totem back into the phone app, so it stops answering as a tag after the reload', () => {
+    const tagBridge = { publish: vi.fn(), withdraw: vi.fn() }
+    roleSwitch(androidApp, vi.fn())!()
+
+    roleSwitch({ ...androidApp, totem: true, tagBridge }, vi.fn())!()
+
+    expect(detectRuntime().totem).toBe(false)
+    expect(tagBridge.withdraw).toHaveBeenCalledOnce()
+  })
+
+  it('has nothing to switch in a browser or the desktop app', () => {
+    expect(roleSwitch(browser, vi.fn())).toBeUndefined()
+    expect(roleSwitch({ ...browser, mobile: true }, vi.fn())).toBeUndefined()
+    expect(roleSwitch(desktopApp, vi.fn())).toBeUndefined()
+  })
+})
+
 describe('isPhoneApp', () => {
   it('is the Tauri build on a phone', () => {
     expect(isPhoneApp(androidApp)).toBe(true)
@@ -116,5 +177,9 @@ describe('isPhoneApp', () => {
   it('is not the desktop app nor a browser, even on a phone', () => {
     expect(isPhoneApp(desktopApp)).toBe(false)
     expect(isPhoneApp({ ...browser, mobile: true })).toBe(false)
+  })
+
+  it('is not a phone marked as totem: that one runs the kiosk', () => {
+    expect(isPhoneApp({ ...androidApp, totem: true })).toBe(false)
   })
 })

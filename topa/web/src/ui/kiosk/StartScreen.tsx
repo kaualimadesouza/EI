@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react'
 
 import type { ConnectionPort } from '../../ports/connection'
+import { BrandMark } from '../BrandMark'
 import { DineInIcon, StoreMark, TakeAwayIcon } from '../icons'
 
 interface StartScreenProps {
   mode: 'api' | 'demo'
   connection: ConnectionPort
   onBegin: (dineIn: boolean) => void
-  onQueue: () => void
+  /** Absent on the customer's own phone, where there is no queue to send away. */
+  onQueue?: () => void
+  onSwitchRole?: () => void
 }
 
 interface StatusLook {
@@ -28,7 +31,7 @@ function lookOf(status: 'checking' | 'demo' | 'online' | 'offline'): StatusLook 
   }
 }
 
-export function StartScreen({ mode, connection, onBegin, onQueue }: StartScreenProps) {
+export function StartScreen({ mode, connection, onBegin, onQueue, onSwitchRole }: StartScreenProps) {
   const [reachability, setReachability] = useState<'checking' | 'online' | 'offline'>('checking')
 
   useEffect(() => {
@@ -81,22 +84,21 @@ export function StartScreen({ mode, connection, onBegin, onQueue }: StartScreenP
             Levar para viagem
           </button>
         </div>
-        <button
-          type="button"
-          onClick={onQueue}
-          className="min-h-16 self-start text-left text-[22px] font-medium underline underline-offset-4 short:text-[20px] max-sm:text-[18px]"
-        >
-          A fila está grande? Peça pelo celular
-        </button>
+        {onQueue && (
+          <button
+            type="button"
+            onClick={onQueue}
+            className="min-h-16 self-start text-left text-[22px] font-medium underline underline-offset-4 short:text-[20px] max-sm:text-[18px]"
+          >
+            A fila está grande? Peça pelo celular
+          </button>
+        )}
         <div className="flex items-center justify-between gap-4 text-on-teal">
           <p role="status" className="flex items-center gap-3 text-[18px] font-medium">
             <span aria-hidden="true" className={`size-3 rounded-full ${look.dot}`} />
             {look.label}
           </p>
-          <p className="flex items-center gap-2 text-[18px] font-medium">
-            <img src={`${import.meta.env.BASE_URL}topa-mark.png`} alt="" className="h-6 w-auto brightness-0 invert" />
-            por TOPA
-          </p>
+          <BrandMark label="por TOPA" className="text-[18px] font-medium" onStaffTaps={onSwitchRole} />
         </div>
       </div>
     </section>

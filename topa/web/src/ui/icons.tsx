@@ -50,6 +50,7 @@ export const TrashIcon = (props: IconProps) => (
 )
 export const CheckIcon = (props: IconProps) => <Stroke d="M5 12.5l4.5 4.5L19 7.5" {...props} />
 export const ArrowDownIcon = (props: IconProps) => <Stroke d="M12 4v15M6 13l6 6 6-6" {...props} />
+export const ArrowLeftIcon = (props: IconProps) => <Stroke d="M20 12H5M11 6l-6 6 6 6" {...props} />
 export const CardIcon = (props: IconProps) => (
   <Stroke d="M3 6h18v12H3zM3 10h18M7 15h4" {...props} />
 )

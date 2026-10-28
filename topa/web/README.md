@@ -17,10 +17,20 @@ npm run lint && npm run typecheck
 
 ## Apps (desktop e Android)
 
-`src-tauri/` wraps the web build. The desktop app shows the kiosk. The Android app opens on
-"Aproximar do totem": a customer facing a busy totem holds the phone to the NFC sticker next to
-its screen and the app opens that store. The runtime is picked in `src/composition.ts`
-(`isTauri()` plus an Android user agent means the phone app).
+`src-tauri/` wraps the web build. The desktop app shows the kiosk. The Android app has two roles,
+picked in `src/composition.ts`:
+
+- **Phone** (the default): it opens on plain TOPA and "Aproximar do totem". Holding the phone to a
+  totem (or its sticker) reads the store's link, and the app opens that store's ordering screens,
+  with "Ler outro totem" to go back.
+- **Totem**: it runs the kiosk and answers phones as an NFC Forum Type 4 tag holding the store's
+  link (`TagEmulationService.kt` over host card emulation), on the start and queue screens only,
+  so a card held to the totem at payment never meets the tag. A phone without the app opens the
+  link in its browser. Devices without HCE fall back to the sticker.
+
+Staff switch a device between the two roles by tapping the TOPA mark (top of the phone screen,
+"por TOPA" on the kiosk start) five times within 2 s; the app reloads in the other role. Both
+screens show the app version next to the mark.
 
 You need Rust (rustup). For Android also JDK 17+, the Android SDK with an NDK (`ANDROID_HOME`,
 `NDK_HOME`) and `rustup target add aarch64-linux-android`. The Linux desktop build needs
@@ -33,7 +43,9 @@ npx tauri android build --debug --apk --target aarch64   # debug APK, unsigned, 
 ```
 
 The APK lands in `src-tauri/gen/android/app/build/outputs/apk/universal/debug/` (about 115 MB:
-a debug build keeps its symbols). `src-tauri/gen/android` is committed, as Tauri recommends.
+a debug build keeps its symbols). `src-tauri/gen/android` is committed, as Tauri recommends. After
+a build, `./gradlew :app:testUniversalDebugUnitTest` in `src-tauri/gen/android` runs the Kotlin
+tests of the tag's APDU exchange (`Type4TagTest.kt`).
 
 CI (`.github/workflows/native.yml`) builds the APK and a Linux bundle (`.deb` and AppImage) on
 every PR that touches `topa/web`: download them from the run page as `topa-android-debug-apk`
@@ -45,8 +57,9 @@ the APK to that release.
 Use any NFC writer app (NFC Tools, for example) and an NTAG213 or larger sticker. Write a single
 URI record with the store's URL, `https://topa-totem.vercel.app/?loja=<slug>`, where the slug is
 lowercase letters, digits and hyphens. Lock the tag afterwards so nobody can rewrite it. The app
-accepts only http(s) URLs with a valid `loja`; anything else shows "Adesivo não reconhecido". A
-phone without the app opens the same URL in its browser.
+accepts only http(s) URLs with a valid `loja`; anything else shows "Não é um totem TOPA.". A
+phone without the app opens the same URL in its browser. An Android totem with HCE needs no
+sticker: it serves the same URL itself.
 
 ### Icons and versions
 
