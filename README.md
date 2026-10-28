@@ -52,16 +52,11 @@ make lint
 precisam do Node 24 (em Node mais antigo, instale as dependências do front com `npx -y npm@11 ci`
 dentro de `topa/web`) e do [uv](https://docs.astral.sh/uv/) para a API.
 
-O front encontra a API por `VITE_API_URL`: na sua máquina é `/api`, repassado pelo servidor do Vite;
-nos builds de produção, é o endereço completo da API publicada, gravado em
-[`topa/web/.env.production`](topa/web/.env.production). Sem essa variável, o front abre em modo
-demonstração.
-
-Há um ambiente só. O site, em [topa-totem.vercel.app](https://topa-totem.vercel.app) e no DEV
-([topa-totem-dev.vercel.app](https://topa-totem-dev.vercel.app)), e os apps (APK e instaladores
-desktop) usam a mesma API, que sobe para a AWS a cada push na `main` que mexa nela
-([`topa/api/infrastructure/README.md`](topa/api/infrastructure/README.md)). A API libera CORS só
-para esses dois endereços e para os apps, então o preview de cada PR abre em modo demonstração.
+Há um ambiente só: todo build de produção do front (site, previews e apps) usa a API publicada na
+AWS, que sobe a cada push na `main` que mexa nela
+([`topa/api/infrastructure/README.md`](topa/api/infrastructure/README.md)). Na sua máquina, o
+`make run` usa a API local. Os detalhes, inclusive como publicar o site à mão, estão em
+[`topa/web/README.md`](topa/web/README.md#which-api-a-build-talks-to).
 
 ## Arquitetura final
 

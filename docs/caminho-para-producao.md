@@ -1,14 +1,10 @@
 # Caminho para produção
 
-O que falta para o TOPA sair do modo demonstração e atender uma loja de verdade, dividido em
-fases. Estado de 28/10/2026.
+O que falta para o TOPA atender uma loja de verdade, dividido em fases. Estado de 28/10/2026.
 
-Todo build de produção usa a API publicada na AWS: o site `topa-totem.vercel.app` e o DEV, o
-APK e os instaladores da release. Quem decide é `topa/web/src/composition.ts`: com `VITE_API_URL`
-no build (o de produção a lê de `topa/web/.env.production`), o app usa a API; sem ela, usa o
-cardápio embutido (`topa/web/src/domain/demo-catalog.ts`) e guarda pedidos e esgotados no
-`localStorage` de cada aparelho, sem sincronizar. Esse é o **modo demonstração**, que segue no
-`npm run dev` e no preview de cada PR, cujo endereço fica fora do CORS da API.
+Todo build de produção (site, previews e apps) usa a API publicada na AWS. O **modo
+demonstração**, com o cardápio embutido (`topa/web/src/domain/demo-catalog.ts`) e os pedidos
+guardados só no aparelho, fica para o `npm run dev`. Os detalhes estão em `topa/web/README.md`.
 
 ## Fase 1: uma loja de verdade
 
@@ -21,11 +17,10 @@ a fase 2.
    molde do kbjmodas-api. O deploy (`.github/workflows/api-deploy.yml`) roda
    `alembic upgrade head` antes de cada versão. Falta monitorar pelo `/health/ready`, que já
    existe.
-2. **Ligar o site e o app à API.** Feito: o build de produção lê o endereço da API de
-   `topa/web/.env.production`, e a API libera CORS para o site (PROD e DEV) e para as origens do
-   app (`http://tauri.localhost` no Android e no Windows, `tauri://localhost` no macOS e no
-   Linux), em `topa/api/infrastructure/main.tf`. Há um ambiente só: o DEV grava no mesmo banco
-   que o PROD.
+2. **Ligar o site e o app à API.** Feito: todo build de produção lê o endereço da API de
+   `topa/web/.env.production`, e a API libera CORS para as URLs do projeto na Vercel e para os
+   apps (`topa/api/infrastructure/main.tf`). Há um ambiente só: DEV, previews e apps gravam no
+   mesmo banco que o PROD.
 3. **Partida a frio.** A primeira requisição depois de um tempo parado leva alguns segundos,
    e a pílula de status do servidor desiste em 3 s (`topa/web/src/adapters/http/http-connection.ts`).
    Um agendamento que chama a API a cada poucos minutos a mantém quente.

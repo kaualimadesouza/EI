@@ -18,15 +18,42 @@ npm run lint && npm run typecheck
 ## Which API a build talks to
 
 `src/composition.ts` uses the API when `VITE_API_URL` is set and demo mode when it is unset or
-empty. `npm run dev` and the tests read no URL, `make run` sets `/api` (proxied by Vite), and every
-production build (`npm run build`, so Vercel and both Tauri apps) reads the deployed API's URL
-from `.env.production`. The API answers CORS only for `topa-totem.vercel.app`,
-`topa-totem-dev.vercel.app` and the apps' webviews, so:
+empty.
 
-- a PR preview builds with an empty `VITE_API_URL` (`.github/workflows/web.yml`) and runs in demo
-  mode;
-- `npm run preview` of a regular build, served from localhost, cannot reach the API: build it with
-  `VITE_API_URL= npm run build` to look at it in demo mode.
+- `npm run dev` and the tests read no URL, so they run in demo mode; `make run` sets `/api`, which
+  Vite proxies to the local API.
+- Every production build (`npm run build`: each Vercel deploy, PR previews included, and both
+  Tauri apps) reads the deployed API's URL from `.env.production`. There is one environment, so
+  whatever these builds do lands in the production database. The URL is the `api_url` the API
+  deploy prints; if it ever changes, update the file.
+- The API answers CORS only for the origins in `topa/api/infrastructure/main.tf`: the Vercel
+  project's URLs and the apps' webviews. Served from anywhere else, such as `npm run preview` on
+  localhost, a production build cannot reach it; `VITE_API_URL=` in `.env.production.local`
+  (gitignored) makes a local build run in demo mode.
+- A `VITE_API_URL` set in the Vercel project's settings would come down with `vercel pull` and
+  beat the file: keep it unset there.
+- A kiosk on `make run` sends its queue QR to the hosted site (`src/domain/store.ts`), so phone
+  orders placed through it go to the production API, not the local one.
+
+### Deploying by hand
+
+`.github/workflows/web.yml` deploys on its own once the repo holds the Vercel secrets. Until then,
+from `topa/web`:
+
+```bash
+npx -y vercel@59.10.0 link --yes --project topa-totem    # once per checkout
+
+# PROD: topa-totem.vercel.app
+npx -y vercel@59.10.0 pull --yes --environment=production
+npx -y vercel@59.10.0 build --prod
+npx -y vercel@59.10.0 deploy --prebuilt --prod
+
+# DEV: topa-totem-dev.vercel.app
+npx -y vercel@59.10.0 pull --yes --environment=preview
+npx -y vercel@59.10.0 build
+url=$(npx -y vercel@59.10.0 deploy --prebuilt)
+npx -y vercel@59.10.0 alias set "$url" topa-totem-dev.vercel.app
+```
 
 ## Apps (desktop e Android)
 
