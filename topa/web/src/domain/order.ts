@@ -6,7 +6,9 @@ export interface OrderDraft {
   paymentMethod: 'card' | 'pix'
 }
 
+/** What the customer sees after paying; the phone follows the order by its id. */
 export interface PlacedOrder {
+  id: string
   number: number
   totalCents: number
 }

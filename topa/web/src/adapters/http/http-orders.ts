@@ -59,13 +59,20 @@ export class HttpOrders implements OrdersPort {
     }
     if (!response.ok) throw new Error(`POST /orders answered ${response.status}`)
     const order = (await response.json()) as OrderJson
-    return { number: order.number, totalCents: order.total_cents }
+    return { id: order.id, number: order.number, totalCents: order.total_cents }
   }
 
   async list(businessDate: string): Promise<OrderSummary[]> {
     const response = await this.client.get(`/orders?date=${businessDate}`)
     if (!response.ok) throw new Error(`GET /orders answered ${response.status}`)
     return ((await response.json()) as OrderJson[]).map(toSummary)
+  }
+
+  async statusOf(orderId: string): Promise<OrderSummary['status']> {
+    const path = `/orders/${encodeURIComponent(orderId)}`
+    const response = await this.client.get(path)
+    if (!response.ok) throw new Error(`GET ${path} answered ${response.status}`)
+    return ((await response.json()) as OrderJson).status
   }
 
   async setStatus(orderId: string, status: OrderSummary['status']): Promise<OrderSummary> {

@@ -52,8 +52,11 @@ class InMemoryOrderRepository:
             key=lambda order: order.number,
         )
 
-    def get_for_update(self, order_id: uuid.UUID) -> Order | None:
+    def get(self, order_id: uuid.UUID) -> Order | None:
         return next((order for order in self.orders if order.id == order_id), None)
+
+    def get_for_update(self, order_id: uuid.UUID) -> Order | None:
+        return self.get(order_id)
 
     def set_status(self, order_id: uuid.UUID, status: OrderStatus) -> None:
         self.orders = [

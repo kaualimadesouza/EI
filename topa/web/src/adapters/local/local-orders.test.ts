@@ -39,7 +39,7 @@ describe('LocalOrders', () => {
     const second = await new LocalOrders(menu, storage, monday).place(draft)
     const nextDay = await new LocalOrders(menu, storage, tuesday).place(draft)
 
-    expect(first).toEqual({ number: 1, totalCents: 2 * 1490 + 990 })
+    expect(first).toEqual({ id: expect.any(String), number: 1, totalCents: 2 * 1490 + 990 })
     expect(second.number).toBe(2)
     expect(nextDay.number).toBe(1)
   })
@@ -125,6 +125,44 @@ describe('LocalOrders', () => {
     const third = await orders.place(draft)
 
     expect([first.number, second.number, third.number]).toEqual([1, 2, 3])
+  })
+
+  it('tells the phone where its order is, and runs the demo kitchen: ready 5 s after it was placed', async () => {
+    const { storage, menu, orders } = store()
+    const { id } = await orders.place(draft)
+    await orders.place(draft)
+    const later = (ms: number) => new LocalOrders(menu, storage, () => new Date(monday().getTime() + ms))
+
+    expect(await later(4_999).statusOf(id)).toBe('received')
+    expect(await later(5_000).statusOf(id)).toBe('ready')
+    const dashboard = await later(5_000).list('2026-10-26')
+    expect(dashboard.map((o) => [o.number, o.status])).toEqual([
+      [1, 'ready'],
+      [2, 'received'],
+    ])
+  })
+
+  it('cooks only an order a phone follows: on the dashboard alone it waits for the merchant', async () => {
+    const { storage, menu, orders } = store()
+    await orders.place(draft)
+
+    const anHourLater = new LocalOrders(menu, storage, () => new Date(monday().getTime() + 3_600_000))
+
+    expect((await anHourLater.list('2026-10-26'))[0].status).toBe('received')
+  })
+
+  it('leaves an order the merchant already started to the merchant', async () => {
+    const { storage, menu, orders } = store()
+    const { id } = await orders.place(draft)
+    await orders.setStatus(id, 'preparing')
+
+    expect(await new LocalOrders(menu, storage, () => new Date(monday().getTime() + 60_000)).statusOf(id)).toBe('preparing')
+  })
+
+  it('fails when asked about an order this browser does not hold', async () => {
+    const { orders } = store()
+
+    await expect(orders.statusOf('gone')).rejects.toThrow('order gone is not in this browser')
   })
 
   it('uses the browser storage and clock by default', async () => {

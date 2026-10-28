@@ -13,11 +13,22 @@ const draft = {
   paymentMethod: 'pix' as const,
 }
 
+const order = (id: string, status: string) => ({
+  id,
+  number: 3,
+  status,
+  dine_in: false,
+  payment_method: 'pix',
+  total_cents: 990,
+  created_at: '2026-10-26T15:00:00Z',
+  items: [],
+})
+
 afterEach(() => vi.restoreAllMocks())
 
 describe('HttpOrders', () => {
   it('posts the order in the API shape and returns its number and total', async () => {
-    const fetchFn = json({ number: 47, total_cents: 2980, status: 'received' }, 201)
+    const fetchFn = json({ ...order('o47', 'received'), number: 47, total_cents: 2980 }, 201)
 
     const placed = await new HttpOrders(new HttpClient('/api')).place(draft)
 
@@ -27,7 +38,7 @@ describe('HttpOrders', () => {
       dine_in: false,
       payment_method: 'pix',
     })
-    expect(placed).toEqual({ number: 47, totalCents: 2980 })
+    expect(placed).toEqual({ id: 'o47', number: 47, totalCents: 2980 })
   })
 
   it('turns a refusal into the message the API wrote for the customer', async () => {
@@ -126,5 +137,22 @@ describe('HttpOrders', () => {
     await expect(new HttpOrders(new HttpClient('/api')).setStatus('o1', 'ready')).rejects.toThrow(
       'PATCH /orders/o1 answered 500',
     )
+  })
+
+  it('follows one order until the API says it is ready', async () => {
+    const orders = new HttpOrders(new HttpClient('/api'))
+
+    const preparing = json(order('o3', 'preparing'))
+    expect(await orders.statusOf('o3')).toBe('preparing')
+    expect(preparing).toHaveBeenCalledWith('/api/orders/o3', { signal: expect.any(AbortSignal) })
+    vi.restoreAllMocks()
+    json(order('o3', 'ready'))
+    expect(await orders.statusOf('o3')).toBe('ready')
+  })
+
+  it('fails loudly when the order cannot be read, gone or not', async () => {
+    json({ detail: 'Pedido não encontrado.' }, 404)
+
+    await expect(new HttpOrders(new HttpClient('/api')).statusOf('o3')).rejects.toThrow('GET /orders/o3 answered 404')
   })
 })

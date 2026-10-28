@@ -8,11 +8,13 @@ from pydantic import BaseModel
 from topa_api.application.change_order_status import ChangeOrderStatusUseCase
 from topa_api.application.list_orders import ListOrdersUseCase
 from topa_api.application.place_order import PlaceOrder, PlaceOrderUseCase
+from topa_api.application.read_order import ReadOrderUseCase
 from topa_api.domain.orders import Order, OrderLine, OrderStatus, PaymentMethod
 from topa_api.presentation.fastapi.dependencies import (
     get_change_order_status_use_case,
     get_list_orders_use_case,
     get_place_order_use_case,
+    get_read_order_use_case,
 )
 from topa_api.presentation.fastapi.errors import ErrorResponse
 
@@ -89,6 +91,21 @@ def list_orders(
 ) -> list[OrderResponse]:
     """A business day's orders by number: today in São Paulo unless `date` names another."""
     return [_order_response(order) for order in use_case.execute(business_date)]
+
+
+@router.get(
+    "/orders/{order_id}",
+    responses={
+        404: {"model": ErrorResponse, "description": "no order has that id"},
+        422: {"model": ErrorResponse, "description": "malformed id"},
+    },
+)
+def read_order(
+    order_id: uuid.UUID,
+    use_case: Annotated[ReadOrderUseCase, Depends(get_read_order_use_case)],
+) -> OrderResponse:
+    """One order as it stands now: the customer's phone follows it until it is ready."""
+    return _order_response(use_case.execute(order_id))
 
 
 @router.patch(

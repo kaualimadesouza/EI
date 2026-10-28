@@ -300,6 +300,30 @@ def test_skipping_a_step_is_refused_and_the_order_stays_put(client: TestClient) 
     assert client.get("/orders").json() == [placed]
 
 
+def test_one_order_is_read_as_it_stands_now(client: TestClient) -> None:
+    placed = client.post("/orders", json=_order(("xsalada", 1), ("refri", 2))).json()
+    client.patch(f"/orders/{placed['id']}", json={"status": "preparing"})
+
+    response = client.get(f"/orders/{placed['id']}")
+
+    assert response.status_code == 200
+    assert response.json() == {**placed, "status": "preparing"}
+
+
+def test_reading_an_unknown_order_is_not_found(client: TestClient) -> None:
+    response = client.get(f"/orders/{uuid.uuid4()}")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Pedido não encontrado."}
+
+
+def test_reading_an_order_by_a_malformed_id_gets_the_generic_message(client: TestClient) -> None:
+    response = client.get("/orders/47")
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": INVALID_REQUEST}
+
+
 def test_moving_an_unknown_order_is_not_found(client: TestClient) -> None:
     response = client.patch(f"/orders/{uuid.uuid4()}", json={"status": "preparing"})
 

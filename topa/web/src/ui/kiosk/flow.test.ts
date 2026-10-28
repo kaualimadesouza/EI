@@ -90,9 +90,10 @@ describe('kiosk flow', () => {
     expect(startPaying(paying).payment).toBe('processing')
     expect(declined(startPaying(paying)).payment).toBe('declined')
     expect(failed(startPaying(paying), 'Coxinha esgotou.')).toMatchObject({ payment: 'failed', error: 'Coxinha esgotou.' })
-    expect(paid(startPaying(paying), { number: 47, totalCents: 550 })).toMatchObject({
+    const placed = { id: 'o47', number: 47, totalCents: 550 }
+    expect(paid(startPaying(paying), placed)).toMatchObject({
       screen: 'done',
-      placed: { number: 47, totalCents: 550 },
+      placed,
       payment: 'choosing',
     })
   })

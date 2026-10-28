@@ -9,6 +9,9 @@ interface StoredOrder extends OrderSummary {
   businessDate: string
 }
 
+// with no merchant at a dashboard, the demo kitchen has a followed order ready this long after payment
+const DEMO_KITCHEN_MS = 5_000
+
 /** Demo mode keeps orders in this browser with the API's rules, so a kiosk tab and a dashboard tab agree. */
 export class LocalOrders implements OrdersPort {
   private readonly menu: MenuPort
@@ -44,11 +47,23 @@ export class LocalOrders implements OrdersPort {
       items,
     }
     this.orders.write([...orders, order])
-    return { number: order.number, totalCents: order.totalCents }
+    return { id: order.id, number: order.number, totalCents: order.totalCents }
   }
 
   list(businessDate: string): Promise<OrderSummary[]> {
     return Promise.resolve(this.orders.read().filter((order) => order.businessDate === businessDate))
+  }
+
+  // only the customer's phone follows an order, so only a phone order is cooked; the totem's waits
+  // for the dashboard, and so does any order the merchant has already taken from 'received'
+  statusOf(orderId: string): Promise<OrderSummary['status']> {
+    const orders = this.orders.read()
+    const order = orders.find((o) => o.id === orderId)
+    if (!order) return Promise.reject(new Error(`order ${orderId} is not in this browser`))
+    const due = order.status === 'received' && this.now().getTime() - Date.parse(order.createdAt) >= DEMO_KITCHEN_MS
+    if (!due) return Promise.resolve(order.status)
+    this.orders.write(orders.map((o): StoredOrder => (o.id === orderId ? { ...o, status: 'ready' } : o)))
+    return Promise.resolve('ready')
   }
 
   setStatus(orderId: string, status: OrderSummary['status']): Promise<OrderSummary> {
