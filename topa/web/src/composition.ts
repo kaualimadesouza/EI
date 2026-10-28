@@ -13,8 +13,10 @@ import { type TagBridge, TauriTag } from './adapters/tauri/tauri-tag'
 import { UnavailableBuzzer } from './adapters/unavailable/unavailable-buzzer'
 import { UnavailableNfc } from './adapters/unavailable/unavailable-nfc'
 import { UnavailableTag } from './adapters/unavailable/unavailable-tag'
+import { UnavailableWakeLock } from './adapters/unavailable/unavailable-wake-lock'
 import { WebBuzzer } from './adapters/web/web-buzzer'
 import { type NdefReader, WebNfc } from './adapters/web/web-nfc'
+import { WebWakeLock } from './adapters/web/web-wake-lock'
 import type { Adapters } from './ports/adapters'
 import type { NfcPort } from './ports/nfc'
 
@@ -28,6 +30,8 @@ export interface Runtime {
   tagBridge: TagBridge | undefined
   /** The Vibration API, where the device has one (not on iPhones). */
   vibrate: ((pattern: number[]) => boolean) | undefined
+  /** The Screen Wake Lock API, where the browser has one. */
+  wakeLock: { request(type: 'screen'): Promise<Pick<WakeLockSentinel, 'release'>> } | undefined
 }
 
 const totemFlag = () => new StoredValue(browserStorage(), 'topa.totem', false)
@@ -40,6 +44,7 @@ export function detectRuntime(): Runtime {
     ndefReader: window.NDEFReader,
     tagBridge: window.TopaTag,
     vibrate: 'vibrate' in navigator ? (pattern) => navigator.vibrate(pattern) : undefined,
+    wakeLock: 'wakeLock' in navigator ? navigator.wakeLock : undefined,
   }
 }
 
@@ -72,6 +77,7 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
   const nfc = nfcFor(runtime)
   const tag = runtime.tagBridge ? new TauriTag(runtime.tagBridge) : new UnavailableTag()
   const buzzer = runtime.vibrate ? new WebBuzzer(runtime.vibrate) : new UnavailableBuzzer()
+  const wakeLock = runtime.wakeLock ? new WebWakeLock(runtime.wakeLock) : new UnavailableWakeLock()
   if (apiUrl) {
     const client = new HttpClient(apiUrl)
     return {
@@ -82,8 +88,9 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
       nfc,
       tag,
       buzzer,
+      wakeLock,
     }
   }
   const menu = new LocalMenu()
-  return { mode: 'demo', connection: new LocalConnection(), menu, orders: new LocalOrders(menu), nfc, tag, buzzer }
+  return { mode: 'demo', connection: new LocalConnection(), menu, orders: new LocalOrders(menu), nfc, tag, buzzer, wakeLock }
 }

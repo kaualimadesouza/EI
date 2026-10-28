@@ -1,17 +1,13 @@
-import { type ReactNode, useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 
 import { formatBRL } from '../../domain/menu'
-import { displayNumber, type OrderSummary, type PlacedOrder } from '../../domain/order'
-import type { BuzzerPort } from '../../ports/buzzer'
-import type { OrdersPort } from '../../ports/orders'
-import { BellIcon, CheckIcon, ClockIcon, ContactlessIcon } from '../icons'
+import { displayNumber, type PlacedOrder } from '../../domain/order'
+import { CheckIcon, ContactlessIcon } from '../icons'
 import { KIOSK_ACTION } from './parts'
 import { useCountdown } from './use-countdown'
 import { Qr } from './Qr'
 
 const RETURN_SECONDS = 20
-/** How often the customer's phone asks where its order is. */
-export const FOLLOW_MS = 2000
 
 interface OrderScreenProps {
   placed: PlacedOrder
@@ -21,11 +17,12 @@ interface OrderScreenProps {
   /** The ready call: a ring that stays under reduced motion, and a blink where motion is welcome. */
   calling?: boolean
   onNewOrder: () => void
+  /** Under the button: the totem's countdown, or the phone's warning that a check failed. */
   children?: ReactNode
 }
 
 /** The paid order's number on teal: the totem's confirmation and the phone's pager share it. */
-function OrderScreen({ placed, icon, title, hint, calling = false, onNewOrder, children }: OrderScreenProps) {
+export function OrderScreen({ placed, icon, title, hint, calling = false, onNewOrder, children }: OrderScreenProps) {
   return (
     <section className="flex min-h-0 flex-1 flex-col items-center justify-center-safe gap-8 overflow-y-auto bg-teal px-12 py-8 text-center text-white short:gap-4 max-sm:gap-6 max-sm:px-4">
       <span
@@ -76,46 +73,6 @@ export function DoneScreen({ placed, onNewOrder }: DoneScreenProps) {
       <p className="text-caption text-on-teal tabular-nums">Voltando ao início em {left} s</p>
     </OrderScreen>
   )
-}
-
-const PREPARING = {
-  icon: <ClockIcon size={56} className="phone:size-12" />,
-  title: 'Preparando seu pedido',
-  hint: 'Avisamos aqui quando ficar pronto. Deixe esta tela aberta.',
-}
-
-// the customer cannot tell received from preparing, and does not need to
-const PAGER: Record<OrderSummary['status'], { icon: ReactNode; title: string; hint: string }> = {
-  received: PREPARING,
-  preparing: PREPARING,
-  ready: { icon: <BellIcon size={56} className="phone:size-12" />, title: 'Seu pedido está pronto', hint: 'Retire no balcão.' },
-  delivered: { icon: <CheckIcon size={56} className="phone:size-12" />, title: 'Pedido entregue', hint: 'Bom apetite!' },
-}
-
-interface PagerScreenProps {
-  placed: PlacedOrder
-  orders: OrdersPort
-  buzzer: BuzzerPort
-  onNewOrder: () => void
-}
-
-/** The customer's phone as the counter's pager: it follows the order and calls the customer when it is ready. */
-export function PagerScreen({ placed, orders, buzzer, onNewOrder }: PagerScreenProps) {
-  const [status, setStatus] = useState<OrderSummary['status']>('received')
-  const handedOver = status === 'delivered'
-
-  useEffect(() => {
-    if (handedOver) return
-    // a failed check keeps the last known state; the next one asks again
-    const timer = setInterval(() => orders.statusOf(placed).then(setStatus, () => {}), FOLLOW_MS)
-    return () => clearInterval(timer)
-  }, [orders, placed, handedOver])
-
-  useEffect(() => {
-    if (status === 'ready') buzzer.buzz()
-  }, [status, buzzer])
-
-  return <OrderScreen placed={placed} {...PAGER[status]} calling={status === 'ready'} onNewOrder={onNewOrder} />
 }
 
 interface QueueScreenProps {

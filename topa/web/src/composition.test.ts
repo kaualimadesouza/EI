@@ -9,7 +9,9 @@ import { LocalOrders } from './adapters/local/local-orders'
 import { TauriNfc } from './adapters/tauri/tauri-nfc'
 import { UnavailableBuzzer } from './adapters/unavailable/unavailable-buzzer'
 import { UnavailableNfc } from './adapters/unavailable/unavailable-nfc'
+import { UnavailableWakeLock } from './adapters/unavailable/unavailable-wake-lock'
 import { WebNfc } from './adapters/web/web-nfc'
+import { WebWakeLock } from './adapters/web/web-wake-lock'
 import type { NdefReader } from './adapters/web/web-nfc'
 import { createAdapters, detectRuntime, isPhoneApp, roleSwitch, type Runtime } from './composition'
 
@@ -20,6 +22,7 @@ const browser: Runtime = {
   ndefReader: undefined,
   tagBridge: undefined,
   vibrate: undefined,
+  wakeLock: undefined,
 }
 const androidApp: Runtime = { ...browser, tauri: true, mobile: true }
 const desktopApp: Runtime = { ...browser, tauri: true }
@@ -122,6 +125,25 @@ describe('createAdapters', () => {
     expect(buzzer).toBeInstanceOf(UnavailableBuzzer)
   })
 
+  it('keeps the screen on through the Screen Wake Lock API where the device has one', () => {
+    const release = vi.fn(() => Promise.resolve())
+    const wakeLock = { request: vi.fn(() => Promise.resolve({ release })) }
+
+    const { wakeLock: port } = createAdapters(undefined, { ...browser, wakeLock })
+    port.hold()
+
+    expect(port).toBeInstanceOf(WebWakeLock)
+    expect(wakeLock.request).toHaveBeenCalledWith('screen')
+  })
+
+  it('leaves the screen to its timeout without the Screen Wake Lock API', () => {
+    const { wakeLock } = createAdapters('/api', browser)
+
+    wakeLock.hold()()
+
+    expect(wakeLock).toBeInstanceOf(UnavailableWakeLock)
+  })
+
   it('has no tag to serve without the bridge, and publishing is harmless', () => {
     const { tag } = createAdapters('/api', browser)
 
@@ -136,6 +158,7 @@ describe('detectRuntime', () => {
   afterEach(() => {
     localStorage.clear()
     Reflect.deleteProperty(navigator, 'vibrate')
+    Reflect.deleteProperty(navigator, 'wakeLock')
   })
 
   it('sees a plain desktop browser in the test DOM', () => {
@@ -165,6 +188,13 @@ describe('detectRuntime', () => {
     detectRuntime().vibrate!([200])
 
     expect(vibrate).toHaveBeenCalledWith([200])
+  })
+
+  it('picks up the Screen Wake Lock API when the device has it', () => {
+    const wakeLock = { request: vi.fn() }
+    Object.defineProperty(navigator, 'wakeLock', { value: wakeLock, configurable: true })
+
+    expect(detectRuntime().wakeLock).toBe(wakeLock)
   })
 
   it('picks up Web NFC when the browser has it', () => {

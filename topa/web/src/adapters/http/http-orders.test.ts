@@ -11,7 +11,6 @@ const draft = {
   lines: [{ productId: 'misto', quantity: 2 }],
   dineIn: false,
   paymentMethod: 'pix' as const,
-  placedOn: 'phone' as const,
 }
 
 const order = (id: string, status: string) => ({
@@ -24,8 +23,6 @@ const order = (id: string, status: string) => ({
   created_at: '2026-10-26T15:00:00Z',
   items: [],
 })
-
-const placed = { id: 'o3', number: 3, totalCents: 990, businessDate: '2026-10-26' }
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -41,8 +38,7 @@ describe('HttpOrders', () => {
       dine_in: false,
       payment_method: 'pix',
     })
-    // the API does not record where an order was placed yet, so it is not sent
-    expect(placed).toEqual({ id: 'o47', number: 47, totalCents: 2980, businessDate: '2026-10-26' })
+    expect(placed).toEqual({ id: 'o47', number: 47, totalCents: 2980 })
   })
 
   it('turns a refusal into the message the API wrote for the customer', async () => {
@@ -143,28 +139,20 @@ describe('HttpOrders', () => {
     )
   })
 
-  it('follows a placed order through its business day until the API says it is ready', async () => {
+  it('follows one order until the API says it is ready', async () => {
     const orders = new HttpOrders(new HttpClient('/api'))
 
-    const preparing = json([order('o1', 'ready'), order('o3', 'preparing')])
-    expect(await orders.statusOf(placed)).toBe('preparing')
-    expect(preparing).toHaveBeenCalledWith('/api/orders?date=2026-10-26', { signal: expect.any(AbortSignal) })
+    const preparing = json(order('o3', 'preparing'))
+    expect(await orders.statusOf('o3')).toBe('preparing')
+    expect(preparing).toHaveBeenCalledWith('/api/orders/o3', { signal: expect.any(AbortSignal) })
     vi.restoreAllMocks()
-    json([order('o3', 'ready')])
-    expect(await orders.statusOf(placed)).toBe('ready')
+    json(order('o3', 'ready'))
+    expect(await orders.statusOf('o3')).toBe('ready')
   })
 
-  it('says the order is not found when its day no longer lists it', async () => {
-    json([order('o1', 'ready')])
+  it('fails loudly when the order cannot be read, gone or not', async () => {
+    json({ detail: 'Pedido não encontrado.' }, 404)
 
-    await expect(new HttpOrders(new HttpClient('/api')).statusOf(placed)).rejects.toEqual(
-      new OrderRejectedError('Pedido não encontrado.'),
-    )
-  })
-
-  it('fails loudly when the order cannot be followed', async () => {
-    json({}, 500)
-
-    await expect(new HttpOrders(new HttpClient('/api')).statusOf(placed)).rejects.toThrow('GET /orders answered 500')
+    await expect(new HttpOrders(new HttpClient('/api')).statusOf('o3')).rejects.toThrow('GET /orders/o3 answered 404')
   })
 })

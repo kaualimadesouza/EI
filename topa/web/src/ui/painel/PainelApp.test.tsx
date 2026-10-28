@@ -10,6 +10,7 @@ import { LocalMenu } from '../../adapters/local/local-menu'
 import { LocalOrders } from '../../adapters/local/local-orders'
 import { UnavailableBuzzer } from '../../adapters/unavailable/unavailable-buzzer'
 import { UnavailableTag } from '../../adapters/unavailable/unavailable-tag'
+import { UnavailableWakeLock } from '../../adapters/unavailable/unavailable-wake-lock'
 import { PainelApp, POLL_MS, UNDO_MS } from './PainelApp'
 
 class MemoryStorage {
@@ -26,8 +27,8 @@ class MemoryStorage {
 const NOW = new Date(2026, 9, 26, 16, 0)
 const at = (day: number, hour: number, minute = 0) => () => new Date(2026, 9, day, hour, minute)
 
-const xsalada: OrderDraft = { lines: [{ productId: 'xsalada', quantity: 2 }], dineIn: true, paymentMethod: 'card', placedOn: 'totem' }
-const coxinha: OrderDraft = { lines: [{ productId: 'coxinha', quantity: 1 }], dineIn: false, paymentMethod: 'pix', placedOn: 'totem' }
+const xsalada: OrderDraft = { lines: [{ productId: 'xsalada', quantity: 2 }], dineIn: true, paymentMethod: 'card' }
+const coxinha: OrderDraft = { lines: [{ productId: 'coxinha', quantity: 1 }], dineIn: false, paymentMethod: 'pix' }
 
 function demoStore() {
   const storage = new MemoryStorage()
@@ -41,6 +42,7 @@ function demoStore() {
     nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
     tag: new UnavailableTag(),
     buzzer: new UnavailableBuzzer(),
+    wakeLock: new UnavailableWakeLock(),
   }
   return { adapters, menu, ordersAt }
 }
@@ -278,6 +280,7 @@ describe('PainelApp', () => {
       nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
       tag: new UnavailableTag(),
       buzzer: new UnavailableBuzzer(),
+      wakeLock: new UnavailableWakeLock(),
     }
 
     renderPainel(failing)
@@ -313,6 +316,7 @@ describe('PainelApp', () => {
       nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
       tag: new UnavailableTag(),
       buzzer: new UnavailableBuzzer(),
+      wakeLock: new UnavailableWakeLock(),
     }
     renderPainel(adapters)
 

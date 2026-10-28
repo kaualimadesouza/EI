@@ -11,7 +11,15 @@ function tapFiveTimes(text: string) {
 
 // an Android phone browser: it has the Vibration API, which the test watches
 function demoOnAndroid(vibrate: () => boolean) {
-  const runtime: Runtime = { tauri: false, mobile: true, totem: false, ndefReader: undefined, tagBridge: undefined, vibrate }
+  const runtime: Runtime = {
+    tauri: false,
+    mobile: true,
+    totem: false,
+    ndefReader: undefined,
+    tagBridge: undefined,
+    vibrate,
+    wakeLock: undefined,
+  }
   return createAdapters(undefined, runtime)
 }
 

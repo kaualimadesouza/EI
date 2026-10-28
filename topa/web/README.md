@@ -28,16 +28,18 @@ picked in `src/composition.ts`:
   so a card held to the totem at payment never meets the tag. A phone without the app opens the
   link in its browser. Devices without HCE fall back to the sticker.
 
-An order placed on a phone (the app, or a phone browser that opened a store link) turns the phone
-into the counter's pager: after payment it shows the order being prepared and, once it is ready,
-vibrates (Vibration API, so not on iPhones) and blinks a bell, which stands still under reduced
-motion. It asks every 2 s and stays up until the customer leaves it. In demo mode a phone order is
-ready 5 s after payment and `/painel` sees it ready too; with the API, the merchant marks it ready
-on `/painel`. An order placed at the totem keeps the plain confirmation and waits for the merchant.
-
 Staff switch a device between the two roles by tapping the TOPA mark (top of the phone screen,
 "por TOPA" on the kiosk start) five times within 2 s; the app reloads in the other role. Both
 screens show the app version next to the mark.
+
+An order placed on a phone (the app, or a phone browser that opened a store link) turns the phone
+into the counter's pager: after payment it shows the order being prepared and, once it is ready,
+vibrates (Vibration API, so not on iPhones) and blinks a bell, which stands still under reduced
+motion. While it waits it keeps the screen on (Screen Wake Lock API) and asks `GET /orders/{id}`
+every 2 s, and at once when the page comes back; it stays until the customer leaves it. In demo
+mode a followed order still `received` is ready 5 s after payment, and `/painel` sees it too; with
+the API, the merchant marks it ready. An order placed at the totem keeps the plain confirmation and
+waits for the merchant.
 
 You need Rust (rustup). For Android also JDK 17+, the Android SDK with an NDK (`ANDROID_HOME`,
 `NDK_HOME`) and `rustup target add aarch64-linux-android`. The Linux desktop build needs
