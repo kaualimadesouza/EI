@@ -69,9 +69,9 @@ the MVP monorepo (`topa/web/`, `topa/api/`). The repo is public.
    The bot never shows in `requested_reviewers`; the `review_requested` event
    on the PR timeline is the confirmation.
 10. CI green, squash-merge, delete the branch, move the card to **Done**
-    (`Closes #<n>` closes the issue). A merge to main deploys `topa/web/` to DEV
-    (`topa-totem-dev.vercel.app`); merging the release-please PR cuts a release
-    and deploys PROD (`topa-totem.vercel.app`).
+    (`Closes #<n>` closes the issue). Merging the release-please PR cuts a
+    release; what each merge deploys, and what still goes out by hand, is in
+    `CLAUDE.md`.
 
 ## Board operations
 

@@ -55,9 +55,51 @@ dentro de `topa/web`) e do [uv](https://docs.astral.sh/uv/) para a API.
 O front encontra a API por `VITE_API_URL`, que precisa ser do mesmo domínio (`/api`, repassado pelo
 servidor do Vite), porque a API não libera CORS. Sem essa variável, o front abre em modo demonstração.
 
-Na nuvem, o front é publicado na Vercel em modo demonstração, sem API:
-[topa-totem-dev.vercel.app](https://topa-totem-dev.vercel.app) recebe cada push na `main`, e
-[topa-totem.vercel.app](https://topa-totem.vercel.app) recebe cada release.
+Na nuvem, o front está publicado em modo demonstração, sem API, em
+[topa-totem.vercel.app](https://topa-totem.vercel.app).
+
+## Arquitetura final
+
+Como o sistema fica no fim, depois de todas as fases e apostas, do usuário até o banco de dados.
+O caminho até lá, fase por fase, está em [`docs/caminho-para-producao.md`](docs/caminho-para-producao.md).
+
+```mermaid
+%%{init: {"htmlLabels": false, "flowchart": {"htmlLabels": false}}}%%
+flowchart TB
+    %% SVG labels on purpose: GitHub clips the default HTML labels
+    lojista(["Lojista"])
+    cliente(["Cliente"])
+
+    subgraph loja["Na loja"]
+        painel["Painel do lojista<br/>pedidos e cardápio"]
+        totem["Totem<br/>pedido, pagamento,<br/>recomendação<br/>e cópia local"]
+    end
+
+    celular["Celular do cliente<br/>navegador ou app"]
+
+    servidor["Servidor TOPA<br/>cardápio, pedidos<br/>e pagamentos"]
+    banco["Banco de dados"]
+
+    pagamentos["Pagamentos<br/>cartão e Pix"]
+
+    lojista --> painel
+    cliente -- "pede no totem" --> totem
+    cliente -- "fila grande" --> celular
+    totem -. "link da loja por<br/>NFC ou QR Code" .-> celular
+
+    painel <-- "direto, sem internet" --> totem
+    painel <-- "sincroniza quando<br/>há internet" --> servidor
+    totem <-- "sincroniza quando<br/>há internet" --> servidor
+    celular -- "internet do celular" --> servidor
+    servidor --> banco
+
+    servidor -- "Pix" --> pagamentos
+    totem -- "cartão" --> pagamentos
+```
+
+Sem internet, a loja continua vendendo: o totem e o painel trabalham sobre uma cópia local e
+sincronizam com o servidor quando a conexão volta. O desenho está em
+[Vender sem internet](docs/caminho-para-producao.md#vender-sem-internet).
 
 ## Como compilar os documentos
 

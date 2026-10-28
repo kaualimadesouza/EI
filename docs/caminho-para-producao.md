@@ -1,7 +1,7 @@
 # Caminho para produção
 
 O que falta para o TOPA sair do modo demonstração e atender uma loja de verdade, dividido em
-fases. Estado de 28/10/2026, versão `topa 0.1.1`.
+fases. Estado de 28/10/2026.
 
 Hoje todo build publicado roda em **modo demonstração**: o APK, os instaladores da release e o
 site `topa-totem.vercel.app`. Quem decide é `topa/web/src/composition.ts`: com `VITE_API_URL`
@@ -115,10 +115,43 @@ taxas, contrato e o SDK para Android. Hoje o pagamento é simulado: o QR do Pix 
   com os sistemas de gestão das lojas e a unificação fiscal como o principal risco técnico.
   Antes da primeira venda real, é preciso decidir com a loja como cada venda do totem entra no
   fiscal dela (a emissão da NFC-e).
-- **Vender sem internet (edge computing):** o totem guarda os pedidos e sincroniza quando a
-  conexão volta. Exige uma numeração de pedidos que não colida entre aparelhos offline.
 - **Recomendação por visão computacional:** as sugestões de hoje são regras fixas (fase 1,
   item 5).
+
+### Vender sem internet
+
+O pitch promete continuidade de venda, e o README lista a operação offline como diferencial. Este
+é o desenho que o grupo propõe para isso. Hoje o app só funciona sem internet porque o modo
+demonstração não usa servidor; ligado à API, ele passa a depender dela para tudo.
+
+1. **O totem trabalha sempre sobre uma cópia local** do cardápio, dos preços e dos esgotados, com
+   ou sem internet. A sincronização com o servidor roda por trás, então a queda da internet não
+   muda nada para quem pede.
+2. **Os pedidos entram numa fila local** no aparelho, e a sincronização os envia ao servidor. Sem
+   internet, eles esperam na fila até a conexão voltar.
+3. **A loja se comunica pela rede interna** (o *edge*). O totem e o painel do lojista, ou a tela
+   da cozinha, conversam direto pelo roteador da loja, sem passar pela nuvem. Se a internet cai e
+   o roteador continua ligado, o pedido chega à cozinha do mesmo jeito.
+4. **O painel também sincroniza com o servidor.** Com internet, ele faz o login do lojista,
+   recebe os pedidos feitos pelo celular e envia as mudanças de cardápio e de esgotados. Sem
+   internet, essas mudanças esperam a conexão voltar. Fora da loja, o painel fala só com o
+   servidor.
+5. **Numeração dos pedidos sem repetir.** Cada totem numera com um prefixo próprio (A01, A02 num
+   totem; B01, B02 no outro), sempre, e não só sem internet, para a cozinha não ver duas
+   numerações no mesmo dia. Hoje a API numera os pedidos do dia a partir de 001.
+6. **Pagamento**, a parte difícil:
+   - a saída mais segura é um chip 4G de reserva no aparelho, que combina com o modelo de
+     aluguel (HaaS): se a internet da loja cai, o totem continua conectado pelo 4G, com cartão,
+     Pix e sincronização;
+   - sem nenhuma conexão, o cartão por aproximação só funciona se a credenciadora permitir
+     transação offline, normalmente com limite de valor. É preciso confirmar com ela, porque o
+     Tap on Phone costuma exigir autorização online;
+   - o Pix precisa de internet para confirmar o pagamento, então o totem o esconde até a conexão
+     voltar.
+7. **Celular do cliente:** usa a internet do próprio cliente e alcança o servidor, mas a loja só
+   recebe o pedido quando voltar a ter internet. Esconder "Peça pelo celular" no totem não basta:
+   o adesivo NFC continua na loja, e quem já abriu o cardápio segue pedindo. Por isso o servidor
+   recusa pedidos pelo celular de uma loja cujo totem parou de sincronizar.
 
 ## Antes do primeiro piloto numa loja
 
