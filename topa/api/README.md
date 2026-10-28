@@ -59,6 +59,8 @@ make test
   business day (America/Sao_Paulo).
 - `GET /orders?date=YYYY-MM-DD`: one business day's orders by number, each shaped like the
   `POST /orders` answer with its items in menu order. Without `date`, today in São Paulo.
+- `GET /orders/{id}`: one order as it stands now, shaped the same way; the customer's phone
+  follows its order with it. 404 when no order has that id.
 - `PATCH /orders/{id}`: `{"status": ...}` moves the order along `received`, `preparing`,
   `ready`, `delivered`, one step forward or one back (the dashboard's undo), and answers 200
   with it.
@@ -74,7 +76,7 @@ dashboard computes them from `GET /orders`.
 ```
 src/topa_api/
   domain/                 catalog, order rules and their pt-BR errors, no frameworks, no IO
-  application/            use cases (place, list and move orders, product availability)
+  application/            use cases (place, list, read and move orders, product availability)
                           and the ports they need (repositories, clock, readiness probe)
   adapters/               SQLAlchemy models and repositories, engine, system clock
   presentation/fastapi/   routers, request/response schemas, the ports routes ask for, error handlers
