@@ -10,8 +10,10 @@ import { LocalMenu } from './adapters/local/local-menu'
 import { LocalOrders } from './adapters/local/local-orders'
 import { TauriNfc } from './adapters/tauri/tauri-nfc'
 import { type TagBridge, TauriTag } from './adapters/tauri/tauri-tag'
+import { UnavailableBuzzer } from './adapters/unavailable/unavailable-buzzer'
 import { UnavailableNfc } from './adapters/unavailable/unavailable-nfc'
 import { UnavailableTag } from './adapters/unavailable/unavailable-tag'
+import { WebBuzzer } from './adapters/web/web-buzzer'
 import { type NdefReader, WebNfc } from './adapters/web/web-nfc'
 import type { Adapters } from './ports/adapters'
 import type { NfcPort } from './ports/nfc'
@@ -24,6 +26,8 @@ export interface Runtime {
   totem: boolean
   ndefReader: (new () => NdefReader) | undefined
   tagBridge: TagBridge | undefined
+  /** The Vibration API, where the device has one (not on iPhones). */
+  vibrate: ((pattern: number[]) => boolean) | undefined
 }
 
 const totemFlag = () => new StoredValue(browserStorage(), 'topa.totem', false)
@@ -35,6 +39,7 @@ export function detectRuntime(): Runtime {
     totem: totemFlag().read(),
     ndefReader: window.NDEFReader,
     tagBridge: window.TopaTag,
+    vibrate: 'vibrate' in navigator ? (pattern) => navigator.vibrate(pattern) : undefined,
   }
 }
 
@@ -66,6 +71,7 @@ function nfcFor(runtime: Runtime): NfcPort {
 export function createAdapters(apiUrl: string | undefined, runtime: Runtime = detectRuntime()): Adapters {
   const nfc = nfcFor(runtime)
   const tag = runtime.tagBridge ? new TauriTag(runtime.tagBridge) : new UnavailableTag()
+  const buzzer = runtime.vibrate ? new WebBuzzer(runtime.vibrate) : new UnavailableBuzzer()
   if (apiUrl) {
     const client = new HttpClient(apiUrl)
     return {
@@ -75,8 +81,9 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
       orders: new HttpOrders(client),
       nfc,
       tag,
+      buzzer,
     }
   }
   const menu = new LocalMenu()
-  return { mode: 'demo', connection: new LocalConnection(), menu, orders: new LocalOrders(menu), nfc, tag }
+  return { mode: 'demo', connection: new LocalConnection(), menu, orders: new LocalOrders(menu), nfc, tag, buzzer }
 }

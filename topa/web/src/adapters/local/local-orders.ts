@@ -7,7 +7,12 @@ import { browserStorage, StoredValue, type KeyValueStore } from './browser-stora
 
 interface StoredOrder extends OrderSummary {
   businessDate: string
+  /** The demo kitchen's moment to turn this phone order ready; gone once it has run. */
+  readyAt?: string
 }
+
+// the demo kitchen: with no merchant at a dashboard, a phone order is ready this long after payment
+const DEMO_KITCHEN_MS = 5_000
 
 /** Demo mode keeps orders in this browser with the API's rules, so a kiosk tab and a dashboard tab agree. */
 export class LocalOrders implements OrdersPort {
@@ -31,7 +36,7 @@ export class LocalOrders implements OrdersPort {
     })
     const createdAt = this.now()
     const businessDate = createdAt.toLocaleDateString('sv-SE')
-    const orders = this.orders.read()
+    const orders = this.stored()
     const order: StoredOrder = {
       id: crypto.randomUUID(),
       number: orders.filter((o) => o.businessDate === businessDate).length + 1,
@@ -42,17 +47,24 @@ export class LocalOrders implements OrdersPort {
       totalCents: items.reduce((sum, item) => sum + item.quantity * item.unitPriceCents, 0),
       createdAt: createdAt.toISOString(),
       items,
+      // a totem order waits for the dashboard, as it always has
+      readyAt: draft.placedOn === 'phone' ? new Date(createdAt.getTime() + DEMO_KITCHEN_MS).toISOString() : undefined,
     }
     this.orders.write([...orders, order])
-    return { number: order.number, totalCents: order.totalCents }
+    return { id: order.id, number: order.number, totalCents: order.totalCents, businessDate }
   }
 
   list(businessDate: string): Promise<OrderSummary[]> {
-    return Promise.resolve(this.orders.read().filter((order) => order.businessDate === businessDate))
+    return Promise.resolve(this.stored().filter((order) => order.businessDate === businessDate))
+  }
+
+  statusOf(placed: PlacedOrder): Promise<OrderSummary['status']> {
+    const order = this.stored().find((o) => o.id === placed.id)
+    return order ? Promise.resolve(order.status) : Promise.reject(new OrderRejectedError('Pedido não encontrado.'))
   }
 
   setStatus(orderId: string, status: OrderSummary['status']): Promise<OrderSummary> {
-    const orders = this.orders.read()
+    const orders = this.stored()
     const order = orders.find((o) => o.id === orderId)
     if (!order) return Promise.reject(new OrderRejectedError('Pedido não encontrado.'))
     if (!canMove(order.status, status)) {
@@ -63,5 +75,19 @@ export class LocalOrders implements OrdersPort {
     const moved: StoredOrder = { ...order, status }
     this.orders.write(orders.map((o) => (o.id === orderId ? moved : o)))
     return Promise.resolve(moved)
+  }
+
+  // whichever tab reads first (the phone or the dashboard) runs the demo kitchen, once per order
+  private stored(): StoredOrder[] {
+    const now = this.now().getTime()
+    let cooked = false
+    const orders = this.orders.read().map((order): StoredOrder => {
+      if (!order.readyAt || Date.parse(order.readyAt) > now) return order
+      cooked = true
+      const waiting = order.status === 'received' || order.status === 'preparing'
+      return { ...order, status: waiting ? 'ready' : order.status, readyAt: undefined }
+    })
+    if (cooked) this.orders.write(orders)
+    return orders
   }
 }

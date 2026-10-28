@@ -7,12 +7,20 @@ import { LocalConnection } from './adapters/local/local-connection'
 import { LocalMenu } from './adapters/local/local-menu'
 import { LocalOrders } from './adapters/local/local-orders'
 import { TauriNfc } from './adapters/tauri/tauri-nfc'
+import { UnavailableBuzzer } from './adapters/unavailable/unavailable-buzzer'
 import { UnavailableNfc } from './adapters/unavailable/unavailable-nfc'
 import { WebNfc } from './adapters/web/web-nfc'
 import type { NdefReader } from './adapters/web/web-nfc'
 import { createAdapters, detectRuntime, isPhoneApp, roleSwitch, type Runtime } from './composition'
 
-const browser: Runtime = { tauri: false, mobile: false, totem: false, ndefReader: undefined, tagBridge: undefined }
+const browser: Runtime = {
+  tauri: false,
+  mobile: false,
+  totem: false,
+  ndefReader: undefined,
+  tagBridge: undefined,
+  vibrate: undefined,
+}
 const androidApp: Runtime = { ...browser, tauri: true, mobile: true }
 const desktopApp: Runtime = { ...browser, tauri: true }
 
@@ -98,6 +106,22 @@ describe('createAdapters', () => {
     expect(tagBridge.withdraw).toHaveBeenCalledOnce()
   })
 
+  it('buzzes in pager pulses through the Vibration API where the device has one', () => {
+    const vibrate = vi.fn(() => true)
+
+    createAdapters(undefined, { ...browser, vibrate }).buzzer.buzz()
+
+    expect(vibrate).toHaveBeenCalledExactlyOnceWith([400, 200, 400, 200, 400])
+  })
+
+  it('has nothing to buzz without the Vibration API, and buzzing is harmless', () => {
+    const { buzzer } = createAdapters('/api', browser)
+
+    buzzer.buzz()
+
+    expect(buzzer).toBeInstanceOf(UnavailableBuzzer)
+  })
+
   it('has no tag to serve without the bridge, and publishing is harmless', () => {
     const { tag } = createAdapters('/api', browser)
 
@@ -109,7 +133,10 @@ describe('createAdapters', () => {
 })
 
 describe('detectRuntime', () => {
-  afterEach(() => localStorage.clear())
+  afterEach(() => {
+    localStorage.clear()
+    Reflect.deleteProperty(navigator, 'vibrate')
+  })
 
   it('sees a plain desktop browser in the test DOM', () => {
     expect(detectRuntime()).toEqual(browser)
@@ -129,6 +156,15 @@ describe('detectRuntime', () => {
     )
 
     expect(detectRuntime()).toEqual(androidApp)
+  })
+
+  it('picks up the Vibration API when the device has it', () => {
+    const vibrate = vi.fn(() => true)
+    Object.defineProperty(navigator, 'vibrate', { value: vibrate, configurable: true })
+
+    detectRuntime().vibrate!([200])
+
+    expect(vibrate).toHaveBeenCalledWith([200])
   })
 
   it('picks up Web NFC when the browser has it', () => {

@@ -21,7 +21,9 @@ const draft = {
   ],
   dineIn: false,
   paymentMethod: 'card' as const,
+  placedOn: 'totem' as const,
 }
+const fromPhone = { ...draft, placedOn: 'phone' as const }
 const monday = () => new Date(2026, 9, 26, 12, 0)
 const tuesday = () => new Date(2026, 9, 27, 8, 0)
 
@@ -39,7 +41,7 @@ describe('LocalOrders', () => {
     const second = await new LocalOrders(menu, storage, monday).place(draft)
     const nextDay = await new LocalOrders(menu, storage, tuesday).place(draft)
 
-    expect(first).toEqual({ number: 1, totalCents: 2 * 1490 + 990 })
+    expect(first).toEqual({ id: expect.any(String), number: 1, totalCents: 2 * 1490 + 990, businessDate: '2026-10-26' })
     expect(second.number).toBe(2)
     expect(nextDay.number).toBe(1)
   })
@@ -125,6 +127,60 @@ describe('LocalOrders', () => {
     const third = await orders.place(draft)
 
     expect([first.number, second.number, third.number]).toEqual([1, 2, 3])
+  })
+
+  it('runs the demo kitchen for a phone order: ready 5 s after it was placed, for the dashboard too', async () => {
+    const { storage, menu, orders } = store()
+    await orders.place(fromPhone)
+    const dashboardAt = (ms: number) => new LocalOrders(menu, storage, () => new Date(monday().getTime() + ms))
+
+    expect((await dashboardAt(4_999).list('2026-10-26'))[0].status).toBe('received')
+    expect((await dashboardAt(5_000).list('2026-10-26'))[0].status).toBe('ready')
+  })
+
+  it('tells the phone where its order is, and turns it ready on time', async () => {
+    const { storage, menu, orders } = store()
+    const placed = await orders.place(fromPhone)
+
+    expect(await orders.statusOf(placed)).toBe('received')
+    expect(await new LocalOrders(menu, storage, () => new Date(monday().getTime() + 5_000)).statusOf(placed)).toBe('ready')
+  })
+
+  it('leaves a totem order to the dashboard: no demo kitchen moves it', async () => {
+    const { storage, menu, orders } = store()
+    const placed = await orders.place(draft)
+    const anHourLater = new LocalOrders(menu, storage, () => new Date(monday().getTime() + 3_600_000))
+
+    expect(await anHourLater.statusOf(placed)).toBe('received')
+    expect((await anHourLater.list('2026-10-26'))[0].status).toBe('received')
+  })
+
+  it('runs the demo kitchen once, so an undo after it sticks', async () => {
+    const { storage, menu, orders } = store()
+    const placed = await orders.place(fromPhone)
+    const later = new LocalOrders(menu, storage, () => new Date(monday().getTime() + 10_000))
+
+    await later.setStatus(placed.id, 'preparing')
+
+    expect(await later.statusOf(placed)).toBe('preparing')
+  })
+
+  it('never pulls back a phone order the dashboard already moved past ready', async () => {
+    const { storage, menu, orders } = store()
+    const placed = await orders.place(fromPhone)
+    await orders.setStatus(placed.id, 'preparing')
+    await orders.setStatus(placed.id, 'ready')
+    await orders.setStatus(placed.id, 'delivered')
+
+    expect(await new LocalOrders(menu, storage, () => new Date(monday().getTime() + 5_000)).statusOf(placed)).toBe('delivered')
+  })
+
+  it('says an order it does not hold is not found', async () => {
+    const { orders } = store()
+
+    await expect(orders.statusOf({ id: 'gone', number: 1, totalCents: 0, businessDate: '2026-10-26' })).rejects.toEqual(
+      new OrderRejectedError('Pedido não encontrado.'),
+    )
   })
 
   it('uses the browser storage and clock by default', async () => {

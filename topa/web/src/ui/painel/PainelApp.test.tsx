@@ -8,6 +8,7 @@ import type { Adapters } from '../../ports/adapters'
 import { OrderRejectedError } from '../../ports/orders'
 import { LocalMenu } from '../../adapters/local/local-menu'
 import { LocalOrders } from '../../adapters/local/local-orders'
+import { UnavailableBuzzer } from '../../adapters/unavailable/unavailable-buzzer'
 import { UnavailableTag } from '../../adapters/unavailable/unavailable-tag'
 import { PainelApp, POLL_MS, UNDO_MS } from './PainelApp'
 
@@ -25,8 +26,8 @@ class MemoryStorage {
 const NOW = new Date(2026, 9, 26, 16, 0)
 const at = (day: number, hour: number, minute = 0) => () => new Date(2026, 9, day, hour, minute)
 
-const xsalada: OrderDraft = { lines: [{ productId: 'xsalada', quantity: 2 }], dineIn: true, paymentMethod: 'card' }
-const coxinha: OrderDraft = { lines: [{ productId: 'coxinha', quantity: 1 }], dineIn: false, paymentMethod: 'pix' }
+const xsalada: OrderDraft = { lines: [{ productId: 'xsalada', quantity: 2 }], dineIn: true, paymentMethod: 'card', placedOn: 'totem' }
+const coxinha: OrderDraft = { lines: [{ productId: 'coxinha', quantity: 1 }], dineIn: false, paymentMethod: 'pix', placedOn: 'totem' }
 
 function demoStore() {
   const storage = new MemoryStorage()
@@ -39,6 +40,7 @@ function demoStore() {
     orders: ordersAt(() => NOW),
     nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
     tag: new UnavailableTag(),
+    buzzer: new UnavailableBuzzer(),
   }
   return { adapters, menu, ordersAt }
 }
@@ -272,9 +274,10 @@ describe('PainelApp', () => {
       mode: 'api',
       connection: { isReachable: () => Promise.resolve(false) },
       menu: { list: () => Promise.reject(new Error('down')), setAvailability: vi.fn() },
-      orders: { place: vi.fn(), list: () => Promise.reject(new Error('down')), setStatus: vi.fn() },
+      orders: { place: vi.fn(), list: () => Promise.reject(new Error('down')), setStatus: vi.fn(), statusOf: vi.fn() },
       nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
       tag: new UnavailableTag(),
+      buzzer: new UnavailableBuzzer(),
     }
 
     renderPainel(failing)
@@ -306,9 +309,10 @@ describe('PainelApp', () => {
       mode: 'api',
       connection: { isReachable: () => Promise.resolve(true) },
       menu: { list: () => Promise.resolve([suco]), setAvailability: () => Promise.reject(new Error('network')) },
-      orders: { place: vi.fn(), list: () => Promise.resolve([order]), setStatus },
+      orders: { place: vi.fn(), list: () => Promise.resolve([order]), setStatus, statusOf: vi.fn() },
       nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
       tag: new UnavailableTag(),
+      buzzer: new UnavailableBuzzer(),
     }
     renderPainel(adapters)
 

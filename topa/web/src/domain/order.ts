@@ -4,11 +4,16 @@ export interface OrderDraft {
   lines: CartLine[]
   dineIn: boolean
   paymentMethod: 'card' | 'pix'
+  /** Only an order placed on the customer's own phone is followed until it is ready. */
+  placedOn: 'totem' | 'phone'
 }
 
+/** What the customer sees after paying, and the handle the phone follows the order by. */
 export interface PlacedOrder {
+  id: string
   number: number
   totalCents: number
+  businessDate: string
 }
 
 /** A placed order as the dashboard follows it through the kitchen. */

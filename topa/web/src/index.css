@@ -35,6 +35,14 @@
   --text-caption: 18px;
   --radius-control: 24px;
   --radius-panel: 32px;
+
+  /* the ready call on the customer's phone, like a pager's light; used under motion-safe only */
+  --animate-blink: blink 1s ease-in-out infinite;
+  @keyframes blink {
+    50% {
+      opacity: 0.25;
+    }
+  }
 }
 
 :root {

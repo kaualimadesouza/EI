@@ -1,3 +1,4 @@
+import type { BuzzerPort } from './buzzer'
 import type { ConnectionPort } from './connection'
 import type { MenuPort } from './menu'
 import type { NfcPort } from './nfc'
@@ -12,4 +13,5 @@ export interface Adapters {
   orders: OrdersPort
   nfc: NfcPort
   tag: TagPort
+  buzzer: BuzzerPort
 }

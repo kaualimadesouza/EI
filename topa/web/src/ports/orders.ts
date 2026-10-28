@@ -6,6 +6,8 @@ export interface OrdersPort {
   list(businessDate: string): Promise<OrderSummary[]>
   /** One step forward through the kitchen, or one back to undo. */
   setStatus(orderId: string, status: OrderSummary['status']): Promise<OrderSummary>
+  /** Where one placed order is now; the customer's phone asks until it is ready. */
+  statusOf(order: PlacedOrder): Promise<OrderSummary['status']>
 }
 
 /** The store refused the request (an item sold out, a status that cannot follow); the message is for people. */

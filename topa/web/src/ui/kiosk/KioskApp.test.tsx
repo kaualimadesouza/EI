@@ -5,8 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEMO_CATALOG } from '../../domain/demo-catalog'
 import type { Adapters } from '../../ports/adapters'
 import type { Product } from '../../domain/menu'
-import type { OrderDraft, PlacedOrder } from '../../domain/order'
+import type { OrderDraft, OrderSummary, PlacedOrder } from '../../domain/order'
 import { OrderRejectedError } from '../../ports/orders'
+import { FOLLOW_MS } from './EndScreens'
 import { KioskApp } from './KioskApp'
 import { Qr } from './Qr'
 
@@ -14,22 +15,29 @@ interface Fakes {
   adapters: Adapters
   place: ReturnType<typeof vi.fn<(draft: OrderDraft) => Promise<PlacedOrder>>>
   list: ReturnType<typeof vi.fn<() => Promise<Product[]>>>
+  statusOf: ReturnType<typeof vi.fn<(order: PlacedOrder) => Promise<OrderSummary['status']>>>
+  buzz: ReturnType<typeof vi.fn<() => void>>
 }
 
 function fakes(products: Product[] = DEMO_CATALOG.map((p) => ({ ...p }))): Fakes {
   const list = vi.fn<() => Promise<Product[]>>().mockResolvedValue(products)
   const place = vi
     .fn<(draft: OrderDraft) => Promise<PlacedOrder>>()
-    .mockImplementation((draft) => Promise.resolve({ number: 47, totalCents: draft.lines.length * 100 }))
+    .mockImplementation((draft) =>
+      Promise.resolve({ id: 'o47', number: 47, totalCents: draft.lines.length * 100, businessDate: '2026-10-26' }),
+    )
+  const statusOf = vi.fn<(order: PlacedOrder) => Promise<OrderSummary['status']>>().mockResolvedValue('received')
+  const buzz = vi.fn<() => void>()
   const adapters: Adapters = {
     mode: 'demo',
     connection: { isReachable: () => Promise.resolve(true) },
     menu: { list, setAvailability: vi.fn() },
-    orders: { place, list: vi.fn(), setStatus: vi.fn() },
+    orders: { place, list: vi.fn(), setStatus: vi.fn(), statusOf },
     nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
     tag: { available: false, publish: vi.fn(), withdraw: vi.fn() },
+    buzzer: { buzz },
   }
-  return { adapters, place, list }
+  return { adapters, place, list, statusOf, buzz }
 }
 
 const PHONE_MENU_URL = 'https://topa-totem.vercel.app/?loja=lanchonete-bem-te-vi'
@@ -42,6 +50,13 @@ function setup(f: Fakes = fakes(), now: () => Date = morning) {
   return { user, ...f }
 }
 
+// the kiosk opened on the customer's own phone: the phone app, or a store link in its browser
+function setupPhone(f: Fakes = fakes()) {
+  const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) })
+  render(<KioskApp adapters={f.adapters} now={morning} onCustomerPhone />)
+  return { user, ...f }
+}
+
 const button = (name: string | RegExp) => screen.getByRole('button', { name })
 // role queries match accessible names verbatim, and Intl puts a no-break space after R$
 const COMBO_BANNER = 'Adicionar Café + pão de queijo por R$\u00a012,90'
@@ -50,6 +65,16 @@ async function startOrder(user: ReturnType<typeof userEvent.setup>, dineIn = tru
   await user.click(button(dineIn ? /Comer aqui/ : /Levar para viagem/))
   await screen.findByRole('heading', { name: 'Lanches' })
 }
+
+async function payForCombo(user: ReturnType<typeof userEvent.setup>) {
+  await startOrder(user)
+  await user.click(button(COMBO_BANNER))
+  await user.click(button('Ver pedido'))
+  await user.click(button('Pagar'))
+  await user.click(button('Simular aprovação (demo)'))
+}
+
+const nextCheck = () => act(() => vi.advanceTimersByTimeAsync(FOLLOW_MS))
 
 describe('KioskApp', () => {
   beforeEach(() => {
@@ -77,7 +102,106 @@ describe('KioskApp', () => {
       lines: [{ productId: 'combo-cafe', quantity: 1 }],
       dineIn: false,
       paymentMethod: 'card',
+      placedOn: 'totem',
     })
+  })
+
+  it('on the totem, keeps the plain confirmation: no kitchen to follow, nothing buzzes', async () => {
+    const { user, statusOf, buzz } = setup()
+
+    await payForCombo(user)
+    await screen.findByText('Pedido confirmado')
+    act(() => vi.advanceTimersByTime(15_000))
+
+    expect(screen.getByText('Acompanhe seu número na tela do balcão.')).toBeInTheDocument()
+    expect(screen.queryByText(/Preparando|pronto/)).not.toBeInTheDocument()
+    expect(statusOf).not.toHaveBeenCalled()
+    expect(buzz).not.toHaveBeenCalled()
+  })
+
+  it('on the customer phone, shows the order being prepared, then buzzes and calls the customer when it is ready', async () => {
+    const { user, place, statusOf, buzz } = setupPhone()
+
+    await payForCombo(user)
+    expect(place).toHaveBeenCalledWith(expect.objectContaining({ placedOn: 'phone' }))
+    expect(await screen.findByRole('status')).toHaveTextContent('Preparando seu pedido')
+    expect(screen.getByLabelText('Pedido número 047')).toBeInTheDocument()
+    expect(screen.getByText('Avisamos aqui quando ficar pronto. Deixe esta tela aberta.')).toBeInTheDocument()
+    await nextCheck()
+    expect(statusOf).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'o47', businessDate: '2026-10-26' }))
+    expect(screen.getByRole('status')).toHaveTextContent('Preparando seu pedido')
+    expect(buzz).not.toHaveBeenCalled()
+
+    statusOf.mockResolvedValue('ready')
+    await nextCheck()
+
+    expect(screen.getByRole('status')).toHaveTextContent('Seu pedido está pronto')
+    expect(screen.getByText('Retire no balcão.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Pedido número 047')).toBeInTheDocument()
+    expect(buzz).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the phone on a ready order until the customer leaves, buzzing once per call', async () => {
+    const f = fakes()
+    f.statusOf.mockResolvedValue('ready')
+    const { user, buzz } = setupPhone(f)
+    await payForCombo(user)
+    await screen.findByRole('status')
+
+    act(() => vi.advanceTimersByTime(60_000))
+    await nextCheck()
+
+    expect(screen.getByRole('status')).toHaveTextContent('Seu pedido está pronto')
+    expect(buzz).toHaveBeenCalledOnce()
+    await user.click(button('Fazer novo pedido'))
+    expect(screen.getByRole('heading', { name: 'Peça aqui. Pague aqui.' })).toBeInTheDocument()
+  })
+
+  it('goes back to preparing when the counter undoes ready, and buzzes again when it is ready once more', async () => {
+    const { user, statusOf, buzz } = setupPhone()
+    await payForCombo(user)
+    await screen.findByRole('status')
+
+    statusOf.mockResolvedValue('ready')
+    await nextCheck()
+    statusOf.mockResolvedValue('preparing')
+    await nextCheck()
+    expect(screen.getByRole('status')).toHaveTextContent('Preparando seu pedido')
+    statusOf.mockResolvedValue('ready')
+    await nextCheck()
+
+    expect(screen.getByRole('status')).toHaveTextContent('Seu pedido está pronto')
+    expect(buzz).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps the last known state when a check fails, and asks again', async () => {
+    const { user, statusOf } = setupPhone()
+    await payForCombo(user)
+    await screen.findByRole('status')
+
+    statusOf.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await nextCheck()
+    expect(screen.getByRole('status')).toHaveTextContent('Preparando seu pedido')
+    statusOf.mockResolvedValue('ready')
+    await nextCheck()
+
+    expect(screen.getByRole('status')).toHaveTextContent('Seu pedido está pronto')
+  })
+
+  it('stops following the order once the counter hands it over', async () => {
+    const { user, statusOf, buzz } = setupPhone()
+    await payForCombo(user)
+    await screen.findByRole('status')
+
+    statusOf.mockResolvedValue('delivered')
+    await nextCheck()
+    const checks = statusOf.mock.calls.length
+    await nextCheck()
+
+    expect(screen.getByRole('status')).toHaveTextContent('Pedido entregue')
+    expect(screen.getByText('Bom apetite!')).toBeInTheDocument()
+    expect(statusOf).toHaveBeenCalledTimes(checks)
+    expect(buzz).not.toHaveBeenCalled()
   })
 
   it('offers juice after a sandwich and adds it when accepted', async () => {

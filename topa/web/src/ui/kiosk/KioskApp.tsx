@@ -7,7 +7,7 @@ import { bannerFor } from '../../domain/suggest'
 import type { Adapters } from '../../ports/adapters'
 import { OrderRejectedError } from '../../ports/orders'
 import { BagScreen } from './BagScreen'
-import { DoneScreen, QueueScreen } from './EndScreens'
+import { DoneScreen, PagerScreen, QueueScreen } from './EndScreens'
 import * as flow from './flow'
 import { MenuScreen } from './MenuScreen'
 import { ChoiceButtons, KioskHeader, PRIMARY_ACTION, Sheet } from './parts'
@@ -91,6 +91,7 @@ export function KioskApp({ adapters, now = () => new Date(), onSwitchRole, onCus
         lines: state.lines,
         dineIn: state.dineIn,
         paymentMethod: state.paymentMethod,
+        placedOn: onCustomerPhone ? 'phone' : 'totem',
       })
       setState((s) => flow.paid(s, placed))
     } catch (error) {
@@ -115,7 +116,13 @@ export function KioskApp({ adapters, now = () => new Date(), onSwitchRole, onCus
         />
       )}
       {state.screen === 'queue' && <QueueScreen menuUrl={menuUrl} totemIsTag={adapters.tag.available} onOrderHere={reset} />}
-      {state.screen === 'done' && <DoneScreen placed={state.placed!} onNewOrder={reset} />}
+      {/* only an order placed on the customer's phone is paged: at the totem, the next customer is waiting */}
+      {state.screen === 'done' &&
+        (onCustomerPhone ? (
+          <PagerScreen placed={state.placed!} orders={adapters.orders} buzzer={adapters.buzzer} onNewOrder={reset} />
+        ) : (
+          <DoneScreen placed={state.placed!} onNewOrder={reset} />
+        ))}
       {shopping && (
         <KioskHeader
           dineIn={state.dineIn}
