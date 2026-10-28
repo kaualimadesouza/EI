@@ -22,9 +22,9 @@ export function PhoneApp({ adapters, onSwitchRole }: PhoneAppProps) {
       <button
         type="button"
         onClick={() => setStore(null)}
-        className="flex min-h-16 flex-none items-center gap-3 border-b border-line bg-cream px-5 text-lg font-semibold text-slate max-sm:gap-2 max-sm:px-4 max-sm:text-base"
+        className="flex min-h-16 flex-none items-center gap-2 border-b border-line bg-cream px-4 text-base font-semibold text-slate"
       >
-        <ArrowLeftIcon size={24} className="max-sm:size-5" />
+        <ArrowLeftIcon size={20} />
         Ler outro totem
       </button>
       <KioskApp adapters={adapters} onCustomerPhone />

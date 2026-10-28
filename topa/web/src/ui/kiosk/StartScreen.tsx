@@ -18,6 +18,11 @@ interface StatusLook {
   dot: string
 }
 
+const PLACES = [
+  { dineIn: true, label: 'Comer aqui', Icon: DineInIcon },
+  { dineIn: false, label: 'Levar para viagem', Icon: TakeAwayIcon },
+] as const
+
 function lookOf(status: 'checking' | 'demo' | 'online' | 'offline'): StatusLook {
   switch (status) {
     case 'checking':
@@ -49,56 +54,51 @@ export function StartScreen({ mode, connection, onBegin, onQueue, onSwitchRole }
 
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-teal text-white lg:landscape:flex-row">
-      <div className="relative h-[clamp(14rem,36dvh,28rem)] flex-none max-sm:h-auto max-sm:min-h-40 max-sm:flex-1 lg:landscape:h-auto lg:landscape:w-[46%] short:lg:landscape:w-[38%]">
+      <div className="relative h-[clamp(14rem,36dvh,28rem)] flex-none max-sm:h-48 phone:h-auto phone:min-h-40 phone:flex-1 lg:landscape:h-auto lg:landscape:w-[46%] short:lg:landscape:w-[38%]">
         <img src={`${import.meta.env.BASE_URL}photos/xsalada.jpg`} alt="" className="absolute inset-0 size-full object-cover" />
         <div className="absolute inset-x-[clamp(1rem,6vw,3rem)] top-[clamp(1rem,5vw,2.5rem)] flex items-center">
-          <span className="flex h-14 items-center gap-3 rounded-full bg-white pr-5 pl-2 text-[clamp(1rem,2.5vw,1.375rem)] font-semibold whitespace-nowrap text-ink max-sm:h-11 max-sm:gap-2 max-sm:pr-4 max-sm:pl-1.5 max-sm:text-[15px]">
-            <StoreMark className="max-sm:size-8" />
+          <span className="flex h-14 items-center gap-3 rounded-full bg-white pr-5 pl-2 text-[clamp(1rem,2.5vw,1.375rem)] font-semibold whitespace-nowrap text-ink phone:h-11 phone:gap-2 phone:pr-4 phone:pl-1.5">
+            <StoreMark className="phone:size-8" />
             Lanchonete Bem-te-vi
           </span>
         </div>
       </div>
-      <div className="flex flex-1 flex-col gap-6 p-[clamp(1rem,6vw,3rem)] short:gap-3 max-sm:flex-none max-sm:gap-4 lg:landscape:justify-center-safe lg:landscape:overflow-y-auto lg:landscape:p-16 short:lg:landscape:p-10">
-        <h1 className="text-[clamp(3rem,11vw,5.5rem)] leading-[0.95] font-bold tracking-[-0.04em] max-sm:text-[34px] max-sm:leading-none max-sm:tracking-[-0.03em] max-sm:text-balance lg:landscape:text-[clamp(2.5rem,min(5.5vw,9dvh),5.5rem)]">
+      <div className="flex flex-1 flex-col gap-6 p-[clamp(1rem,6vw,3rem)] short:gap-3 max-sm:gap-4 phone:flex-none lg:landscape:justify-center-safe lg:landscape:overflow-y-auto lg:landscape:p-16 short:lg:landscape:p-10">
+        <h1 className="text-[clamp(3rem,11vw,5.5rem)] leading-[0.95] font-bold tracking-[-0.04em] phone:text-[34px] phone:leading-none phone:tracking-[-0.03em] phone:text-balance lg:landscape:text-[clamp(2.5rem,min(5.5vw,9dvh),5.5rem)]">
           Peça aqui. Pague aqui.
         </h1>
-        <p className="max-w-[600px] text-[clamp(1.125rem,3.25vw,1.625rem)] leading-[1.35] text-on-teal short:text-[20px] max-sm:text-[16px] max-sm:leading-snug">
+        <p className="max-w-[600px] text-[clamp(1.125rem,3.25vw,1.625rem)] leading-[1.35] text-on-teal short:text-[20px] phone:text-body phone:leading-snug">
           Monte o pedido, pague por aproximação ou Pix e retire no balcão.
         </p>
-        <p className="mt-auto text-[32px] font-semibold short:text-[26px] max-sm:text-[19px] lg:landscape:mt-6 short:lg:landscape:mt-2">Onde você vai comer?</p>
+        <p className="mt-auto text-[32px] font-semibold short:text-[26px] max-sm:text-[24px] phone:text-heading lg:landscape:mt-6 short:lg:landscape:mt-2">Onde você vai comer?</p>
         <div className="grid grid-cols-2 gap-6 max-sm:gap-3">
-          <button
-            type="button"
-            onClick={() => onBegin(true)}
-            className="flex min-h-40 flex-col items-start justify-between gap-3 rounded-[32px] bg-white p-6 text-left text-[32px] leading-tight font-semibold text-ink short:min-h-32 short:text-[26px] max-sm:min-h-0 max-sm:gap-2 max-sm:rounded-[20px] max-sm:p-4 max-sm:text-[18px]"
-          >
-            <DineInIcon size={44} className="text-teal max-sm:size-8" />
-            Comer aqui
-          </button>
-          <button
-            type="button"
-            onClick={() => onBegin(false)}
-            className="flex min-h-40 flex-col items-start justify-between gap-3 rounded-[32px] bg-white p-6 text-left text-[32px] leading-tight font-semibold text-ink short:min-h-32 short:text-[26px] max-sm:min-h-0 max-sm:gap-2 max-sm:rounded-[20px] max-sm:p-4 max-sm:text-[18px]"
-          >
-            <TakeAwayIcon size={44} className="text-teal max-sm:size-8" />
-            Levar para viagem
-          </button>
+          {PLACES.map(({ dineIn, label, Icon }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => onBegin(dineIn)}
+              className="flex min-h-40 flex-col items-start justify-between gap-3 rounded-panel bg-white p-6 text-left text-[32px] leading-tight font-semibold text-ink short:min-h-32 short:text-[26px] max-sm:min-h-32 max-sm:p-4 max-sm:text-[22px] phone:min-h-0 phone:gap-2 phone:text-label"
+            >
+              <Icon size={44} className="text-teal phone:size-8" />
+              {label}
+            </button>
+          ))}
         </div>
         {onQueue && (
           <button
             type="button"
             onClick={onQueue}
-            className="min-h-16 self-start text-left text-[22px] font-medium underline underline-offset-4 short:text-[20px] max-sm:text-[16px]"
+            className="min-h-16 self-start text-left text-[22px] font-medium underline underline-offset-4 short:text-[20px] max-sm:text-[18px] phone:text-body"
           >
             A fila está grande? Peça pelo celular
           </button>
         )}
         <div className="flex items-center justify-between gap-4 text-on-teal">
-          <p role="status" className="flex items-center gap-3 text-[18px] font-medium max-sm:gap-2 max-sm:text-[14px]">
-            <span aria-hidden="true" className={`size-3 rounded-full max-sm:size-2.5 max-sm:flex-none ${look.dot}`} />
+          <p role="status" className="flex items-center gap-3 text-caption font-medium phone:gap-2">
+            <span aria-hidden="true" className={`size-3 rounded-full phone:size-2.5 phone:flex-none ${look.dot}`} />
             {look.label}
           </p>
-          <BrandMark label="por TOPA" className="text-[18px] font-medium max-sm:text-[14px] max-sm:whitespace-nowrap" onStaffTaps={onSwitchRole} />
+          <BrandMark label="por TOPA" className="text-caption font-medium phone:whitespace-nowrap" onStaffTaps={onSwitchRole} />
         </div>
       </div>
     </section>
