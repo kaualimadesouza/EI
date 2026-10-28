@@ -73,7 +73,7 @@ flowchart TB
     painel["Painel do lojista<br/>pedidos e cardápio"]
 
     servidor["Servidor TOPA<br/>regras de cardápio, pedido e pagamento"]
-    banco[("Banco de dados")]
+    banco["Banco de dados"]
 
     subgraph parceiros["Parceiros"]
         pagamentos["Pagamentos<br/>cartão por aproximação e Pix"]
