@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.3](https://github.com/kaualimadesouza/EI/compare/topa-0.1.2...topa-0.1.3) (2026-10-28)
+
+
+### Features
+
+* **api:** deploy to AWS Lambda with Neon Postgres ([#41](https://github.com/kaualimadesouza/EI/issues/41)) ([fba9f4e](https://github.com/kaualimadesouza/EI/commit/fba9f4ec3c472a8f51e49724af849525cf635b35))
+* buzz the phone when the order is ready ([#44](https://github.com/kaualimadesouza/EI/issues/44)) ([295da4e](https://github.com/kaualimadesouza/EI/commit/295da4e921870ec81d9da545c90d04fb7b4f47d4))
+* point the site and the apps at the deployed API ([#47](https://github.com/kaualimadesouza/EI/issues/47)) ([eb821b9](https://github.com/kaualimadesouza/EI/commit/eb821b95955f063be8660f5e627507f10664bf96))
+
 ## [0.1.2](https://github.com/kaualimadesouza/EI/compare/topa-0.1.1...topa-0.1.2) (2026-10-28)
 
 
