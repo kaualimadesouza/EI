@@ -36,11 +36,12 @@ export function DoneScreen({ placed, onNewOrder }: DoneScreenProps) {
 
 interface QueueScreenProps {
   menuUrl: string
+  totemIsTag: boolean
   onOrderHere: () => void
 }
 
-/** Two ways to move the order to the customer's phone: tap the NFC sticker or scan the QR. */
-export function QueueScreen({ menuUrl, onOrderHere }: QueueScreenProps) {
+/** Two ways to move the order to the customer's phone: tap the NFC tag (the sticker, or the totem itself) or scan the QR. */
+export function QueueScreen({ menuUrl, totemIsTag, onOrderHere }: QueueScreenProps) {
   return (
     <section className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto bg-teal px-12 py-14 text-white short:gap-5 short:py-8 max-sm:gap-6 max-sm:px-4 max-sm:py-8">
       <div className="flex flex-col gap-3">
@@ -55,7 +56,9 @@ export function QueueScreen({ menuUrl, onOrderHere }: QueueScreenProps) {
             <ContactlessIcon size={110} />
           </span>
           <h2 id="queue-nfc" className="text-[30px] font-bold max-sm:text-[24px]">Aproxime o celular</h2>
-          <p className="text-[22px] text-muted max-sm:text-[18px]">Encoste o celular no adesivo TOPA ao lado da tela.</p>
+          <p className="text-[22px] text-muted max-sm:text-[18px]">
+            {totemIsTag ? 'Encoste o celular atrás do totem.' : 'Encoste o celular no adesivo TOPA ao lado da tela.'}
+          </p>
         </section>
         <span aria-hidden="true" className="flex items-center justify-center text-[22px] font-semibold text-on-teal max-sm:py-1">
           ou

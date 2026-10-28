@@ -2,6 +2,7 @@ import type { ConnectionPort } from './connection'
 import type { MenuPort } from './menu'
 import type { NfcPort } from './nfc'
 import type { OrdersPort } from './orders'
+import type { TagPort } from './tag'
 
 /** What the composition root hands the UI: the mode it picked and the ports that serve it. */
 export interface Adapters {
@@ -10,4 +11,5 @@ export interface Adapters {
   menu: MenuPort
   orders: OrdersPort
   nfc: NfcPort
+  tag: TagPort
 }

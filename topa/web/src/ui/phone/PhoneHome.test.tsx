@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -30,28 +30,42 @@ async function tapToScan() {
 }
 
 describe('PhoneHome', () => {
-  it('invites the customer to order from the phone through the totem sticker', () => {
-    render(<PhoneHome nfc={pendingReader().nfc} onStore={vi.fn()} />)
+  it('opens on plain TOPA, with no store and no staff option in sight', () => {
+    render(<PhoneHome onUseAsTotem={vi.fn()} nfc={pendingReader().nfc} onStore={vi.fn()} />)
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Peça pelo celular.')
-    expect(screen.getByRole('button', { name: 'Aproximar do totem' })).toBeInTheDocument()
+    expect(screen.getByText(`v${__APP_VERSION__}`)).toBeInTheDocument()
+    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['Aproximar do totem'])
+    expect(screen.queryByText(/Bem-te-vi/)).not.toBeInTheDocument()
   })
 
-  it('asks for the phone on the sticker while it scans', async () => {
-    render(<PhoneHome nfc={pendingReader().nfc} onStore={vi.fn()} />)
+  it('asks for the phone on the totem while it scans', async () => {
+    render(<PhoneHome onUseAsTotem={vi.fn()} nfc={pendingReader().nfc} onStore={vi.fn()} />)
 
     await tapToScan()
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Encoste o celular no adesivo TOPA ao lado da tela do totem.',
+      'Encoste o celular atrás do totem ou no adesivo TOPA.',
     )
     expect(screen.queryByRole('button', { name: 'Aproximar do totem' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument()
   })
 
+  it('turns this device into the store totem when staff hold the TOPA mark for 3 s', () => {
+    vi.useFakeTimers()
+    const onUseAsTotem = vi.fn()
+    render(<PhoneHome onUseAsTotem={onUseAsTotem} nfc={pendingReader().nfc} onStore={vi.fn()} />)
+
+    fireEvent.pointerDown(screen.getByText('TOPA'))
+    act(() => vi.advanceTimersByTime(3000))
+    vi.useRealTimers()
+
+    expect(onUseAsTotem).toHaveBeenCalledOnce()
+  })
+
   it('hands over the store written on the sticker', async () => {
     const onStore = vi.fn()
-    render(<PhoneHome nfc={readerAnswering({ kind: 'url', url: STORE_URL })} onStore={onStore} />)
+    render(<PhoneHome onUseAsTotem={vi.fn()} nfc={readerAnswering({ kind: 'url', url: STORE_URL })} onStore={onStore} />)
 
     await tapToScan()
 
@@ -62,7 +76,7 @@ describe('PhoneHome', () => {
   it('goes back to the start on cancel and ignores a tag read afterwards', async () => {
     const onStore = vi.fn()
     const reader = pendingReader()
-    render(<PhoneHome nfc={reader.nfc} onStore={onStore} />)
+    render(<PhoneHome onUseAsTotem={vi.fn()} nfc={reader.nfc} onStore={onStore} />)
     await tapToScan()
 
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
@@ -75,7 +89,7 @@ describe('PhoneHome', () => {
 
   it('stops scanning when the screen goes away', async () => {
     const reader = pendingReader()
-    const { unmount } = render(<PhoneHome nfc={reader.nfc} onStore={vi.fn()} />)
+    const { unmount } = render(<PhoneHome onUseAsTotem={vi.fn()} nfc={reader.nfc} onStore={vi.fn()} />)
     await tapToScan()
 
     unmount()
@@ -84,7 +98,7 @@ describe('PhoneHome', () => {
   })
 
   it('says the phone has no NFC and points to the QR Code, with nothing to retry', async () => {
-    render(<PhoneHome nfc={readerAnswering({ kind: 'no-nfc' })} onStore={vi.fn()} />)
+    render(<PhoneHome onUseAsTotem={vi.fn()} nfc={readerAnswering({ kind: 'no-nfc' })} onStore={vi.fn()} />)
 
     await tapToScan()
 
@@ -94,7 +108,7 @@ describe('PhoneHome', () => {
   })
 
   it('says NFC is off and how to turn it on', async () => {
-    render(<PhoneHome nfc={readerAnswering({ kind: 'nfc-off' })} onStore={vi.fn()} />)
+    render(<PhoneHome onUseAsTotem={vi.fn()} nfc={readerAnswering({ kind: 'nfc-off' })} onStore={vi.fn()} />)
 
     await tapToScan()
 
@@ -104,37 +118,37 @@ describe('PhoneHome', () => {
   })
 
   it('does not recognize a tag without a URL', async () => {
-    render(<PhoneHome nfc={readerAnswering({ kind: 'no-url' })} onStore={vi.fn()} />)
+    render(<PhoneHome onUseAsTotem={vi.fn()} nfc={readerAnswering({ kind: 'no-url' })} onStore={vi.fn()} />)
 
     await tapToScan()
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Adesivo não reconhecido.')
+    expect(screen.getByRole('alert')).toHaveTextContent('Não é um totem TOPA.')
     expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeInTheDocument()
   })
 
   it('does not recognize a URL that is not a TOPA store', async () => {
     const onStore = vi.fn()
-    render(<PhoneHome nfc={readerAnswering({ kind: 'url', url: 'https://example.com/' })} onStore={onStore} />)
+    render(<PhoneHome onUseAsTotem={vi.fn()} nfc={readerAnswering({ kind: 'url', url: 'https://example.com/' })} onStore={onStore} />)
 
     await tapToScan()
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Adesivo não reconhecido.')
+    expect(screen.getByRole('alert')).toHaveTextContent('Não é um totem TOPA.')
     expect(onStore).not.toHaveBeenCalled()
   })
 
   it('says the sticker could not be read when the read fails', async () => {
-    render(<PhoneHome nfc={readerAnswering({ kind: 'nothing-read' })} onStore={vi.fn()} />)
+    render(<PhoneHome onUseAsTotem={vi.fn()} nfc={readerAnswering({ kind: 'nothing-read' })} onStore={vi.fn()} />)
 
     await tapToScan()
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível ler o adesivo.')
+    expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível ler o totem.')
     expect(screen.getByRole('button', { name: 'Tentar de novo' })).toBeInTheDocument()
   })
 
   it('scans again from an error and opens the store this time', async () => {
     const onStore = vi.fn()
     const nfc = readerAnswering({ kind: 'nfc-off' }, { kind: 'url', url: STORE_URL })
-    render(<PhoneHome nfc={nfc} onStore={onStore} />)
+    render(<PhoneHome onUseAsTotem={vi.fn()} nfc={nfc} onStore={onStore} />)
     await tapToScan()
 
     await userEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))

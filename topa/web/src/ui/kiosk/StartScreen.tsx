@@ -2,12 +2,16 @@ import { useEffect, useState } from 'react'
 
 import type { ConnectionPort } from '../../ports/connection'
 import { DineInIcon, StoreMark, TakeAwayIcon } from '../icons'
+import { useHold } from '../use-hold'
 
 interface StartScreenProps {
   mode: 'api' | 'demo'
   connection: ConnectionPort
   onBegin: (dineIn: boolean) => void
-  onQueue: () => void
+  /** Absent in the phone app, which is already the customer's phone. */
+  onQueue?: () => void
+  /** Only on a device marked as totem: staff hold the TOPA mark to get the phone app back. */
+  onLeaveTotem?: () => void
 }
 
 interface StatusLook {
@@ -28,8 +32,9 @@ function lookOf(status: 'checking' | 'demo' | 'online' | 'offline'): StatusLook 
   }
 }
 
-export function StartScreen({ mode, connection, onBegin, onQueue }: StartScreenProps) {
+export function StartScreen({ mode, connection, onBegin, onQueue, onLeaveTotem }: StartScreenProps) {
   const [reachability, setReachability] = useState<'checking' | 'online' | 'offline'>('checking')
+  const holdToLeave = useHold(onLeaveTotem)
 
   useEffect(() => {
     let current = true
@@ -81,21 +86,24 @@ export function StartScreen({ mode, connection, onBegin, onQueue }: StartScreenP
             Levar para viagem
           </button>
         </div>
-        <button
-          type="button"
-          onClick={onQueue}
-          className="min-h-16 self-start text-left text-[22px] font-medium underline underline-offset-4 short:text-[20px] max-sm:text-[18px]"
-        >
-          A fila está grande? Peça pelo celular
-        </button>
+        {onQueue && (
+          <button
+            type="button"
+            onClick={onQueue}
+            className="min-h-16 self-start text-left text-[22px] font-medium underline underline-offset-4 short:text-[20px] max-sm:text-[18px]"
+          >
+            A fila está grande? Peça pelo celular
+          </button>
+        )}
         <div className="flex items-center justify-between gap-4 text-on-teal">
           <p role="status" className="flex items-center gap-3 text-[18px] font-medium">
             <span aria-hidden="true" className={`size-3 rounded-full ${look.dot}`} />
             {look.label}
           </p>
-          <p className="flex items-center gap-2 text-[18px] font-medium">
+          <p {...holdToLeave} className="flex items-center gap-2 text-[18px] font-medium select-none">
             <img src={`${import.meta.env.BASE_URL}topa-mark.png`} alt="" className="h-6 w-auto brightness-0 invert" />
             por TOPA
+            <span className="text-[14px] tabular-nums">v{__APP_VERSION__}</span>
           </p>
         </div>
       </div>

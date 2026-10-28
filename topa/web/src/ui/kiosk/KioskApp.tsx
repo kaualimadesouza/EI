@@ -20,12 +20,16 @@ import { useCountdown } from './use-countdown'
 interface KioskAppProps {
   adapters: Adapters
   now?: () => Date
+  /** Only on a device marked as totem. */
+  onLeaveTotem?: () => void
+  /** The store opened on the customer's own phone: no tag to serve, no queue to send away. */
+  inPhoneApp?: boolean
 }
 
 const IDLE_SECONDS = 45
 const IDLE_WARNING_SECONDS = 15
 
-export function KioskApp({ adapters, now = () => new Date() }: KioskAppProps) {
+export function KioskApp({ adapters, now = () => new Date(), onLeaveTotem, inPhoneApp = false }: KioskAppProps) {
   const [state, setState] = useState<flow.KioskState>(flow.START)
   const [products, setProducts] = useState<Product[]>([])
   const [menuState, setMenuState] = useState<'loading' | 'ready' | 'error'>('loading')
@@ -47,6 +51,13 @@ export function KioskApp({ adapters, now = () => new Date() }: KioskAppProps) {
   useEffect(() => {
     if (state.screen === 'start') loadMenu()
   }, [state.screen, loadMenu])
+
+  const menuUrl = phoneMenuUrl(window.location.origin, import.meta.env.BASE_URL)
+  useEffect(() => {
+    if (inPhoneApp) return
+    adapters.tag.publish(menuUrl)
+    return () => adapters.tag.withdraw()
+  }, [adapters.tag, menuUrl, inPhoneApp])
 
   const shopping = ['menu', 'bag', 'payment'].includes(state.screen)
   const idleWatch = shopping && state.sheet !== 'idle' && state.payment !== 'processing'
@@ -97,10 +108,11 @@ export function KioskApp({ adapters, now = () => new Date() }: KioskAppProps) {
           mode={adapters.mode}
           connection={adapters.connection}
           onBegin={(dineIn) => setState(flow.begin(dineIn))}
-          onQueue={() => setState(flow.openQueue())}
+          onQueue={inPhoneApp ? undefined : () => setState(flow.openQueue())}
+          onLeaveTotem={onLeaveTotem}
         />
       )}
-      {state.screen === 'queue' && <QueueScreen menuUrl={phoneMenuUrl(window.location.origin, import.meta.env.BASE_URL)} onOrderHere={reset} />}
+      {state.screen === 'queue' && <QueueScreen menuUrl={menuUrl} totemIsTag={adapters.tag.available} onOrderHere={reset} />}
       {state.screen === 'done' && <DoneScreen placed={state.placed!} onNewOrder={reset} />}
       {shopping && (
         <KioskHeader

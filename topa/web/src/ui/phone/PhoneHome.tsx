@@ -7,6 +7,7 @@ import { PhoneScreen, PRIMARY_ACTION, SECONDARY_ACTION } from './PhoneScreen'
 interface PhoneHomeProps {
   nfc: NfcPort
   onStore: (store: StoreRef) => void
+  onUseAsTotem: () => void
 }
 
 interface Problem {
@@ -27,13 +28,13 @@ const PROBLEMS: Record<ScanFailure['kind'], Problem> = {
     retry: true,
   },
   'no-url': {
-    title: 'Adesivo não reconhecido.',
-    hint: 'Use o adesivo TOPA que fica ao lado da tela do totem.',
+    title: 'Não é um totem TOPA.',
+    hint: 'Encoste atrás do totem ou no adesivo TOPA ao lado da tela.',
     retry: true,
   },
   'nothing-read': {
-    title: 'Não foi possível ler o adesivo.',
-    hint: 'Mantenha o celular encostado no adesivo até a leitura terminar.',
+    title: 'Não foi possível ler o totem.',
+    hint: 'Mantenha o celular encostado até a leitura terminar.',
     retry: true,
   },
 }
@@ -78,8 +79,8 @@ function WarningGlyph() {
   )
 }
 
-/** The phone app's start: read the NFC sticker next to a busy totem and open that store here. */
-export function PhoneHome({ nfc, onStore }: PhoneHomeProps) {
+/** The phone app's start: read a busy totem's NFC tag (the totem itself or its sticker) and open that store here. */
+export function PhoneHome({ nfc, onStore, onUseAsTotem }: PhoneHomeProps) {
   const [phase, setPhase] = useState<'idle' | 'scanning' | ScanFailure['kind']>('idle')
   // always holds the latest scan's controller, so cancel and unmount can abort it
   const scan = useRef(new AbortController())
@@ -114,6 +115,7 @@ export function PhoneHome({ nfc, onStore }: PhoneHomeProps) {
 
   return (
     <PhoneScreen
+      onHoldMark={onUseAsTotem}
       hero={
         <>
           <ContactlessGlyph active={phase === 'scanning'} />
@@ -121,7 +123,7 @@ export function PhoneHome({ nfc, onStore }: PhoneHomeProps) {
             Peça pelo celular.
           </h1>
           <p className="max-w-[30ch] text-lg leading-[1.4] text-on-teal">
-            Totem com fila? Aproxime o celular do adesivo TOPA e o cardápio da loja abre aqui.
+            Totem com fila? Aproxime o celular do totem TOPA e o cardápio da loja abre aqui.
           </p>
         </>
       }
@@ -129,7 +131,7 @@ export function PhoneHome({ nfc, onStore }: PhoneHomeProps) {
       {phase === 'scanning' && (
         <>
           <p role="status" className="text-xl leading-snug font-semibold">
-            Encoste o celular no adesivo TOPA ao lado da tela do totem.
+            Encoste o celular atrás do totem ou no adesivo TOPA.
           </p>
           <button type="button" onClick={cancel} className={SECONDARY_ACTION}>
             Cancelar

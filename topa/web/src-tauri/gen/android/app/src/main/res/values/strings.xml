@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">"TOPA"</string>
     <string name="main_activity_title">"TOPA"</string>
+    <string name="tag_emulation">"Cardápio da loja no celular do cliente"</string>
 </resources>
