@@ -32,7 +32,7 @@ function lookOf(status: 'checking' | 'demo' | 'online' | 'offline'): StatusLook 
     case 'online':
       return { label: 'Servidor conectado', dot: 'bg-white' }
     case 'offline':
-      return { label: 'Servidor sem resposta: confira a internet', dot: 'bg-warning-tint' }
+      return { label: 'Servidor sem resposta: chame um atendente', dot: 'bg-warning-tint' }
   }
 }
 

@@ -34,7 +34,7 @@ Contrast is measured against cream; AA text needs 4.5:1.
 | `muted` | #4A5553 | secondary text (7.2:1) |
 | `line` | #E4DDCB | hairlines and card borders |
 | `sage` | #9DB3AD | decoration only (2.1:1): never text, never the only sign of a state |
-| `warning` | #9A5508 | warnings as text or icon: esgotado, fila cheia, servidor local sem resposta (5.3:1) |
+| `warning` | #9A5508 | warnings as text or icon: esgotado, fila cheia, servidor sem resposta (5.3:1) |
 | `warning-tint` | #FBF0DE | light warning surface behind `warning` text; the warning dot on teal |
 
 - One primary action per screen, in teal with white text. Everything else is

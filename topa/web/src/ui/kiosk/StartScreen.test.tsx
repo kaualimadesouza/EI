@@ -6,7 +6,7 @@ import type { ConnectionPort } from '../../ports/connection'
 import { StartScreen } from './StartScreen'
 
 const ONLINE = 'Servidor conectado'
-const OFFLINE = 'Servidor sem resposta: confira a internet'
+const OFFLINE = 'Servidor sem resposta: chame um atendente'
 
 function portAnswering(reachable: boolean): ConnectionPort {
   return { isReachable: () => Promise.resolve(reachable) }

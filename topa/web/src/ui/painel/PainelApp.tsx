@@ -178,7 +178,7 @@ export function PainelApp({ adapters, now = () => new Date() }: PainelAppProps) 
             <p className="text-[15px] text-muted first-letter:uppercase">{longDate.format(today)}</p>
           </div>
           <p className="text-[14px] text-muted">
-            {adapters.mode === 'demo' ? 'Modo demonstração: dados deste navegador' : 'Dados do servidor'}, atualiza a cada 3 s
+            {adapters.mode === 'demo' ? 'Modo demonstração: dados deste navegador' : 'Dados do servidor'}, atualizados a cada 3 s
           </p>
         </header>
         {(alerts.length > 0 || problem) && (
