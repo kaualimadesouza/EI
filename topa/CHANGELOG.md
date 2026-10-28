@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/kaualimadesouza/EI/compare/topa-0.1.1...topa-0.1.2) (2026-10-28)
+
+
+### Features
+
+* fit the kiosk screens to a phone ([#35](https://github.com/kaualimadesouza/EI/issues/35)) ([2db2d9e](https://github.com/kaualimadesouza/EI/commit/2db2d9ecbf04c5effd97da6615f72483599944cb))
+
 ## [0.1.1](https://github.com/kaualimadesouza/EI/compare/topa-0.1.0...topa-0.1.1) (2026-10-28)
 
 
