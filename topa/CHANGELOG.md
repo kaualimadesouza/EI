@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.1](https://github.com/kaualimadesouza/EI/compare/topa-0.1.0...topa-0.1.1) (2026-10-28)
+
+
+### Features
+
+* Android totem answers as its own NFC tag ([#31](https://github.com/kaualimadesouza/EI/issues/31)) ([5d01d5f](https://github.com/kaualimadesouza/EI/commit/5d01d5f5629a5c2c47328cf0d826e42180878f0d))
+
+
+### Bug Fixes
+
+* **web:** credit catalog photos, add HTTP timeout, and fix queue QR URL ([#28](https://github.com/kaualimadesouza/EI/issues/28)) ([a17139d](https://github.com/kaualimadesouza/EI/commit/a17139dfed7e3211807b4d3ec50eb556b89dc651))
+
 ## 0.1.0 (2026-10-26)
 
 
