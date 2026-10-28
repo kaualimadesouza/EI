@@ -1,8 +1,10 @@
 package io.github.kaualimadesouza.topa
 
+import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.nfc.NfcAdapter
+import android.nfc.cardemulation.CardEmulation
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -41,37 +43,61 @@ class MainActivity : TauriActivity() {
 
   override fun onResume() {
     super.onResume()
-    if (TagEmulationService.publishedUrl != null) stopPolling()
+    if (TagEmulationService.publishedUrl != null) serve()
+  }
+
+  override fun onPause() {
+    // Android honours a preferred service only while its activity is resumed
+    if (TagEmulationService.publishedUrl != null) releaseTag()
+    super.onPause()
   }
 
   private inner class TagBridge {
     @JavascriptInterface
     fun publish(url: String) {
       TagEmulationService.publishedUrl = url
-      runOnUiThread { stopPolling() }
+      runOnUiThread { serve() }
     }
 
     @JavascriptInterface
     fun withdraw() {
       TagEmulationService.publishedUrl = null
-      runOnUiThread { restorePolling() }
+      runOnUiThread {
+        releaseTag()
+        restorePolling()
+      }
     }
   }
 
+  private fun serve() {
+    preferTag()
+    stopPolling()
+  }
+
+  // when another app also claims the NDEF AID, Android shows the totem a "tap again" prompt and answers nothing
+  private fun preferTag() =
+    withNfc { CardEmulation.getInstance(it).setPreferredService(this, ComponentName(this, TagEmulationService::class.java)) }
+
+  private fun releaseTag() = withNfc { CardEmulation.getInstance(it).unsetPreferredService(this) }
+
   // a totem polling for tags would read the customer's wallet card instead of being read (Android 15+)
-  private fun stopPolling() =
-    changeDiscovery { it.setDiscoveryTechnology(this, NfcAdapter.FLAG_READER_DISABLE, NfcAdapter.FLAG_LISTEN_KEEP) }
-
-  private fun restorePolling() = changeDiscovery { it.resetDiscoveryTechnology(this) }
-
-  private fun changeDiscovery(change: (NfcAdapter) -> Unit) {
+  private fun stopPolling() {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return
+    withNfc { it.setDiscoveryTechnology(this, NfcAdapter.FLAG_READER_DISABLE, NfcAdapter.FLAG_LISTEN_KEEP) }
+  }
+
+  private fun restorePolling() {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return
+    withNfc { it.resetDiscoveryTechnology(this) }
+  }
+
+  private fun withNfc(change: (NfcAdapter) -> Unit) {
     val adapter = NfcAdapter.getDefaultAdapter(this) ?: return
     try {
       change(adapter)
     } catch (e: RuntimeException) {
-      // only costs reliability on a crowded tap; the tag itself keeps answering
-      Log.w("TopaTag", "NFC discovery change refused", e)
+      // a refusal only brings back the problem the call avoids; the tag itself keeps answering
+      Log.w("TopaTag", "NFC change refused", e)
     }
   }
 }
