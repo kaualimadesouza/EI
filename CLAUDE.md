@@ -34,6 +34,8 @@ and UI copy is in Portuguese; code is in English.
   PR, the DEV alias on push to main, PROD when release-please cuts a release).
 - release-please versions the `topa` package only, so only commits touching `topa/` release; it bumps
   every version file listed in `.github/release-please-config.json` and writes `topa/CHANGELOG.md`.
+  A lock entry there filters on `@.name.value`: release-please wraps TOML values, so `@.name` matches
+  nothing and the file is skipped with only a log line.
 - Skills in `.claude/skills/` (card-workflow, design-tokens, portuguese-copy, tdd,
   thermo-nuclear-code-quality-review) hold the working conventions; follow them.
 
