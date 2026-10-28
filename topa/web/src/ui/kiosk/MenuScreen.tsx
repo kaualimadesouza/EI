@@ -2,6 +2,7 @@ import { itemCount, MAX_QUANTITY, quantityOf, totalCents, type CartLine } from '
 import { CATEGORIES, findProduct, formatBRL, type Product } from '../../domain/menu'
 import type { Suggestion } from '../../domain/suggest'
 import { CategoryIcon, MinusIcon, PlusIcon } from '../icons'
+import { PRIMARY_ACTION } from './parts'
 import { photoOf } from './photo'
 
 interface MenuScreenProps {
@@ -26,7 +27,7 @@ export function MenuScreen(props: MenuScreenProps) {
       <div className="flex min-h-0 flex-1 max-sm:flex-col">
         <nav
           aria-label="Categorias"
-          className="flex w-[168px] flex-none flex-col gap-2 overflow-y-auto bg-ground-2 px-3 py-6 [scrollbar-width:none] short:py-3 max-sm:w-full max-sm:flex-row max-sm:overflow-x-auto max-sm:px-4 max-sm:py-3"
+          className="flex w-[168px] flex-none flex-col gap-2 overflow-y-auto bg-ground-2 px-3 py-6 [scrollbar-width:none] short:py-3 max-sm:w-full max-sm:flex-row max-sm:overflow-x-auto max-sm:px-4 max-sm:py-3 phone:py-2"
         >
           {CATEGORIES.map((c) => (
             <button
@@ -38,14 +39,14 @@ export function MenuScreen(props: MenuScreenProps) {
                 c.id === category ? 'bg-teal font-semibold text-white' : 'font-medium text-ink'
               }`}
             >
-              <CategoryIcon category={c.id} />
+              <CategoryIcon category={c.id} className="phone:size-6" />
               {c.label}
             </button>
           ))}
         </nav>
         <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-8 py-8 [scrollbar-width:none] short:gap-6 short:py-6 max-sm:gap-4 max-sm:p-4">
           <div className="flex flex-col gap-8 short:gap-6 max-sm:gap-4 lg:landscape:flex-row lg:landscape:items-center lg:landscape:justify-between">
-            <h1 className="text-[44px] leading-tight font-bold short:text-[36px] max-sm:text-[30px]">{label}</h1>
+            <h1 className="text-title leading-tight font-bold">{label}</h1>
             {banner && bannerProduct && (
               <button
                 type="button"
@@ -82,10 +83,10 @@ export function MenuScreen(props: MenuScreenProps) {
           </ul>
         </div>
       </div>
-      <footer className="flex h-32 flex-none items-center justify-between gap-6 border-t border-line bg-white px-12 short:h-24 max-sm:h-24 max-sm:gap-4 max-sm:px-4">
+      <footer className="flex h-32 flex-none items-center justify-between gap-6 border-t border-line bg-white px-12 short:h-24 max-sm:h-24 max-sm:gap-4 max-sm:px-4 phone:h-20">
         <div className="flex min-w-0 flex-col">
           {count === 0 ? (
-            <span className="text-[22px] text-muted max-sm:text-[16px]">Toque em um produto para adicionar.</span>
+            <span className="text-[22px] text-muted max-sm:text-[16px] phone:text-caption phone:leading-snug">Toque em um produto para adicionar.</span>
           ) : (
             <>
               <span className="text-[32px] font-bold tabular-nums max-sm:text-[24px]">{formatBRL(totalCents(lines, products))}</span>
@@ -97,7 +98,7 @@ export function MenuScreen(props: MenuScreenProps) {
           type="button"
           onClick={onReview}
           disabled={count === 0}
-          className="h-20 flex-none rounded-[24px] bg-teal px-10 text-[26px] font-semibold text-white disabled:bg-line disabled:text-muted short:h-16 max-sm:h-16 max-sm:px-6 max-sm:text-[20px]"
+          className={`${PRIMARY_ACTION} h-20 flex-none px-10 text-[26px] disabled:bg-line disabled:text-muted short:h-16 max-sm:h-16 max-sm:px-6 max-sm:text-[20px]`}
         >
           Ver pedido
         </button>

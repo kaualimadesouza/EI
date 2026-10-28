@@ -10,7 +10,7 @@ import { BagScreen } from './BagScreen'
 import { DoneScreen, QueueScreen } from './EndScreens'
 import * as flow from './flow'
 import { MenuScreen } from './MenuScreen'
-import { ChoiceButtons, KioskHeader, Sheet } from './parts'
+import { ChoiceButtons, KioskHeader, PRIMARY_ACTION, Sheet } from './parts'
 import { CheckIcon } from '../icons'
 import { PaymentScreen, PIX_SECONDS } from './PaymentScreen'
 import { StartScreen } from './StartScreen'
@@ -125,13 +125,13 @@ export function KioskApp({ adapters, now = () => new Date(), onSwitchRole, onCus
         />
       )}
       {state.screen === 'menu' && menuState !== 'ready' && (
-        <div className="flex flex-1 flex-col items-center justify-center gap-6 px-12 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center gap-6 px-12 text-center phone:gap-4 phone:px-6">
           {menuState === 'loading' ? (
-            <p role="status" className="text-[26px]">Carregando o cardápio...</p>
+            <p role="status" className="text-[26px] phone:text-lead">Carregando o cardápio...</p>
           ) : (
             <>
-              <p role="alert" className="text-[26px] font-semibold">Não foi possível carregar o cardápio.</p>
-              <button type="button" onClick={loadMenu} className="h-20 rounded-[24px] bg-teal px-10 text-[22px] font-semibold text-white">
+              <p role="alert" className="text-[26px] font-semibold phone:text-lead">Não foi possível carregar o cardápio.</p>
+              <button type="button" onClick={loadMenu} className={`${PRIMARY_ACTION} h-20 px-10 text-[22px] phone:px-8`}>
                 Tentar de novo
               </button>
             </>
@@ -174,13 +174,13 @@ export function KioskApp({ adapters, now = () => new Date(), onSwitchRole, onCus
       )}
       {state.upsell && (
         <Sheet title={state.upsell.question}>
-          <p className="flex items-center gap-2 text-[18px] font-semibold text-teal">
-            <CheckIcon size={24} />
+          <p className="flex items-center gap-2 text-caption font-semibold text-teal">
+            <CheckIcon size={24} className="phone:size-5" />
             {findProduct(products, state.justAdded!)!.name} adicionado
           </p>
-          <img src={photoOf(state.upsell.productId)} alt="" className="h-[300px] w-full rounded-[24px] object-cover short:h-48 max-sm:h-44" />
-          <h2 className="text-[32px] leading-tight font-bold max-sm:text-[24px]">{state.upsell.question}</h2>
-          <p className="text-[22px] text-muted max-sm:text-[18px]">{state.upsell.reason}</p>
+          <img src={photoOf(state.upsell.productId)} alt="" className="h-[300px] w-full rounded-[24px] object-cover short:h-48 max-sm:h-44 phone:h-36" />
+          <h2 className="text-heading leading-tight font-bold">{state.upsell.question}</h2>
+          <p className="text-body text-muted phone:leading-snug">{state.upsell.reason}</p>
           <ChoiceButtons
             secondary="Não, obrigado"
             primary={`Adicionar por ${formatBRL(findProduct(products, state.upsell.productId)!.priceCents)}`}
@@ -191,8 +191,8 @@ export function KioskApp({ adapters, now = () => new Date(), onSwitchRole, onCus
       )}
       {state.sheet === 'cancel' && (
         <Sheet title="Cancelar o pedido?">
-          <h2 className="text-[32px] font-bold max-sm:text-[24px]">Cancelar o pedido?</h2>
-          <p className="text-[22px] text-muted max-sm:text-[18px]">
+          <h2 className="text-heading font-bold">Cancelar o pedido?</h2>
+          <p className="text-body text-muted">
             {count === 1 ? 'O item escolhido será removido.' : `Os ${count} itens escolhidos serão removidos.`}
           </p>
           <ChoiceButtons
@@ -212,8 +212,8 @@ function IdleSheet({ onStay, onLeave }: { onStay: () => void; onLeave: () => voi
   const left = useCountdown(IDLE_WARNING_SECONDS, onLeave)
   return (
     <Sheet title="Você ainda está aí?">
-      <h2 className="text-[32px] font-bold max-sm:text-[24px]">Você ainda está aí?</h2>
-      <p className="text-[22px] text-muted tabular-nums max-sm:text-[18px]">O pedido será cancelado em {left} s.</p>
+      <h2 className="text-heading font-bold">Você ainda está aí?</h2>
+      <p className="text-body text-muted tabular-nums">O pedido será cancelado em {left} s.</p>
       <ChoiceButtons secondary="Recomeçar" primary="Continuar" onSecondary={onLeave} onPrimary={onStay} />
     </Sheet>
   )

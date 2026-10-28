@@ -54,6 +54,36 @@ Prices, totals and order numbers use `tabular-nums`. Offline (edge mode, a
 Tauri build with no network) the font link fails and `system-ui` takes over;
 self-host the same four weights if a card needs pixel parity there.
 
+## Kiosk sizes per screen
+
+The kiosk has four layouts: the tablet (the base classes), `short:` (640px or
+wider but at most 820px tall), `max-sm:` (under 640px, a small tablet) and
+`phone:` (under 480px, a phone in portrait). Tailwind emits `phone:` rules
+after `max-sm:` ones, so where both match the phone value wins.
+
+Type and radius roles live in `@theme` with their tablet value; the `:root`
+block below it in `index.css` resizes them per layout, so `text-title` alone
+gives 44, 36, 30 or 26px.
+
+| Class | Tablet | `short:` | `max-sm:` | `phone:` | For |
+|---|---|---|---|---|---|
+| `text-title` | 44 | 36 | 30 | 26 | screen titles, order totals |
+| `text-heading` | 32 | 32 | 24 | 22 | sheet titles, confirmations |
+| `text-lead` | 26 | 26 | 20 | 17 | the main instruction in a card |
+| `text-body` | 22 | 22 | 18 | 16 | explanations, hints |
+| `text-label` | 22 | 22 | 18 | 17 | button and tile labels |
+| `text-caption` | 18 | 18 | 18 | 14 | status, countdowns, demo links |
+| `rounded-control` | 24 | 24 | 24 | 20 | buttons and tiles |
+| `rounded-panel` | 32 | 32 | 32 | 24 | cards and sheets |
+
+- An element whose tablet sizes match a role uses the role class.
+- One with its own tablet sizes keeps them as arbitrary values and joins the
+  phone scale with `phone:text-<role>`; a one-off (the start headline, the
+  order number) may stay arbitrary at every size.
+- Kiosk buttons start from `KIOSK_ACTION`, `PRIMARY_ACTION` or
+  `SECONDARY_ACTION` in `src/ui/kiosk/parts.tsx` (radius, weight, the 64px
+  phone height and label size) and add their own tablet height and type.
+
 ## Touch targets
 
 - **Kiosk: every tappable thing is at least 64px high** (`min-h-16`), with at

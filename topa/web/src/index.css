@@ -3,6 +3,9 @@
 /* a landscape tablet or a laptop: wide enough for the kiosk layout but short on height */
 @custom-variant short (@media (min-width: 640px) and (max-height: 820px));
 
+/* a phone in portrait; 480 to 639 px (a small tablet) keeps the max-sm layout */
+@custom-variant phone (@media (width < 30rem));
+
 /* TOPA tokens: logo colors plus black and white; the single source for every screen.
    The default palette is reset, so a class outside these tokens (bg-blue-500) compiles to nothing. */
 @theme {
@@ -22,6 +25,40 @@
   --color-on-teal: #dce6e2;
   --color-warning: #9a5508;
   --color-warning-tint: #fbf0de;
+
+  /* kiosk type and radius roles at tablet size; the :root block below resizes them per screen */
+  --text-title: 44px;
+  --text-heading: 32px;
+  --text-lead: 26px;
+  --text-body: 22px;
+  --text-label: 22px;
+  --text-caption: 18px;
+  --radius-control: 24px;
+  --radius-panel: 32px;
+}
+
+:root {
+  @variant short {
+    --text-title: 36px;
+  }
+  @variant max-sm {
+    --text-title: 30px;
+    --text-heading: 24px;
+    --text-lead: 20px;
+    --text-body: 18px;
+    --text-label: 18px;
+  }
+  /* the phone scale: after max-sm, so it wins where both match */
+  @variant phone {
+    --text-title: 26px;
+    --text-heading: 22px;
+    --text-lead: 17px;
+    --text-body: 16px;
+    --text-label: 17px;
+    --text-caption: 14px;
+    --radius-control: 20px;
+    --radius-panel: 24px;
+  }
 }
 
 body {

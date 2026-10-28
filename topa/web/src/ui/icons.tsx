@@ -64,9 +64,9 @@ export const ContactlessIcon = (props: IconProps) => (
   />
 )
 
-export function StoreMark({ size = 40 }: { size?: number }) {
+export function StoreMark({ size = 40, className }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true" className={className}>
       <circle cx="24" cy="24" r="24" className="fill-ink" />
       <path d="M1 27c0 12.7 10.3 23 23 23s23-10.3 23-23z" className="fill-teal" />
       <path d="M9 19c6-6 24-6 30 0" strokeWidth="3.5" fill="none" strokeLinecap="round" className="stroke-white" />
