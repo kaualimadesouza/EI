@@ -15,6 +15,19 @@ npm run lint && npm run typecheck
 
 `make run` from `topa/` brings up the web app with the API and Postgres.
 
+## Which API a build talks to
+
+`src/composition.ts` uses the API when `VITE_API_URL` is set and demo mode when it is unset or
+empty. `npm run dev` and the tests read no URL, `make run` sets `/api` (proxied by Vite), and every
+production build (`npm run build`, so Vercel and both Tauri apps) reads the deployed API's URL
+from `.env.production`. The API answers CORS only for `topa-totem.vercel.app`,
+`topa-totem-dev.vercel.app` and the apps' webviews, so:
+
+- a PR preview builds with an empty `VITE_API_URL` (`.github/workflows/web.yml`) and runs in demo
+  mode;
+- `npm run preview` of a regular build, served from localhost, cannot reach the API: build it with
+  `VITE_API_URL= npm run build` to look at it in demo mode.
+
 ## Apps (desktop e Android)
 
 `src-tauri/` wraps the web build. The desktop app shows the kiosk. The Android app has two roles,

@@ -35,7 +35,7 @@ function isReachableFromPhone(url: URL): boolean {
   )
 }
 
-/** A phone scanning the queue QR cannot reach the totem's own loopback, so local runs point to the hosted demo. */
+/** A phone scanning the queue QR cannot reach the totem's own loopback, so local runs point to the hosted site. */
 export function phoneMenuUrl(origin: string, basePath = '/'): string {
   let url: URL
   try {

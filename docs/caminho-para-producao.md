@@ -3,11 +3,12 @@
 O que falta para o TOPA sair do modo demonstração e atender uma loja de verdade, dividido em
 fases. Estado de 28/10/2026.
 
-Hoje todo build publicado roda em **modo demonstração**: o APK, os instaladores da release e o
-site `topa-totem.vercel.app`. Quem decide é `topa/web/src/composition.ts`: com `VITE_API_URL`
-no build, o app usa a API; sem ela, usa o cardápio embutido (`topa/web/src/domain/demo-catalog.ts`)
-e guarda pedidos e esgotados no `localStorage` de cada aparelho, sem sincronizar. Só o
-`make run` local liga a web à API.
+Todo build de produção usa a API publicada na AWS: o site `topa-totem.vercel.app` e o DEV, o
+APK e os instaladores da release. Quem decide é `topa/web/src/composition.ts`: com `VITE_API_URL`
+no build (o de produção a lê de `topa/web/.env.production`), o app usa a API; sem ela, usa o
+cardápio embutido (`topa/web/src/domain/demo-catalog.ts`) e guarda pedidos e esgotados no
+`localStorage` de cada aparelho, sem sincronizar. Esse é o **modo demonstração**, que segue no
+`npm run dev` e no preview de cada PR, cujo endereço fica fora do CORS da API.
 
 ## Fase 1: uma loja de verdade
 
@@ -15,17 +16,16 @@ Objetivo: a Lanchonete Bem-te-vi com dados num servidor, e totem, celular, site 
 os mesmos pedidos e esgotados. A issue #32 já cobre parte desta fase (itens 1 e 2) junto com
 a fase 2.
 
-1. **Publicar a API e o banco.** A API vai para a AWS Lambda (imagem
+1. **Publicar a API e o banco.** Feito: a API roda na AWS Lambda (imagem
    `topa/api/Dockerfile.lambda`), atrás de um API Gateway, com o Postgres no Neon, no mesmo
    molde do kbjmodas-api. O deploy (`.github/workflows/api-deploy.yml`) roda
-   `alembic upgrade head` antes de cada versão. Falta:
-   - a configuração única do dono: projeto no Neon, bootstrap na AWS e secrets no GitHub
-     (`topa/api/infrastructure/README.md`);
-   - monitorar pelo `/health/ready`, que já existe.
-2. **Ligar o site e o app à API.** A API libera CORS para o site e para as
-   origens do app (`http://tauri.localhost` no Android e no Windows, `tauri://localhost` no
-   macOS e no Linux), em `topa/api/infrastructure/main.tf`. Falta o build do site e o do APK
-   receberem `VITE_API_URL` com o endereço da API, que o primeiro deploy mostra.
+   `alembic upgrade head` antes de cada versão. Falta monitorar pelo `/health/ready`, que já
+   existe.
+2. **Ligar o site e o app à API.** Feito: o build de produção lê o endereço da API de
+   `topa/web/.env.production`, e a API libera CORS para o site (PROD e DEV) e para as origens do
+   app (`http://tauri.localhost` no Android e no Windows, `tauri://localhost` no macOS e no
+   Linux), em `topa/api/infrastructure/main.tf`. Há um ambiente só: o DEV grava no mesmo banco
+   que o PROD.
 3. **Partida a frio.** A primeira requisição depois de um tempo parado leva alguns segundos,
    e a pílula de status do servidor desiste em 3 s (`topa/web/src/adapters/http/http-connection.ts`).
    Um agendamento que chama a API a cada poucos minutos a mantém quente.
@@ -118,8 +118,8 @@ taxas, contrato e o SDK para Android. Hoje o pagamento é simulado: o QR do Pix 
 ### Vender sem internet
 
 O pitch promete continuidade de venda, e o README lista a operação offline como diferencial. Este
-é o desenho que o grupo propõe para isso. Hoje o app só funciona sem internet porque o modo
-demonstração não usa servidor; ligado à API, ele passa a depender dela para tudo.
+é o desenho que o grupo propõe para isso. Hoje o app publicado depende da API para tudo; só o
+modo demonstração, que não usa servidor, funciona sem internet.
 
 1. **O totem trabalha sempre sobre uma cópia local** do cardápio, dos preços e dos esgotados, com
    ou sem internet. A sincronização com o servidor roda por trás, então a queda da internet não

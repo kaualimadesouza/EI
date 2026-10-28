@@ -53,12 +53,15 @@ precisam do Node 24 (em Node mais antigo, instale as dependências do front com 
 dentro de `topa/web`) e do [uv](https://docs.astral.sh/uv/) para a API.
 
 O front encontra a API por `VITE_API_URL`: na sua máquina é `/api`, repassado pelo servidor do Vite;
-publicado, é o endereço completo da API, que libera CORS só para o site e para o app. Sem essa
-variável, o front abre em modo demonstração.
+nos builds de produção, é o endereço completo da API publicada, gravado em
+[`topa/web/.env.production`](topa/web/.env.production). Sem essa variável, o front abre em modo
+demonstração.
 
-Na nuvem, o front ainda está publicado em modo demonstração em
-[topa-totem.vercel.app](https://topa-totem.vercel.app). A API sobe para a AWS a cada push na `main`
-que mexa nela ([`topa/api/infrastructure/README.md`](topa/api/infrastructure/README.md)).
+Há um ambiente só. O site, em [topa-totem.vercel.app](https://topa-totem.vercel.app) e no DEV
+([topa-totem-dev.vercel.app](https://topa-totem-dev.vercel.app)), e os apps (APK e instaladores
+desktop) usam a mesma API, que sobe para a AWS a cada push na `main` que mexa nela
+([`topa/api/infrastructure/README.md`](topa/api/infrastructure/README.md)). A API libera CORS só
+para esses dois endereços e para os apps, então o preview de cada PR abre em modo demonstração.
 
 ## Arquitetura final
 
