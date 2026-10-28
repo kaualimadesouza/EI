@@ -39,7 +39,7 @@ You need Rust (rustup). For Android also JDK 17+, the Android SDK with an NDK (`
 ```bash
 npm run tauri dev                                         # desktop window over the Vite dev server
 npm run tauri android dev                                 # phone over adb, or an emulator
-npx tauri android build --debug --apk --target aarch64   # debug APK, unsigned, arm64 phones
+npx tauri android build --debug --apk --target aarch64   # debug APK, arm64 phones
 ```
 
 The APK lands in `src-tauri/gen/android/app/build/outputs/apk/universal/debug/` (about 115 MB:

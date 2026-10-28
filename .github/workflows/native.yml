@@ -1,6 +1,6 @@
 name: Native apps
 
-# Packages topa/web with Tauri: the Android phone app (debug APK, unsigned) and the desktop app.
+# Packages topa/web with Tauri: the Android phone app (debug APK, a fresh debug key per run) and the desktop app.
 # A PR gets the APK and a Linux bundle as workflow artifacts; a release gets the desktop installers
 # for Linux, Windows and macOS plus the APK attached. release-please chains the release build:
 # a release created with GITHUB_TOKEN triggers nothing on its own.
