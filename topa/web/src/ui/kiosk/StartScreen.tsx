@@ -30,9 +30,9 @@ function lookOf(status: 'checking' | 'demo' | 'online' | 'offline'): StatusLook 
     case 'demo':
       return { label: 'Modo demonstração', dot: 'bg-sage' }
     case 'online':
-      return { label: 'Servidor local conectado', dot: 'bg-white' }
+      return { label: 'Servidor conectado', dot: 'bg-white' }
     case 'offline':
-      return { label: 'Servidor local sem resposta: confira o make run', dot: 'bg-warning-tint' }
+      return { label: 'Servidor sem resposta: confira a internet', dot: 'bg-warning-tint' }
   }
 }
 

@@ -280,9 +280,9 @@ describe('PainelApp', () => {
     renderPainel(failing)
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'O servidor local não responde. Os números abaixo podem estar desatualizados.',
+      'O servidor não responde. Os números abaixo podem estar desatualizados.',
     )
-    expect(screen.getByText('Servidor local, atualiza a cada 3 s')).toBeInTheDocument()
+    expect(screen.getByText('Dados do servidor, atualiza a cada 3 s')).toBeInTheDocument()
   })
 
   it('shows why a move or a toggle failed, in words for the merchant', async () => {

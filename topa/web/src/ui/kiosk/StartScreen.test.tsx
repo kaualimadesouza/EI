@@ -5,8 +5,8 @@ import { describe, expect, it, vi } from 'vitest'
 import type { ConnectionPort } from '../../ports/connection'
 import { StartScreen } from './StartScreen'
 
-const ONLINE = 'Servidor local conectado'
-const OFFLINE = 'Servidor local sem resposta: confira o make run'
+const ONLINE = 'Servidor conectado'
+const OFFLINE = 'Servidor sem resposta: confira a internet'
 
 function portAnswering(reachable: boolean): ConnectionPort {
   return { isReachable: () => Promise.resolve(reachable) }
@@ -42,7 +42,7 @@ describe('StartScreen', () => {
     expect(onQueue).toHaveBeenCalledOnce()
   })
 
-  it('says it is checking while the local server has not answered', () => {
+  it('says it is checking while the server has not answered', () => {
     renderStart('api', pending)
 
     expect(screen.getByRole('status')).toHaveTextContent('Verificando conexão')
@@ -54,13 +54,13 @@ describe('StartScreen', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Modo demonstração')
   })
 
-  it('shows the local server as connected when the API answers', async () => {
+  it('shows the server as connected when the API answers', async () => {
     renderStart('api', portAnswering(true))
 
     expect(await screen.findByText(ONLINE)).toBeInTheDocument()
   })
 
-  it('warns and says what to check when the local server does not answer', async () => {
+  it('warns and says what to check when the server does not answer', async () => {
     renderStart('api', portAnswering(false))
 
     expect(await screen.findByText(OFFLINE)).toBeInTheDocument()

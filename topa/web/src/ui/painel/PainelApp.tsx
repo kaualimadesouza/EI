@@ -130,7 +130,7 @@ export function PainelApp({ adapters, now = () => new Date() }: PainelAppProps) 
   const late = orders.filter((order) => order.status !== 'delivered' && ageMinutes(order, today) >= 10)
   const soldOut = products.filter((product) => !product.available)
   const alerts: string[] = []
-  if (offline) alerts.push('O servidor local não responde. Os números abaixo podem estar desatualizados.')
+  if (offline) alerts.push('O servidor não responde. Os números abaixo podem estar desatualizados.')
   if (late.length === 1) alerts.push(`O pedido ${displayNumber(late[0].number)} espera há ${ageMinutes(late[0], today)} min.`)
   if (late.length > 1) alerts.push(`${late.length} pedidos esperam há mais de 10 min.`)
   if (soldOut.length > 0) alerts.push(`Esgotados no totem: ${soldOut.map((p) => p.name).join(', ')}.`)
@@ -178,7 +178,7 @@ export function PainelApp({ adapters, now = () => new Date() }: PainelAppProps) 
             <p className="text-[15px] text-muted first-letter:uppercase">{longDate.format(today)}</p>
           </div>
           <p className="text-[14px] text-muted">
-            {adapters.mode === 'demo' ? 'Modo demonstração: dados deste navegador' : 'Servidor local'}, atualiza a cada 3 s
+            {adapters.mode === 'demo' ? 'Modo demonstração: dados deste navegador' : 'Dados do servidor'}, atualiza a cada 3 s
           </p>
         </header>
         {(alerts.length > 0 || problem) && (
