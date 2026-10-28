@@ -68,12 +68,12 @@ flowchart TB
     cliente(["Cliente"])
     lojista(["Lojista"])
 
-    totem["Totem na loja<br/>pedido e pagamento"]
+    totem["Totem na loja<br/>pedido, pagamento e recomendação"]
     celular["Celular do cliente<br/>navegador ou app"]
     painel["Painel do lojista<br/>pedidos e cardápio"]
 
     servidor["Servidor TOPA<br/>regras de cardápio, pedido e pagamento"]
-    banco[("Banco de dados<br/>lojas, cardápios e pedidos")]
+    banco[("Banco de dados")]
 
     subgraph parceiros["Parceiros"]
         pagamentos["Pagamentos<br/>cartão por aproximação e Pix"]
