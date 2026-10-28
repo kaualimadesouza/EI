@@ -69,9 +69,12 @@ flowchart TB
     cliente(["Cliente"])
     lojista(["Lojista"])
 
-    totem["Totem na loja<br/>pedido, pagamento<br/>e recomendação"]
+    subgraph loja["Na loja"]
+        totem["Totem<br/>pedido, pagamento,<br/>recomendação<br/>e cópia local"]
+        painel["Painel do lojista<br/>pedidos e cardápio"]
+    end
+
     celular["Celular do cliente<br/>navegador ou app"]
-    painel["Painel do lojista<br/>pedidos e cardápio"]
 
     servidor["Servidor TOPA<br/>cardápio, pedidos<br/>e pagamentos"]
     banco["Banco de dados"]
@@ -86,9 +89,9 @@ flowchart TB
     totem -. "NFC ou QR Code" .-> celular
     lojista --> painel
 
-    totem --> servidor
-    celular --> servidor
-    painel --> servidor
+    totem <-- "Wi-Fi da loja" --> painel
+    totem <-- "sincroniza quando<br/>há internet" --> servidor
+    celular -- "internet do celular" --> servidor
     servidor --> banco
 
     totem -- "cartão" --> pagamentos
@@ -98,6 +101,11 @@ flowchart TB
 
 A seta tracejada não é uma conexão de rede: é o link da loja que o totem passa ao celular do
 cliente, por NFC ou QR Code, quando a fila está grande.
+
+Sem internet, a loja continua vendendo. O totem guarda uma cópia local do cardápio, dos esgotados
+e da fila de pedidos, fala com o painel pelo Wi-Fi da loja e sincroniza com o servidor quando a
+conexão volta. O que muda no pagamento e nos pedidos pelo celular nesse período está em
+[Vender sem internet](docs/caminho-para-producao.md#vender-sem-internet).
 
 ## Como compilar os documentos
 

@@ -1,7 +1,7 @@
 # Caminho para produção
 
 O que falta para o TOPA sair do modo demonstração e atender uma loja de verdade, dividido em
-fases. Estado de 28/10/2026, versão `topa 0.1.1`.
+fases. Estado de 28/10/2026, versão `topa 0.1.2`.
 
 Hoje todo build publicado roda em **modo demonstração**: o APK, os instaladores da release e o
 site `topa-totem.vercel.app`. Quem decide é `topa/web/src/composition.ts`: com `VITE_API_URL`
@@ -115,10 +115,35 @@ taxas, contrato e o SDK para Android. Hoje o pagamento é simulado: o QR do Pix 
   com os sistemas de gestão das lojas e a unificação fiscal como o principal risco técnico.
   Antes da primeira venda real, é preciso decidir com a loja como cada venda do totem entra no
   fiscal dela (a emissão da NFC-e).
-- **Vender sem internet (edge computing):** o totem guarda os pedidos e sincroniza quando a
-  conexão volta. Exige uma numeração de pedidos que não colida entre aparelhos offline.
+- **Vender sem internet (edge computing):** a loja continua vendendo quando a internet cai. O
+  desenho está na seção [Vender sem internet](#vender-sem-internet).
 - **Recomendação por visão computacional:** as sugestões de hoje são regras fixas (fase 1,
   item 5).
+
+## Vender sem internet
+
+A aposta de *edge computing* do pitch, ainda não começada. Hoje o app funciona sem internet só
+porque o modo demonstração não usa servidor; ligado à API, ele passa a depender dela para tudo.
+O desenho previsto:
+
+1. **O totem guarda uma cópia local** do cardápio, dos preços e dos esgotados. Sem internet, usa
+   essa cópia em vez de perguntar ao servidor.
+2. **Os pedidos ficam numa fila local.** O totem registra os pedidos no aparelho e envia tudo ao
+   servidor quando a internet volta.
+3. **A loja se comunica pela rede interna** (o *edge*). O totem e o painel do lojista, ou a tela
+   da cozinha, conversam pelo Wi-Fi da loja, sem passar pela nuvem. Se a internet cai e o
+   roteador continua ligado, o pedido chega na cozinha do mesmo jeito.
+4. **Numeração dos pedidos sem repetir.** Offline, cada totem usa um prefixo próprio (A01, A02
+   num totem; B01, B02 no outro), para dois totens não gerarem o mesmo número.
+5. **Pagamento**, a parte difícil:
+   - cartão por aproximação: só funciona offline se a credenciadora permitir transação offline,
+     normalmente com limite de valor. A outra saída é um chip 4G de reserva no aparelho, que
+     combina com o modelo de aluguel (HaaS);
+   - Pix: precisa de internet para confirmar o pagamento. Sem conexão, o totem esconde o Pix até
+     a internet voltar.
+6. **Celular do cliente:** usa a internet do próprio cliente e alcança o servidor, mas a loja só
+   recebe o pedido quando voltar a ter internet. Por isso, enquanto a loja estiver offline, o
+   totem deixa de oferecer "Peça pelo celular".
 
 ## Antes do primeiro piloto numa loja
 
