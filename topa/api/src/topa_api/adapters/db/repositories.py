@@ -80,6 +80,10 @@ class SqlAlchemyOrderRepository:
         )
         return [_order_of(row) for row in rows]
 
+    def get(self, order_id: uuid.UUID) -> Order | None:
+        row = self._session.get(OrderRow, order_id, options=[WITH_ITEMS])
+        return None if row is None else _order_of(row)
+
     def get_for_update(self, order_id: uuid.UUID) -> Order | None:
         row = self._session.get(OrderRow, order_id, options=[WITH_ITEMS], with_for_update=True)
         return None if row is None else _order_of(row)

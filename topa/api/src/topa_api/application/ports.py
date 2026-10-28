@@ -45,6 +45,10 @@ class OrderRepository(Protocol):
         """That business day's orders, by number."""
         ...
 
+    def get(self, order_id: uuid.UUID) -> Order | None:
+        """A plain read that holds nothing: the customer's phone asks every few seconds."""
+        ...
+
     def get_for_update(self, order_id: uuid.UUID) -> Order | None:
         """Holds the order until the transaction ends, so two dashboards moving it at once
         take turns instead of both checking the change against the same old status."""

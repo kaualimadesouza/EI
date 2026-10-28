@@ -10,6 +10,7 @@ import { BagScreen } from './BagScreen'
 import { DoneScreen, QueueScreen } from './EndScreens'
 import * as flow from './flow'
 import { MenuScreen } from './MenuScreen'
+import { PagerScreen } from './PagerScreen'
 import { ChoiceButtons, KioskHeader, PRIMARY_ACTION, Sheet } from './parts'
 import { CheckIcon } from '../icons'
 import { PaymentScreen, PIX_SECONDS } from './PaymentScreen'
@@ -115,7 +116,20 @@ export function KioskApp({ adapters, now = () => new Date(), onSwitchRole, onCus
         />
       )}
       {state.screen === 'queue' && <QueueScreen menuUrl={menuUrl} totemIsTag={adapters.tag.available} onOrderHere={reset} />}
-      {state.screen === 'done' && <DoneScreen placed={state.placed!} onNewOrder={reset} />}
+      {/* only an order placed on the customer's phone is paged (and, in demo mode, cooked);
+          at the totem the next customer is waiting, and the order waits for the dashboard */}
+      {state.screen === 'done' &&
+        (onCustomerPhone ? (
+          <PagerScreen
+            placed={state.placed!}
+            orders={adapters.orders}
+            buzzer={adapters.buzzer}
+            wakeLock={adapters.wakeLock}
+            onNewOrder={reset}
+          />
+        ) : (
+          <DoneScreen placed={state.placed!} onNewOrder={reset} />
+        ))}
       {shopping && (
         <KioskHeader
           dineIn={state.dineIn}

@@ -8,7 +8,9 @@ import type { Adapters } from '../../ports/adapters'
 import { OrderRejectedError } from '../../ports/orders'
 import { LocalMenu } from '../../adapters/local/local-menu'
 import { LocalOrders } from '../../adapters/local/local-orders'
+import { UnavailableBuzzer } from '../../adapters/unavailable/unavailable-buzzer'
 import { UnavailableTag } from '../../adapters/unavailable/unavailable-tag'
+import { UnavailableWakeLock } from '../../adapters/unavailable/unavailable-wake-lock'
 import { PainelApp, POLL_MS, UNDO_MS } from './PainelApp'
 
 class MemoryStorage {
@@ -39,6 +41,8 @@ function demoStore() {
     orders: ordersAt(() => NOW),
     nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
     tag: new UnavailableTag(),
+    buzzer: new UnavailableBuzzer(),
+    wakeLock: new UnavailableWakeLock(),
   }
   return { adapters, menu, ordersAt }
 }
@@ -272,9 +276,11 @@ describe('PainelApp', () => {
       mode: 'api',
       connection: { isReachable: () => Promise.resolve(false) },
       menu: { list: () => Promise.reject(new Error('down')), setAvailability: vi.fn() },
-      orders: { place: vi.fn(), list: () => Promise.reject(new Error('down')), setStatus: vi.fn() },
+      orders: { place: vi.fn(), list: () => Promise.reject(new Error('down')), setStatus: vi.fn(), statusOf: vi.fn() },
       nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
       tag: new UnavailableTag(),
+      buzzer: new UnavailableBuzzer(),
+      wakeLock: new UnavailableWakeLock(),
     }
 
     renderPainel(failing)
@@ -306,9 +312,11 @@ describe('PainelApp', () => {
       mode: 'api',
       connection: { isReachable: () => Promise.resolve(true) },
       menu: { list: () => Promise.resolve([suco]), setAvailability: () => Promise.reject(new Error('network')) },
-      orders: { place: vi.fn(), list: () => Promise.resolve([order]), setStatus },
+      orders: { place: vi.fn(), list: () => Promise.resolve([order]), setStatus, statusOf: vi.fn() },
       nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
       tag: new UnavailableTag(),
+      buzzer: new UnavailableBuzzer(),
+      wakeLock: new UnavailableWakeLock(),
     }
     renderPainel(adapters)
 

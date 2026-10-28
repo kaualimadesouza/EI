@@ -75,6 +75,7 @@ export function StoreMark({ size = 40, className }: IconProps) {
   )
 }
 
+export const BellIcon = (props: IconProps) => <Stroke d="M12 3v2M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4" {...props} />
 export const ClockIcon = (props: IconProps) => <Stroke d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2" {...props} />
 export const UndoIcon = (props: IconProps) => <Stroke d="M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11" {...props} />
 export const AlertIcon = (props: IconProps) => (

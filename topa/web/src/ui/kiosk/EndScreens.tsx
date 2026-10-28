@@ -9,23 +9,36 @@ import { Qr } from './Qr'
 
 const RETURN_SECONDS = 20
 
-interface DoneScreenProps {
+interface OrderScreenProps {
   placed: PlacedOrder
+  icon: ReactNode
+  title: string
+  hint: string
+  /** The ready call: a ring that stays under reduced motion, and a blink where motion is welcome. */
+  calling?: boolean
   onNewOrder: () => void
+  /** Under the button: the totem's countdown, or the phone's warning that a check failed. */
+  children?: ReactNode
 }
 
-export function DoneScreen({ placed, onNewOrder }: DoneScreenProps) {
-  const left = useCountdown(RETURN_SECONDS, onNewOrder)
+/** The paid order's number on teal: the totem's confirmation and the phone's pager share it. */
+export function OrderScreen({ placed, icon, title, hint, calling = false, onNewOrder, children }: OrderScreenProps) {
   return (
     <section className="flex min-h-0 flex-1 flex-col items-center justify-center-safe gap-8 overflow-y-auto bg-teal px-12 py-8 text-center text-white short:gap-4 max-sm:gap-6 max-sm:px-4">
-      <span className="flex size-24 items-center justify-center rounded-full bg-white text-teal phone:size-20">
-        <CheckIcon size={56} className="phone:size-12" />
+      <span
+        className={`flex size-24 items-center justify-center rounded-full bg-white text-teal phone:size-20 ${
+          calling ? 'ring-8 ring-on-teal motion-safe:animate-blink' : ''
+        }`}
+      >
+        {icon}
       </span>
-      <p className="text-heading font-semibold">Pedido confirmado</p>
+      <p role="status" className="text-heading font-semibold">
+        {title}
+      </p>
       <p aria-label={`Pedido número ${displayNumber(placed.number)}`} className="text-[clamp(140px,24dvh,220px)] leading-none font-bold tabular-nums max-sm:text-[140px]">
         {displayNumber(placed.number)}
       </p>
-      <p className="max-w-[560px] text-lead text-on-teal">Acompanhe seu número na tela do balcão.</p>
+      <p className="max-w-[560px] text-lead text-on-teal">{hint}</p>
       <p className="text-body tabular-nums">Total pago {formatBRL(placed.totalCents)}</p>
       <div className="mt-8 flex flex-col items-center gap-4 short:mt-2 phone:mt-2 phone:gap-3">
         <button
@@ -35,9 +48,30 @@ export function DoneScreen({ placed, onNewOrder }: DoneScreenProps) {
         >
           Fazer novo pedido
         </button>
-        <p className="text-caption text-on-teal tabular-nums">Voltando ao início em {left} s</p>
+        {children}
       </div>
     </section>
+  )
+}
+
+interface DoneScreenProps {
+  placed: PlacedOrder
+  onNewOrder: () => void
+}
+
+/** The totem's confirmation: the next customer is waiting, so it returns to the start by itself. */
+export function DoneScreen({ placed, onNewOrder }: DoneScreenProps) {
+  const left = useCountdown(RETURN_SECONDS, onNewOrder)
+  return (
+    <OrderScreen
+      placed={placed}
+      icon={<CheckIcon size={56} className="phone:size-12" />}
+      title="Pedido confirmado"
+      hint="Acompanhe seu número na tela do balcão."
+      onNewOrder={onNewOrder}
+    >
+      <p className="text-caption text-on-teal tabular-nums">Voltando ao início em {left} s</p>
+    </OrderScreen>
   )
 }
 

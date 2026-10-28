@@ -108,3 +108,19 @@ def test_an_order_read_for_update_is_held_until_that_transaction_ends(db_engine:
             )
 
     assert isinstance(raised.value.orig, LockNotAvailable)
+
+
+def test_a_plain_read_of_an_order_holds_nothing(db_engine: Engine) -> None:
+    """The customer's phone reads its order every few seconds; the dashboard must never wait."""
+    placed = _order(1)
+    with Session(db_engine) as session, session.begin():
+        SqlAlchemyOrderRepository(session).add(placed)
+
+    with Session(db_engine) as first, first.begin():
+        assert SqlAlchemyOrderRepository(first).get(placed.id) == placed
+        assert SqlAlchemyOrderRepository(first).get(uuid.uuid4()) is None
+        with Session(db_engine) as second, second.begin():
+            locked = second.execute(
+                select(OrderRow.id).where(OrderRow.id == placed.id).with_for_update(nowait=True)
+            )
+            assert locked.scalar_one() == placed.id
