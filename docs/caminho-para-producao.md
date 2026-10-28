@@ -89,6 +89,9 @@ taxas, contrato e o SDK para Android. Hoje o pagamento é simulado: o QR do Pix 
 ## Fase 4: operação
 
 - **APK:**
+  - dois apps do mesmo código (issue #36): o da loja, com o totem e o painel atrás do login do
+    lojista, e o do cliente, que só lê o totem e pede. Hoje um APK só abre como cliente, e 5
+    toques rápidos na marca TOPA transformam o celular em totem;
   - uma keystore fixa guardada como secret. Hoje cada build do CI assina com uma chave de debug
     nova, e o Android recusa instalar um APK por cima de outro assinado com chave diferente;
   - build de release em vez de debug. O debug usa o id `...topa.debug`, então o de release se
