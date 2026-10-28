@@ -13,8 +13,10 @@
         { "type": "json", "path": "web/package-lock.json", "jsonpath": "$.version" },
         { "type": "json", "path": "web/package-lock.json", "jsonpath": "$.packages[''].version" },
         { "type": "toml", "path": "api/pyproject.toml", "jsonpath": "$.project.version" },
+        { "type": "toml", "path": "api/uv.lock", "jsonpath": "$.package[?(@.name.value=='topa-api')].version" },
         { "type": "json", "path": "web/src-tauri/tauri.conf.json", "jsonpath": "$.version" },
-        { "type": "toml", "path": "web/src-tauri/Cargo.toml", "jsonpath": "$.package.version" }
+        { "type": "toml", "path": "web/src-tauri/Cargo.toml", "jsonpath": "$.package.version" },
+        { "type": "toml", "path": "web/src-tauri/Cargo.lock", "jsonpath": "$.package[?(@.name.value=='topa')].version" }
       ]
     }
   }
