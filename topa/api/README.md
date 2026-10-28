@@ -3,6 +3,8 @@
 FastAPI backend of the TOPA MVP: Postgres through SQLAlchemy 2, schema in Alembic,
 hexagonal layout enforced by import-linter.
 
+The schema, as an ER diagram: [`docs/banco-de-dados.md`](../../docs/banco-de-dados.md).
+
 ## Run
 
 From `topa/`, `make run` brings up Postgres, this API and the web app with reload.
