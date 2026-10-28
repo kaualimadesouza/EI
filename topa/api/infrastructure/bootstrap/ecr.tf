@@ -33,6 +33,20 @@ data "aws_iam_policy_document" "ecr_lambda_pull" {
   }
 }
 
+# every deploy pushes a new image; the newest one is the one Lambda runs, so keeping the
+# last ten never deletes it and leaves a few to roll back to
+resource "aws_ecr_lifecycle_policy" "api" {
+  repository = aws_ecr_repository.api.name
+  policy = jsonencode({
+    rules = [{
+      rulePriority = 1
+      description  = "Keep the ten most recent images"
+      selection    = { tagStatus = "any", countType = "imageCountMoreThan", countNumber = 10 }
+      action       = { type = "expire" }
+    }]
+  })
+}
+
 resource "aws_ecr_repository_policy" "api" {
   repository = aws_ecr_repository.api.name
   policy     = data.aws_iam_policy_document.ecr_lambda_pull.json

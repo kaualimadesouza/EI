@@ -1,13 +1,15 @@
 locals {
-  name = "topa-api-${var.stage}"
+  # the deployer's policy in bootstrap/ is scoped to exactly this function and role
+  name = "topa-api"
 
-  # Browser origins allowed to call the API: the site of this stage and the apps' webviews
-  # (http://tauri.localhost on Android and Windows, tauri://localhost on macOS and Linux).
-  app_origins = ["http://tauri.localhost", "tauri://localhost"]
-  cors_origins = {
-    prod = concat(["https://topa-totem.vercel.app"], local.app_origins)
-    dev  = concat(["https://topa-totem-dev.vercel.app", "http://localhost:5173", "http://localhost:5180"], local.app_origins)
-  }
+  # The site's PROD and DEV aliases (keep DEV in step with web.yml's VERCEL_DEV_ALIAS) and the
+  # apps' webviews: http://tauri.localhost on Android and Windows, tauri://localhost elsewhere.
+  cors_origins = [
+    "https://topa-totem.vercel.app",
+    "https://topa-totem-dev.vercel.app",
+    "http://tauri.localhost",
+    "tauri://localhost",
+  ]
 }
 
 data "aws_iam_policy_document" "lambda_assume_role" {
@@ -45,7 +47,7 @@ resource "aws_lambda_function" "api" {
   environment {
     variables = {
       TOPA_DATABASE_URL = var.topa_database_url
-      TOPA_CORS_ORIGINS = jsonencode(local.cors_origins[var.stage])
+      TOPA_CORS_ORIGINS = jsonencode(local.cors_origins)
     }
   }
 }
@@ -73,6 +75,13 @@ resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.api.id
   name        = "$default"
   auto_deploy = true
+
+  # no auth yet and the URL ships in the public bundle: a cap keeps a scraper from
+  # holding Neon's compute awake all day
+  default_route_settings {
+    throttling_rate_limit  = 20
+    throttling_burst_limit = 50
+  }
 }
 
 resource "aws_lambda_permission" "api_gateway" {

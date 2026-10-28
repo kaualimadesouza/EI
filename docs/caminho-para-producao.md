@@ -22,7 +22,7 @@ a fase 2.
    - a configuração única do dono: projeto no Neon, bootstrap na AWS e secrets no GitHub
      (`topa/api/infrastructure/README.md`);
    - monitorar pelo `/health/ready`, que já existe.
-2. **Ligar o site e o app à API.** A API libera CORS para o site de cada ambiente e para as
+2. **Ligar o site e o app à API.** A API libera CORS para o site e para as
    origens do app (`http://tauri.localhost` no Android e no Windows, `tauri://localhost` no
    macOS e no Linux), em `topa/api/infrastructure/main.tf`. Falta o build do site e o do APK
    receberem `VITE_API_URL` com o endereço da API, que o primeiro deploy mostra.

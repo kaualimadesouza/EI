@@ -6,6 +6,9 @@ resource "aws_iam_user" "deployer" {
 
 locals {
   account_id = data.aws_caller_identity.current.account_id
+  # exactly the names main.tf creates: a wildcard would let the key mint new roles
+  function_arn = "arn:aws:lambda:${var.region}:${local.account_id}:function:topa-api"
+  role_arn     = "arn:aws:iam::${local.account_id}:role/topa-api"
 }
 
 data "aws_iam_policy_document" "deployer" {
@@ -29,14 +32,18 @@ data "aws_iam_policy_document" "deployer" {
     resources = [aws_ecr_repository.api.arn]
   }
 
-  # Scoped to this project's prefix: the state bucket is shared with other projects.
+  # The bucket is shared with other projects, and this stack's own state sits next to the
+  # main one: the deployer writes only under topa-api/app/.
   statement {
-    sid     = "TerraformState"
-    actions = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"]
-    resources = [
-      "arn:aws:s3:::${var.state_bucket}",
-      "arn:aws:s3:::${var.state_bucket}/topa-api/*",
-    ]
+    sid       = "TerraformStateList"
+    actions   = ["s3:ListBucket"]
+    resources = ["arn:aws:s3:::${var.state_bucket}"]
+  }
+
+  statement {
+    sid       = "TerraformState"
+    actions   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
+    resources = ["arn:aws:s3:::${var.state_bucket}/topa-api/app/*"]
   }
 
   statement {
@@ -57,7 +64,7 @@ data "aws_iam_policy_document" "deployer" {
       "lambda:RemovePermission",
       "lambda:GetPolicy",
     ]
-    resources = ["arn:aws:lambda:${var.region}:${local.account_id}:function:topa-api-*"]
+    resources = [local.function_arn]
   }
 
   statement {
@@ -67,19 +74,31 @@ data "aws_iam_policy_document" "deployer" {
       "iam:DeleteRole",
       "iam:GetRole",
       "iam:TagRole",
-      "iam:AttachRolePolicy",
-      "iam:DetachRolePolicy",
       "iam:ListAttachedRolePolicies",
       "iam:ListRolePolicies",
       "iam:ListInstanceProfilesForRole",
     ]
-    resources = ["arn:aws:iam::${local.account_id}:role/topa-api-*"]
+    resources = [local.role_arn]
+  }
+
+  # Only the basic execution policy: attaching AdministratorAccess to the function's role
+  # would turn a leaked deployer key into admin of the whole account.
+  statement {
+    sid       = "LambdaRolePolicy"
+    actions   = ["iam:AttachRolePolicy", "iam:DetachRolePolicy"]
+    resources = [local.role_arn]
+
+    condition {
+      test     = "ArnEquals"
+      variable = "iam:PolicyARN"
+      values   = ["arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"]
+    }
   }
 
   statement {
     sid       = "PassLambdaExecutionRole"
     actions   = ["iam:PassRole"]
-    resources = ["arn:aws:iam::${local.account_id}:role/topa-api-*"]
+    resources = [local.role_arn]
 
     condition {
       test     = "StringEquals"

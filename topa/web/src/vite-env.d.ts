@@ -1,7 +1,8 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  // same-origin only (`/api`, proxied): the API sends no CORS headers, so another origin is blocked
+  // `/api` locally, proxied by Vite; a deployed build takes the API's full URL, whose CORS list
+  // (topa/api/infrastructure/main.tf) must include the origin the build is served from
   readonly VITE_API_URL?: string
 }
 

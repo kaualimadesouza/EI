@@ -31,10 +31,10 @@ and UI copy is in Portuguese; code is in English.
   sides and run on the host (only the api tests' Postgres comes from compose): Node 24 (or
   `npx -y npm@11 ci` in `topa/web` on older Node) plus uv.
   Both CIs demand 100% coverage. The API deploys to AWS Lambda behind API Gateway, with Postgres on
-  Neon, through `.github/workflows/api-deploy.yml` (dev on push to main, prod on a release; setup in
-  `topa/api/infrastructure/README.md`). AWS commands always take `--profile argumenta-ai`, the
-  owner's personal account: the machine's default profile is the work account. `.github/workflows/web.yml`
-  checks the web app and deploys it to the Vercel project `topa-totem` in demo mode (a preview per
+  Neon, through `.github/workflows/api-deploy.yml`: straight to prod on every push to main that
+  touches the API (setup in `topa/api/infrastructure/README.md`). AWS commands always take
+  `--profile argumenta-ai`, the owner's personal account: the machine's default profile is the work
+  account. `.github/workflows/web.yml` checks the web app and deploys it to the Vercel project `topa-totem` in demo mode (a preview per
   PR, the DEV alias on push to main, PROD when release-please cuts a release) once the repo holds
   the Vercel secrets; until then the deploy job is skipped and PROD goes out by hand with the
   Vercel CLI.
