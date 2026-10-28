@@ -80,10 +80,7 @@ flowchart TB
     servidor["Servidor TOPA<br/>cardápio, pedidos<br/>e pagamentos"]
     banco["Banco de dados"]
 
-    subgraph parceiros["Parceiros"]
-        pagamentos["Pagamentos<br/>cartão e Pix"]
-        fiscal["Fiscal e ERP<br/>a definir"]
-    end
+    pagamentos["Pagamentos<br/>cartão e Pix"]
 
     lojista --> painel
     cliente -- "pede no totem" --> totem
@@ -96,7 +93,6 @@ flowchart TB
     celular -- "internet do celular" --> servidor
     servidor --> banco
 
-    servidor --> fiscal
     servidor -- "Pix" --> pagamentos
     totem -- "cartão" --> pagamentos
 ```
