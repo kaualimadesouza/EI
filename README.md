@@ -52,11 +52,13 @@ make lint
 precisam do Node 24 (em Node mais antigo, instale as dependências do front com `npx -y npm@11 ci`
 dentro de `topa/web`) e do [uv](https://docs.astral.sh/uv/) para a API.
 
-O front encontra a API por `VITE_API_URL`, que precisa ser do mesmo domínio (`/api`, repassado pelo
-servidor do Vite), porque a API não libera CORS. Sem essa variável, o front abre em modo demonstração.
+O front encontra a API por `VITE_API_URL`: na sua máquina é `/api`, repassado pelo servidor do Vite;
+publicado, é o endereço completo da API, que libera CORS só para o site e para o app. Sem essa
+variável, o front abre em modo demonstração.
 
-Na nuvem, o front está publicado em modo demonstração, sem API, em
-[topa-totem.vercel.app](https://topa-totem.vercel.app).
+Na nuvem, o front ainda está publicado em modo demonstração em
+[topa-totem.vercel.app](https://topa-totem.vercel.app). A API sobe para a AWS a cada push na `main`
+que mexa nela ([`topa/api/infrastructure/README.md`](topa/api/infrastructure/README.md)).
 
 ## Arquitetura final
 

@@ -1,0 +1,18 @@
+FROM ghcr.io/astral-sh/uv:0.9.26 AS uv
+
+# the deploy artifact: AWS Lambda's Python base, which also ships the runtime emulator for local runs.
+# Migrations run from CI before each deploy, never when the function starts.
+FROM public.ecr.aws/lambda/python:3.12
+
+COPY --from=uv /uv /usr/local/bin/uv
+
+COPY pyproject.toml uv.lock ${LAMBDA_TASK_ROOT}/
+RUN cd ${LAMBDA_TASK_ROOT} \
+    && uv export --frozen --no-dev --no-emit-project --no-hashes --format requirements.txt -o requirements.txt \
+    && pip install --no-cache-dir -r requirements.txt \
+    && rm -f requirements.txt pyproject.toml uv.lock
+
+# copied to the task root, not src/, so the handler path carries no src. prefix
+COPY src/topa_api ${LAMBDA_TASK_ROOT}/topa_api
+
+CMD ["topa_api.entrypoints.lambda_handler.handler"]

@@ -19,6 +19,16 @@ make run        # http://localhost:8000/health and /health/ready
 `TOPA_DATABASE_URL` overrides the database (default
 `postgresql+psycopg://topa:topa@localhost:5435/topa`).
 
+`TOPA_CORS_ORIGINS` is a JSON list of the browser origins allowed to call the API (none by
+default; the local web app goes through the Vite proxy and needs none).
+
+## Deploy
+
+AWS Lambda behind an API Gateway HTTP API, Postgres on Neon, Terraform in `infrastructure/`:
+see [`infrastructure/README.md`](infrastructure/README.md). The Lambda image is
+`Dockerfile.lambda` (entrypoint `topa_api.entrypoints.lambda_handler`); `Dockerfile` stays the
+local development image.
+
 ## Check
 
 `make check` is the one command CI runs, from `topa/api/`:
@@ -68,7 +78,7 @@ src/topa_api/
                           and the ports they need (repositories, clock, readiness probe)
   adapters/               SQLAlchemy models and repositories, engine, system clock
   presentation/fastapi/   routers, request/response schemas, the ports routes ask for, error handlers
-  entrypoints/            create_app(): binds each port to its adapter, and the ASGI app
+  entrypoints/            create_app(): binds each port to its adapter; the ASGI app and the Lambda handler
 migrations/               Alembic, wired to Base.metadata; the first one seeds the demo menu
 ```
 
