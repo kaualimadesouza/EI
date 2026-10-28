@@ -54,7 +54,7 @@ sales via edge computing. `docs/situacoes_EI_2026.pdf` (proposal) and `docs/Logo
 
 - `docs/`: reference material already delivered (the proposal with its `.tex`, the pitch slides and
   the other deliverables' PDFs), plus `caminho-para-producao.md`, the phased plan from demo mode to
-  production.
+  production. `banco-de-dados.md` is the API database's ER diagram, with its keys and constraints.
 - `entrevistas-prototipo/`: the user-interview assignment (given 21/09/2026). Each of the 5 members
   interviews 15 **end users** (whoever places the order, not the merchant) using Victor's 3-screen,
   9-question script, approved by the group on 28/09. Its `README.md` holds the task rules and pending
