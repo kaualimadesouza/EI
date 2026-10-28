@@ -22,7 +22,7 @@ class MainActivity : TauriActivity() {
     keepClearOfSystemBars(findViewById(android.R.id.content))
   }
 
-  // the page would lay out under the bars, and WebViews before 140 report no safe area to CSS
+  // the page would lay out under the bars; padding here works on every WebView, CSS safe areas do not
   private fun keepClearOfSystemBars(content: View) {
     content.setBackgroundColor(getColor(R.color.system_bars))
     ViewCompat.setOnApplyWindowInsetsListener(content) { view, insets ->

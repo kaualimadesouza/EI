@@ -11,7 +11,9 @@ turns each `--color-x` into `bg-x`, `text-x`, `border-x`, and CSS reads it as
 (`bg-[#1A4D49]`), and never use Tailwind's default palette (`bg-blue-500`,
 `text-gray-600`): `@theme` resets it (`--color-*: initial`), so such a class
 compiles to nothing. A new colour goes into `@theme` first, then gets used. The
-one allowed copy is `theme-color` in `topa/web/index.html`, which cannot read CSS.
+allowed copies are where CSS cannot be read: `theme-color` in `topa/web/index.html`
+and `system_bars` (the Android bars) in
+`topa/web/src-tauri/gen/android/app/src/main/res/values/colors.xml`.
 If this table and `index.css` disagree, `index.css` wins and this file gets
 fixed.
 
