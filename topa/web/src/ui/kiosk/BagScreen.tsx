@@ -18,7 +18,7 @@ export function BagScreen({ products, lines, onIncrement, onDecrement, onBack, o
     <>
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-12 py-8 [scrollbar-width:none] short:py-6 max-sm:p-4">
         <div className="mx-auto flex w-full max-w-[880px] flex-col gap-6 max-sm:gap-2">
-          <h1 className="text-[44px] leading-tight font-bold short:text-[36px] max-sm:text-[30px]">Seu pedido</h1>
+          <h1 className="text-[44px] leading-tight font-bold short:text-[36px] max-sm:text-[26px]">Seu pedido</h1>
           <ul className="flex flex-col divide-y divide-line">
             {lines.map((line) => {
               const product = findProduct(products, line.productId)!
@@ -68,14 +68,14 @@ export function BagScreen({ products, lines, onIncrement, onDecrement, onBack, o
       <footer className="flex-none border-t border-line bg-white px-12 py-8 short:py-5 max-sm:p-4">
         <div className="mx-auto flex w-full max-w-[880px] flex-col gap-6 short:gap-4 max-sm:gap-3">
           <div className="flex items-baseline justify-between gap-4">
-            <span className="text-[26px] max-sm:text-[18px]">Total, {count === 1 ? '1 item' : `${count} itens`}</span>
-            <span className="text-[44px] font-bold tabular-nums short:text-[36px] max-sm:text-[30px]">{formatBRL(totalCents(lines, products))}</span>
+            <span className="text-[26px] max-sm:text-[16px]">Total, {count === 1 ? '1 item' : `${count} itens`}</span>
+            <span className="text-[44px] font-bold tabular-nums short:text-[36px] max-sm:text-[26px]">{formatBRL(totalCents(lines, products))}</span>
           </div>
           <div className="grid grid-cols-2 gap-4 max-sm:gap-3">
-            <button type="button" onClick={onBack} className="h-24 rounded-[24px] border-2 border-slate px-3 text-[22px] font-semibold short:h-20 max-sm:h-20 max-sm:text-[18px]">
+            <button type="button" onClick={onBack} className="h-24 rounded-[24px] border-2 border-slate px-3 text-[22px] font-semibold short:h-20 max-sm:h-16 max-sm:rounded-[20px] max-sm:text-[17px] max-sm:leading-tight">
               Continuar comprando
             </button>
-            <button type="button" onClick={onPay} className="h-24 rounded-[24px] bg-teal text-[26px] font-semibold text-white short:h-20 max-sm:h-20 max-sm:text-[22px]">
+            <button type="button" onClick={onPay} className="h-24 rounded-[24px] bg-teal text-[26px] font-semibold text-white short:h-20 max-sm:h-16 max-sm:rounded-[20px] max-sm:text-[20px]">
               Pagar
             </button>
           </div>

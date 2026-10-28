@@ -15,7 +15,7 @@ export function Sheet({ title, children }: SheetProps) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="flex max-h-full w-full max-w-[800px] flex-col gap-6 overflow-y-auto rounded-t-[32px] bg-white p-12 text-ink short:gap-4 short:p-8 max-sm:gap-4 max-sm:p-5"
+        className="flex max-h-full w-full max-w-[800px] flex-col gap-6 overflow-y-auto rounded-t-[32px] bg-white p-12 text-ink short:gap-4 short:p-8 max-sm:gap-3 max-sm:rounded-t-[24px] max-sm:p-5"
       >
         {children}
       </section>
@@ -36,14 +36,14 @@ export function ChoiceButtons({ secondary, primary, onSecondary, onPrimary }: Ch
       <button
         type="button"
         onClick={onSecondary}
-        className="h-[88px] rounded-[24px] border-2 border-slate px-3 text-[22px] font-semibold text-ink max-sm:h-20 max-sm:text-[18px]"
+        className="h-[88px] rounded-[24px] border-2 border-slate px-3 text-[22px] font-semibold text-ink max-sm:h-16 max-sm:rounded-[20px] max-sm:text-[17px] max-sm:leading-tight"
       >
         {secondary}
       </button>
       <button
         type="button"
         onClick={onPrimary}
-        className="h-[88px] rounded-[24px] bg-teal px-3 text-[22px] font-semibold text-white max-sm:h-20 max-sm:text-[18px]"
+        className="h-[88px] rounded-[24px] bg-teal px-3 text-[22px] font-semibold text-white max-sm:h-16 max-sm:rounded-[20px] max-sm:text-[17px] max-sm:leading-tight"
       >
         {primary}
       </button>
@@ -60,14 +60,14 @@ interface HeaderProps {
 
 export function KioskHeader({ dineIn, cartEmpty, locked, onCancel }: HeaderProps) {
   return (
-    <header className="flex h-[104px] flex-none items-center gap-4 border-b border-line bg-white px-12 short:h-20 max-sm:h-20 max-sm:gap-3 max-sm:px-4">
+    <header className="flex h-[104px] flex-none items-center gap-4 border-b border-line bg-white px-12 short:h-20 max-sm:h-16 max-sm:gap-2 max-sm:pr-2 max-sm:pl-4">
       <span className="flex-none max-sm:hidden">
         <StoreMark size={48} />
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-[22px] font-semibold max-sm:text-[17px]">Lanchonete Bem-te-vi</span>
-        <span className="flex items-center gap-2 text-[18px] text-muted max-sm:text-[14px]">
-          {dineIn ? <DineInIcon size={20} /> : <TakeAwayIcon size={20} />}
+        <span className="truncate text-[22px] font-semibold max-sm:text-[16px]">Lanchonete Bem-te-vi</span>
+        <span className="flex items-center gap-2 text-[18px] text-muted max-sm:gap-1.5 max-sm:text-[13px]">
+          {dineIn ? <DineInIcon size={20} className="max-sm:size-4" /> : <TakeAwayIcon size={20} className="max-sm:size-4" />}
           {dineIn ? 'Comer aqui' : 'Para viagem'}
         </span>
       </span>
@@ -75,9 +75,9 @@ export function KioskHeader({ dineIn, cartEmpty, locked, onCancel }: HeaderProps
         type="button"
         onClick={onCancel}
         disabled={locked}
-        className="flex h-16 flex-none items-center gap-2 rounded-[16px] px-3 text-[22px] font-semibold text-slate disabled:opacity-40 max-sm:gap-1 max-sm:px-2 max-sm:text-[16px]"
+        className="flex h-16 flex-none items-center gap-2 rounded-[16px] px-3 text-[22px] font-semibold text-slate disabled:opacity-40 max-sm:gap-1 max-sm:px-2 max-sm:text-[15px]"
       >
-        <CloseIcon size={28} />
+        <CloseIcon size={28} className="max-sm:size-5" />
         {cartEmpty ? 'Voltar ao início' : 'Cancelar pedido'}
       </button>
     </header>
