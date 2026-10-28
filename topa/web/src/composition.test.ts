@@ -46,6 +46,19 @@ describe('createAdapters', () => {
     expect(adapters.orders).toBeInstanceOf(HttpOrders)
   })
 
+  it('reaches a deployed API at its absolute URL, with one slash before each route', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.resolve(new Response('[]')))
+    const adapters = createAdapters('https://api.example.com', browser)
+
+    await adapters.menu.list()
+    await adapters.connection.isReachable()
+
+    expect(fetchSpy.mock.calls.map(([url]) => url)).toEqual([
+      'https://api.example.com/products',
+      'https://api.example.com/health/ready',
+    ])
+  })
+
   it('falls back to demo mode when there is no API URL', () => {
     const adapters = createAdapters(undefined, browser)
 

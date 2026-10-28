@@ -30,6 +30,8 @@ __pycache__/
 .env
 .env.*
 !.env.example
+# the web build's public settings: they ship in its bundle anyway
+!topa/web/.env.production
 .playwright-mcp/
 .import_linter_cache/
 

@@ -62,7 +62,7 @@ function nfcFor(runtime: Runtime): NfcPort {
   return new UnavailableNfc()
 }
 
-/** The only place that picks adapters: an API URL means the local backend, none means demo mode. */
+/** The only place that picks adapters: an API URL means the API, none (or empty) means demo mode. */
 export function createAdapters(apiUrl: string | undefined, runtime: Runtime = detectRuntime()): Adapters {
   const nfc = nfcFor(runtime)
   const tag = runtime.tagBridge ? new TauriTag(runtime.tagBridge) : new UnavailableTag()
