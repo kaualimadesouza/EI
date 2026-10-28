@@ -7,4 +7,6 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <!-- the kiosk teal, behind the status and navigation bars -->
+    <color name="system_bars">#FF1A4D49</color>
 </resources>
