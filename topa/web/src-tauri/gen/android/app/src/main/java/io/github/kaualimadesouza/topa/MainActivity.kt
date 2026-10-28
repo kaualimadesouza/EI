@@ -47,48 +47,41 @@ class MainActivity : TauriActivity() {
   }
 
   override fun onPause() {
-    // Android honours a preferred service only while its activity is resumed
-    if (TagEmulationService.publishedUrl != null) releaseTag()
+    // a preferred service holds only while resumed, and a paused totem must let other apps read tags
+    if (TagEmulationService.publishedUrl != null) stopServing()
     super.onPause()
   }
 
+  // calls arrive on the bridge's own thread; the URL changes on the UI thread, where the lifecycle reads it
   private inner class TagBridge {
     @JavascriptInterface
-    fun publish(url: String) {
+    fun publish(url: String) = runOnUiThread {
       TagEmulationService.publishedUrl = url
-      runOnUiThread { serve() }
+      serve()
     }
 
     @JavascriptInterface
-    fun withdraw() {
+    fun withdraw() = runOnUiThread {
       TagEmulationService.publishedUrl = null
-      runOnUiThread {
-        releaseTag()
-        restorePolling()
-      }
+      stopServing()
     }
   }
 
-  private fun serve() {
-    preferTag()
-    stopPolling()
-  }
-
-  // when another app also claims the NDEF AID, Android shows the totem a "tap again" prompt and answers nothing
-  private fun preferTag() =
-    withNfc { CardEmulation.getInstance(it).setPreferredService(this, ComponentName(this, TagEmulationService::class.java)) }
-
-  private fun releaseTag() = withNfc { CardEmulation.getInstance(it).unsetPreferredService(this) }
-
+  // another app claiming the NDEF AID makes Android show the totem a "tap again" prompt and answer nothing;
   // a totem polling for tags would read the customer's wallet card instead of being read (Android 15+)
-  private fun stopPolling() {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return
-    withNfc { it.setDiscoveryTechnology(this, NfcAdapter.FLAG_READER_DISABLE, NfcAdapter.FLAG_LISTEN_KEEP) }
+  private fun serve() {
+    withNfc {
+      val tag = ComponentName(this, TagEmulationService::class.java)
+      if (!CardEmulation.getInstance(it).setPreferredService(this, tag)) Log.w(LOG_TAG, "preferred service refused")
+    }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+      withNfc { it.setDiscoveryTechnology(this, NfcAdapter.FLAG_READER_DISABLE, NfcAdapter.FLAG_LISTEN_KEEP) }
+    }
   }
 
-  private fun restorePolling() {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return
-    withNfc { it.resetDiscoveryTechnology(this) }
+  private fun stopServing() {
+    withNfc { CardEmulation.getInstance(it).unsetPreferredService(this) }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) withNfc { it.resetDiscoveryTechnology(this) }
   }
 
   private fun withNfc(change: (NfcAdapter) -> Unit) {
@@ -96,8 +89,10 @@ class MainActivity : TauriActivity() {
     try {
       change(adapter)
     } catch (e: RuntimeException) {
-      // a refusal only brings back the problem the call avoids; the tag itself keeps answering
-      Log.w("TopaTag", "NFC change refused", e)
+      // logged, never fatal: the tag itself keeps answering
+      Log.w(LOG_TAG, "NFC change refused", e)
     }
   }
 }
+
+private const val LOG_TAG = "TopaTag"
