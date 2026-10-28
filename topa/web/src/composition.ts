@@ -70,7 +70,7 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
     const client = new HttpClient(apiUrl)
     return {
       mode: 'api',
-      connection: new HttpConnection(apiUrl),
+      connection: new HttpConnection(client),
       menu: new HttpMenu(client),
       orders: new HttpOrders(client),
       nfc,
