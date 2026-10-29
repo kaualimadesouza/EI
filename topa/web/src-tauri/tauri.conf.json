@@ -35,7 +35,6 @@
       "icons/icon.ico"
     ],
     "android": {
-      "versionCode": 1,
       "debugApplicationIdSuffix": ".debug"
     }
   }

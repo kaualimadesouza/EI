@@ -1,4 +1,4 @@
-package io.github.kaualimadesouza.topa
+package io.github.kaualimadesouza.topa.loja
 
 import android.content.ComponentName
 import android.content.pm.PackageManager
@@ -15,10 +15,10 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import io.github.kaualimadesouza.topa.TagEmulationService
 
 class MainActivity : TauriActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
-    // light icons over the teal that fills the bars
     enableEdgeToEdge(SystemBarStyle.dark(Color.TRANSPARENT), SystemBarStyle.dark(Color.TRANSPARENT))
     super.onCreate(savedInstanceState)
     keepClearOfSystemBars(findViewById(android.R.id.content))
@@ -26,7 +26,8 @@ class MainActivity : TauriActivity() {
 
   // the page would lay out under the bars; padding here works on every WebView, CSS safe areas do not
   private fun keepClearOfSystemBars(content: View) {
-    content.setBackgroundColor(getColor(R.color.system_bars))
+    val barColorRes = resources.getIdentifier("system_bars", "color", packageName)
+    if (barColorRes != 0) content.setBackgroundColor(getColor(barColorRes))
     ViewCompat.setOnApplyWindowInsetsListener(content) { view, insets ->
       val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
       view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
@@ -34,8 +35,9 @@ class MainActivity : TauriActivity() {
     }
   }
 
-  // runs before the first page load; without HCE there is no bridge, so the kiosk points to the sticker
+  // store app runs with the store flavor and registers the totem tag bridge when HCE is available
   override fun onWebViewCreate(webView: WebView) {
+    webView.addJavascriptInterface(AppBridge("loja"), "TopaNative")
     if (packageManager.hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION)) {
       webView.addJavascriptInterface(TagBridge(), "TopaTag")
     }
@@ -52,7 +54,12 @@ class MainActivity : TauriActivity() {
     super.onPause()
   }
 
-  // calls arrive on the bridge's own thread; the URL changes on the UI thread, where the lifecycle reads it
+  private inner class AppBridge(private val flavor: String) {
+    @JavascriptInterface
+    fun getFlavor(): String = flavor
+  }
+
+  // calls arrive on the bridge thread; the URL changes on the UI thread, where the lifecycle reads it
   private inner class TagBridge {
     @JavascriptInterface
     fun publish(url: String) = runOnUiThread {
@@ -67,8 +74,6 @@ class MainActivity : TauriActivity() {
     }
   }
 
-  // another app claiming the NDEF AID makes Android show the totem a "tap again" prompt and answer nothing;
-  // a totem polling for tags would read the customer's wallet card instead of being read (Android 15+)
   private fun serve() {
     withNfc {
       val tag = ComponentName(this, TagEmulationService::class.java)
@@ -89,7 +94,6 @@ class MainActivity : TauriActivity() {
     try {
       change(adapter)
     } catch (e: RuntimeException) {
-      // logged, never fatal: the tag itself keeps answering
       Log.w(LOG_TAG, "NFC change refused", e)
     }
   }

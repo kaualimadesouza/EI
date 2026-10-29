@@ -18,14 +18,18 @@ import { createAdapters, detectRuntime, isPhoneApp, roleSwitch, type Runtime } f
 const browser: Runtime = {
   tauri: false,
   mobile: false,
+  flavor: 'cliente',
+  storeRole: 'totem',
   totem: false,
   ndefReader: undefined,
   tagBridge: undefined,
   vibrate: undefined,
   wakeLock: undefined,
 }
-const androidApp: Runtime = { ...browser, tauri: true, mobile: true }
-const desktopApp: Runtime = { ...browser, tauri: true }
+const customerApp: Runtime = { ...browser, tauri: true, mobile: true, flavor: 'cliente' }
+const storeApp: Runtime = { ...browser, tauri: true, mobile: true, flavor: 'loja' }
+const androidApp: Runtime = customerApp
+const desktopApp: Runtime = { ...browser, tauri: true, flavor: 'loja' }
 
 /** Chrome's NDEFReader as far as composition cares: it gets constructed when a scan starts. */
 class FakeNdefReader implements NdefReader {
@@ -197,55 +201,58 @@ describe('detectRuntime', () => {
     expect(detectRuntime().wakeLock).toBe(wakeLock)
   })
 
-  it('picks up Web NFC when the browser has it', () => {
-    vi.stubGlobal('NDEFReader', FakeNdefReader)
+  it('picks up the store flavor from the Android bridge or build mode', () => {
+    expect(detectRuntime().flavor).toBe('cliente')
 
-    expect(detectRuntime().ndefReader).toBe(FakeNdefReader)
+    vi.stubGlobal('TopaNative', { getFlavor: () => 'loja' })
+    expect(detectRuntime().flavor).toBe('loja')
+  })
+
+  it('picks up the store flavor from build environment when native bridge is absent', () => {
+    vi.stubEnv('VITE_APP_FLAVOR', 'loja')
+    expect(detectRuntime().flavor).toBe('loja')
+    vi.unstubAllEnvs()
   })
 })
 
 describe('roleSwitch', () => {
   afterEach(() => localStorage.clear())
 
-  it('turns the Android phone app into a totem from the next start, withdrawing any tag first', () => {
+  it('has no role switch in the customer app, keeping customers out of totem and painel', () => {
+    expect(roleSwitch(customerApp, vi.fn())).toBeUndefined()
+  })
+
+  it('toggles store mode between totem and painel in the store app, withdrawing any tag first', () => {
     const tagBridge = { publish: vi.fn(), withdraw: vi.fn() }
     const reload = vi.fn()
 
-    roleSwitch({ ...androidApp, tagBridge }, reload)!()
+    roleSwitch({ ...storeApp, tagBridge, storeRole: 'totem' }, reload)!()
 
-    expect(detectRuntime().totem).toBe(true)
+    expect(detectRuntime().storeRole).toBe('painel')
     expect(tagBridge.withdraw).toHaveBeenCalledOnce()
     expect(reload).toHaveBeenCalledOnce()
+
+    roleSwitch({ ...storeApp, tagBridge, storeRole: 'painel' }, reload)!()
+    expect(detectRuntime().storeRole).toBe('totem')
   })
 
-  it('turns a totem back into the phone app, so it stops answering as a tag after the reload', () => {
-    const tagBridge = { publish: vi.fn(), withdraw: vi.fn() }
-    roleSwitch(androidApp, vi.fn())!()
-
-    roleSwitch({ ...androidApp, totem: true, tagBridge }, vi.fn())!()
-
-    expect(detectRuntime().totem).toBe(false)
-    expect(tagBridge.withdraw).toHaveBeenCalledOnce()
-  })
-
-  it('has nothing to switch in a browser or the desktop app', () => {
+  it('has nothing to switch in a browser or desktop build without store role switch', () => {
     expect(roleSwitch(browser, vi.fn())).toBeUndefined()
     expect(roleSwitch({ ...browser, mobile: true }, vi.fn())).toBeUndefined()
-    expect(roleSwitch(desktopApp, vi.fn())).toBeUndefined()
   })
 })
 
 describe('isPhoneApp', () => {
-  it('is the Tauri build on a phone', () => {
-    expect(isPhoneApp(androidApp)).toBe(true)
+  it('is the Tauri customer build on a phone', () => {
+    expect(isPhoneApp(customerApp)).toBe(true)
+  })
+
+  it('is never the store app, which opens totem or painel directly', () => {
+    expect(isPhoneApp(storeApp)).toBe(false)
   })
 
   it('is not the desktop app nor a browser, even on a phone', () => {
     expect(isPhoneApp(desktopApp)).toBe(false)
     expect(isPhoneApp({ ...browser, mobile: true })).toBe(false)
-  })
-
-  it('is not a phone marked as totem: that one runs the kiosk', () => {
-    expect(isPhoneApp({ ...androidApp, totem: true })).toBe(false)
   })
 })

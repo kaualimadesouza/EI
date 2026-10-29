@@ -18,6 +18,7 @@ interface PainelAppProps {
   adapters: Adapters
   storeSlug?: string
   now?: () => Date
+  onSwitchToTotem?: () => void
 }
 
 interface Undo {
@@ -51,7 +52,7 @@ function dayBefore(date: Date): Date {
   return previous
 }
 
-export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => new Date() }: PainelAppProps) {
+export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => new Date(), onSwitchToTotem }: PainelAppProps) {
   const [storeName, setStoreName] = useState<string | null>(null)
   const [notFound, setNotFound] = useState(false)
   const [orders, setOrders] = useState<OrderSummary[]>([])
@@ -198,14 +199,26 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
             </a>
           ))}
         </nav>
-        <a
-          href={import.meta.env.BASE_URL}
-          aria-label="Abrir o totem"
-          className="mt-auto flex h-12 items-center gap-3 rounded-[12px] px-3 text-[15px] font-medium text-teal hover:bg-white max-xl:justify-center"
-        >
-          <ExternalIcon size={20} />
-          <span className="max-xl:hidden">Abrir o totem</span>
-        </a>
+        {onSwitchToTotem ? (
+          <button
+            type="button"
+            onClick={onSwitchToTotem}
+            aria-label="Abrir o totem"
+            className="mt-auto flex h-12 cursor-pointer items-center gap-3 rounded-[12px] px-3 text-[15px] font-medium text-teal hover:bg-white max-xl:justify-center"
+          >
+            <ExternalIcon size={20} />
+            <span className="max-xl:hidden">Abrir o totem</span>
+          </button>
+        ) : (
+          <a
+            href={import.meta.env.BASE_URL}
+            aria-label="Abrir o totem"
+            className="mt-auto flex h-12 items-center gap-3 rounded-[12px] px-3 text-[15px] font-medium text-teal hover:bg-white max-xl:justify-center"
+          >
+            <ExternalIcon size={20} />
+            <span className="max-xl:hidden">Abrir o totem</span>
+          </a>
+        )}
       </aside>
       <main className="flex min-w-0 flex-1 flex-col gap-8 px-8 py-6 max-md:px-4">
         <header className="flex flex-wrap items-end justify-between gap-2">

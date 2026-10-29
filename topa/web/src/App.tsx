@@ -1,3 +1,4 @@
+import type { StoreRole } from './composition'
 import { DEMO_STORE_SLUG, locationStore } from './domain/store'
 import type { Adapters } from './ports/adapters'
 import { KioskApp } from './ui/kiosk/KioskApp'
@@ -8,12 +9,19 @@ interface AppProps {
   adapters: Adapters
   path?: string
   phone?: boolean
-  /** The staff gesture on the TOPA mark; only the Android app has a role to switch. */
+  storeRole?: StoreRole
+  /** The staff gesture on the TOPA mark; in the store app, toggles totem and painel. */
   onSwitchRole?: () => void
 }
 
-/** The phone app reads a totem and opens its store; /painel (under the base path) is the dashboard; the rest is the kiosk. */
-export function App({ adapters, path = window.location.pathname, phone = false, onSwitchRole }: AppProps) {
+/** The phone app reads a totem; the store app shows totem or painel; on the web, /painel is the dashboard. */
+export function App({
+  adapters,
+  path = window.location.pathname,
+  phone = false,
+  storeRole = 'totem',
+  onSwitchRole,
+}: AppProps) {
   if (phone) {
     return (
       <main className="flex min-h-dvh flex-col">
@@ -22,7 +30,7 @@ export function App({ adapters, path = window.location.pathname, phone = false, 
     )
   }
   const store = locationStore(window.location.href)
-  if (path.startsWith(`${import.meta.env.BASE_URL}painel`)) {
+  if (storeRole === 'painel' || path.startsWith(`${import.meta.env.BASE_URL}painel`)) {
     if (store.kind === 'invalid') {
       return (
         <section role="alert" className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-cream px-8 text-center text-ink">
@@ -34,7 +42,7 @@ export function App({ adapters, path = window.location.pathname, phone = false, 
       )
     }
     const storeSlug = store.kind === 'valid' ? store.slug : DEMO_STORE_SLUG
-    return <PainelApp key={storeSlug} adapters={adapters} storeSlug={storeSlug} />
+    return <PainelApp key={storeSlug} adapters={adapters} storeSlug={storeSlug} onSwitchToTotem={onSwitchRole} />
   }
   if (store.kind === 'invalid') {
     return (
