@@ -1,10 +1,12 @@
 import { isTauri } from '@tauri-apps/api/core'
 
+import { HttpAuth } from './adapters/http/http-auth'
 import { HttpClient } from './adapters/http/http-client'
 import { HttpConnection } from './adapters/http/http-connection'
 import { HttpMenu } from './adapters/http/http-menu'
 import { HttpOrders } from './adapters/http/http-orders'
 import { browserStorage, StoredValue } from './adapters/local/browser-storage'
+import { LocalAuth } from './adapters/local/local-auth'
 import { LocalConnection } from './adapters/local/local-connection'
 import { LocalMenu } from './adapters/local/local-menu'
 import { LocalOrders } from './adapters/local/local-orders'
@@ -108,17 +110,30 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
   const wakeLock = runtime.wakeLock ? new WebWakeLock(runtime.wakeLock) : new UnavailableWakeLock()
   if (apiUrl) {
     const client = new HttpClient(apiUrl)
+    const auth = new HttpAuth(client)
     return {
       mode: 'api',
       connection: new HttpConnection(client),
-      menu: new HttpMenu(client),
-      orders: new HttpOrders(client),
+      menu: new HttpMenu(client, () => auth.getToken()),
+      orders: new HttpOrders(client, () => auth.getToken()),
+      auth,
       nfc,
       tag,
       buzzer,
       wakeLock,
     }
   }
+  const auth = new LocalAuth()
   const menu = new LocalMenu()
-  return { mode: 'demo', connection: new LocalConnection(), menu, orders: new LocalOrders(menu), nfc, tag, buzzer, wakeLock }
+  return {
+    mode: 'demo',
+    connection: new LocalConnection(),
+    menu,
+    orders: new LocalOrders(menu),
+    auth,
+    nfc,
+    tag,
+    buzzer,
+    wakeLock,
+  }
 }

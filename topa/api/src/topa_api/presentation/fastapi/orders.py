@@ -2,18 +2,23 @@ import uuid
 from datetime import date, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel
 
 from topa_api.application.change_order_status import ChangeOrderStatusUseCase
+from topa_api.application.check_order_rate_limit import CheckOrderRateLimitUseCase
 from topa_api.application.list_orders import ListOrdersUseCase
 from topa_api.application.place_order import PlaceOrder, PlaceOrderUseCase
 from topa_api.application.read_order import ReadOrderUseCase
+from topa_api.domain.auth import AuthenticatedMerchant
 from topa_api.domain.catalog import DEFAULT_STORE_SLUG
+from topa_api.domain.errors import ForbiddenStoreAccessError
 from topa_api.domain.orders import Order, OrderLine, OrderStatus, PaymentMethod
 from topa_api.presentation.fastapi.dependencies import (
     StoreSlug,
     get_change_order_status_use_case,
+    get_check_order_rate_limit_use_case,
+    get_current_merchant,
     get_list_orders_use_case,
     get_place_order_use_case,
     get_read_order_use_case,
@@ -60,6 +65,15 @@ class OrderResponse(BaseModel):
     items: list[OrderItemResponse]
 
 
+def _client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    if request.client:
+        return request.client.host
+    return "127.0.0.1"
+
+
 @router.post(
     "/orders",
     status_code=201,
@@ -67,12 +81,16 @@ class OrderResponse(BaseModel):
         404: {"model": ErrorResponse, "description": "no store has that slug"},
         409: {"model": ErrorResponse, "description": "a product sold out, or a retry is needed"},
         422: {"model": ErrorResponse, "description": "empty order, bad quantity, unknown product"},
+        429: {"model": ErrorResponse, "description": "rate limit exceeded for client ip"},
     },
 )
 def place_order(
+    request_obj: Request,
     request: PlaceOrderRequest,
     use_case: Annotated[PlaceOrderUseCase, Depends(get_place_order_use_case)],
+    rate_limit: Annotated[CheckOrderRateLimitUseCase, Depends(get_check_order_rate_limit_use_case)],
 ) -> OrderResponse:
+    rate_limit.execute(_client_ip(request_obj))
     order = use_case.execute(
         PlaceOrder(
             store_slug=request.store_slug,
@@ -90,16 +108,21 @@ def place_order(
 @router.get(
     "/orders",
     responses={
+        401: {"model": ErrorResponse, "description": "missing or invalid auth token"},
+        403: {"model": ErrorResponse, "description": "merchant does not belong to this store"},
         404: {"model": ErrorResponse, "description": "no store has that slug"},
         422: {"model": ErrorResponse, "description": "the date is not YYYY-MM-DD"},
     },
 )
 def list_orders(
     use_case: Annotated[ListOrdersUseCase, Depends(get_list_orders_use_case)],
+    merchant: Annotated[AuthenticatedMerchant, Depends(get_current_merchant)],
     business_date: Annotated[date | None, Query(alias="date")] = None,
     store_slug: Annotated[StoreSlug, Query(alias="loja")] = DEFAULT_STORE_SLUG,
 ) -> list[OrderResponse]:
     """A business day's orders by number: today in São Paulo unless `date` names another."""
+    if merchant.store_slug != store_slug:
+        raise ForbiddenStoreAccessError()
     return [_order_response(order) for order in use_case.execute(store_slug, business_date)]
 
 
@@ -121,6 +144,8 @@ def read_order(
 @router.patch(
     "/orders/{order_id}",
     responses={
+        401: {"model": ErrorResponse, "description": "missing or invalid auth token"},
+        403: {"model": ErrorResponse, "description": "merchant does not belong to this store"},
         404: {"model": ErrorResponse, "description": "no order has that id"},
         409: {"model": ErrorResponse, "description": "not one step forward or back"},
         422: {"model": ErrorResponse, "description": "unknown status or malformed id"},
@@ -130,8 +155,15 @@ def change_order_status(
     order_id: uuid.UUID,
     request: ChangeStatusRequest,
     use_case: Annotated[ChangeOrderStatusUseCase, Depends(get_change_order_status_use_case)],
+    merchant: Annotated[AuthenticatedMerchant, Depends(get_current_merchant)],
+    store_slug: Annotated[StoreSlug | None, Query(alias="loja")] = None,
 ) -> OrderResponse:
-    return _order_response(use_case.execute(order_id, request.status))
+    target_store = store_slug if store_slug is not None else merchant.store_slug
+    if merchant.store_slug != target_store:
+        raise ForbiddenStoreAccessError()
+    return _order_response(
+        use_case.execute(order_id, request.status, store_slug=merchant.store_slug)
+    )
 
 
 def _order_response(order: Order) -> OrderResponse:

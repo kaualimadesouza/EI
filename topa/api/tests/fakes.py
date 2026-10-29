@@ -5,7 +5,10 @@ from collections.abc import Collection
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime
 
+from topa_api.application.ports import MerchantRecord
+from topa_api.domain.auth import AuthenticatedMerchant, Merchant
 from topa_api.domain.catalog import Product, Store
+from topa_api.domain.errors import InvalidTokenError, RateLimitExceededError
 from topa_api.domain.orders import Order, OrderStatus
 
 
@@ -84,3 +87,59 @@ class InMemoryOrderRepository:
             replace(order, status=status) if order.id == order_id else order
             for order in self.orders
         ]
+
+
+@dataclass
+class FakeMerchantRepository:
+    merchants: list[Merchant] = field(default_factory=list)
+    password_hashes: dict[str, str] = field(default_factory=dict)
+
+    def get_by_email(self, email: str) -> MerchantRecord | None:
+        lowered = email.lower().strip()
+        merchant = next((m for m in self.merchants if m.email.lower() == lowered), None)
+        if merchant is None:
+            return None
+        return MerchantRecord(
+            merchant=merchant,
+            password_hash=self.password_hashes.get(lowered, ""),
+        )
+
+    def add(self, merchant: Merchant, password_hash: str) -> None:
+        self.merchants.append(merchant)
+        self.password_hashes[merchant.email.lower().strip()] = password_hash
+
+
+class FakePasswordHasher:
+    def hash_password(self, password: str) -> str:
+        return f"hashed_{password}"
+
+    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
+        return hashed_password == f"hashed_{plain_password}"
+
+
+@dataclass
+class FakeTokenService:
+    valid_tokens: dict[str, AuthenticatedMerchant] = field(default_factory=dict)
+
+    def create_token(self, merchant: AuthenticatedMerchant, expires_in_seconds: int = 86400) -> str:
+        token = f"token_for_{merchant.id}"
+        self.valid_tokens[token] = merchant
+        return token
+
+    def verify_token(self, token: str) -> AuthenticatedMerchant:
+        if token not in self.valid_tokens:
+            raise InvalidTokenError()
+        return self.valid_tokens[token]
+
+
+@dataclass
+class FakeRateLimiter:
+    limit: int = 10
+    retry_after: int = 60
+    calls: dict[str, int] = field(default_factory=dict)
+
+    def check_rate_limit(self, key: str) -> None:
+        current = self.calls.get(key, 0)
+        if current >= self.limit:
+            raise RateLimitExceededError(self.retry_after)
+        self.calls[key] = current + 1

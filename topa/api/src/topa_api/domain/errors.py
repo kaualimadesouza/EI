@@ -45,3 +45,24 @@ class ProductNotFoundError(DomainError):
 class StatusChangeNotAllowedError(DomainError):
     def __init__(self, number: int, current: str, requested: str) -> None:
         super().__init__(f"O pedido {number:03d} não pode passar de {current} para {requested}.")
+
+
+class InvalidCredentialsError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("E-mail ou senha incorretos.")
+
+
+class InvalidTokenError(DomainError):
+    def __init__(self, message: str = "Sessão inválida ou expirada.") -> None:
+        super().__init__(message)
+
+
+class ForbiddenStoreAccessError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Acesso não permitido para esta loja.")
+
+
+class RateLimitExceededError(DomainError):
+    def __init__(self, retry_after: int = 60) -> None:
+        super().__init__("Muitos pedidos enviados. Aguarde um momento.")
+        self.retry_after = retry_after

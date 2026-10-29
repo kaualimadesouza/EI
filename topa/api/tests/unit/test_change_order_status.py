@@ -48,4 +48,13 @@ def test_a_refused_change_leaves_the_order_as_it_was(orders: InMemoryOrderReposi
     with pytest.raises(StatusChangeNotAllowedError):
         ChangeOrderStatusUseCase(orders).execute(PLACED.id, OrderStatus.DELIVERED)
 
+
+def test_refuses_updating_order_of_another_store(orders: InMemoryOrderRepository) -> None:
+    from topa_api.domain.errors import ForbiddenStoreAccessError
+
+    with pytest.raises(ForbiddenStoreAccessError):
+        ChangeOrderStatusUseCase(orders).execute(
+            PLACED.id, OrderStatus.PREPARING, store_slug="outra-loja"
+        )
+
     assert orders.orders == [PLACED]

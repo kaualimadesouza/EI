@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { App } from './App'
+import { LocalAuth } from './adapters/local/local-auth'
 import { createAdapters, type Runtime } from './composition'
 
 function tapFiveTimes(text: string) {
@@ -67,6 +68,7 @@ describe('App', () => {
   it('treats a store link opened from the totem as the customer phone: shows sold-out items from the dashboard and no server pill', async () => {
     const user = userEvent.setup()
     const adapters = createAdapters(undefined)
+    await adapters.auth.login({ email: 'admin@bemtevi.topa.com', password: 'topa123' })
     const dashboard = render(<App adapters={adapters} path="/painel" />)
     await user.click(await screen.findByRole('switch', { name: 'Coxinha à venda' }))
     dashboard.unmount()
@@ -92,6 +94,11 @@ describe('App', () => {
       <App
         adapters={{
           ...base,
+          auth: new LocalAuth({
+            storage: null,
+            initialMerchant: { email: 'admin@bemtevi.topa.com', storeSlug: 'cantina-central' },
+            initialToken: 'token',
+          }),
           menu: { load, setAvailability: vi.fn() },
           orders: { place: vi.fn(), list, setStatus: vi.fn(), statusOf: vi.fn() },
         }}
@@ -159,6 +166,7 @@ describe('App', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Seu pedido está pronto')
     expect(vibrate).toHaveBeenCalledOnce()
     phone.unmount()
+    await adapters.auth.login({ email: 'admin@bemtevi.topa.com', password: 'topa123' })
     render(<App adapters={adapters} path="/painel" />)
     expect(await kitchenColumnOfOrder001()).toBe('Prontos')
   })
@@ -177,6 +185,7 @@ describe('App', () => {
     expect(screen.queryByText(/Preparando|pronto/)).not.toBeInTheDocument()
     expect(vibrate).not.toHaveBeenCalled()
     totem.unmount()
+    await adapters.auth.login({ email: 'admin@bemtevi.topa.com', password: 'topa123' })
     render(<App adapters={adapters} path="/painel" />)
     expect(await kitchenColumnOfOrder001()).toBe('Recebidos')
     expect(within(screen.getByRole('region', { name: 'Prontos' })).getByText('Nenhum pedido aqui.')).toBeInTheDocument()
@@ -184,7 +193,9 @@ describe('App', () => {
 
   it('opens the merchant dashboard in store app when storeRole is painel regardless of path', async () => {
     const onSwitchRole = vi.fn()
-    render(<App adapters={createAdapters(undefined)} storeRole="painel" onSwitchRole={onSwitchRole} />)
+    const adapters = createAdapters(undefined)
+    await adapters.auth.login({ email: 'admin@bemtevi.topa.com', password: 'topa123' })
+    render(<App adapters={adapters} storeRole="painel" onSwitchRole={onSwitchRole} />)
 
     expect(await screen.findByRole('heading', { name: 'Painel do lojista' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Comer aqui/ })).not.toBeInTheDocument()

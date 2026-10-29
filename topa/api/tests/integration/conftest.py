@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, NullPool, create_engine, delete, make_url, text, update
 
 from tests.fakes import FixedClock
-from topa_api.adapters.db.models import OrderRow, ProductRow, StoreRow
+from topa_api.adapters.db.models import MerchantRow, OrderRow, ProductRow, StoreRow
 from topa_api.adapters.db.session import get_engine
 from topa_api.domain.catalog import DEFAULT_STORE_SLUG
 from topa_api.entrypoints.rest_application import create_app
@@ -63,6 +63,7 @@ def reset_database(db_engine: Engine) -> Iterator[None]:
     with db_engine.begin() as connection:
         connection.execute(delete(OrderRow))
         connection.execute(delete(ProductRow).where(ProductRow.store_slug != DEFAULT_STORE_SLUG))
+        connection.execute(delete(MerchantRow).where(MerchantRow.email != "admin@bemtevi.topa.com"))
         connection.execute(delete(StoreRow).where(StoreRow.slug != DEFAULT_STORE_SLUG))
         connection.execute(update(ProductRow).values(available=True))
 
@@ -83,6 +84,15 @@ def app(db_engine: Engine, clock: FixedClock) -> FastAPI:
 def client(app: FastAPI) -> Iterator[TestClient]:
     with TestClient(app) as test_client:
         yield test_client
+
+
+@pytest.fixture
+def auth_headers(client: TestClient) -> dict[str, str]:
+    response = client.post(
+        "/auth/login", json={"email": "admin@bemtevi.topa.com", "password": "topa123"}
+    )
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
 
 
 @pytest.fixture

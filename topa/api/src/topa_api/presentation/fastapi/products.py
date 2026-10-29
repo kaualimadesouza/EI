@@ -5,9 +5,12 @@ from pydantic import BaseModel
 
 from topa_api.application.get_store_menu import GetStoreMenuUseCase
 from topa_api.application.set_product_availability import SetProductAvailabilityUseCase
+from topa_api.domain.auth import AuthenticatedMerchant
 from topa_api.domain.catalog import DEFAULT_STORE_SLUG, Category, Product
+from topa_api.domain.errors import ForbiddenStoreAccessError
 from topa_api.presentation.fastapi.dependencies import (
     StoreSlug,
+    get_current_merchant,
     get_set_product_availability_use_case,
     get_store_menu_use_case,
 )
@@ -76,6 +79,8 @@ def list_products(
 @router.patch(
     "/products/{product_id}",
     responses={
+        401: {"model": ErrorResponse, "description": "missing or invalid auth token"},
+        403: {"model": ErrorResponse, "description": "merchant does not belong to this store"},
         404: {"model": ErrorResponse, "description": "unknown store or product"},
         422: {"model": ErrorResponse, "description": "available is missing or not a boolean"},
     },
@@ -86,9 +91,12 @@ def set_product_availability(
     use_case: Annotated[
         SetProductAvailabilityUseCase, Depends(get_set_product_availability_use_case)
     ],
+    merchant: Annotated[AuthenticatedMerchant, Depends(get_current_merchant)],
     store_slug: Annotated[StoreSlug, Query(alias="loja")] = DEFAULT_STORE_SLUG,
 ) -> ProductResponse:
     """Sold out or back on sale; the kiosk refuses a sold-out product from the next order on."""
+    if merchant.store_slug != store_slug:
+        raise ForbiddenStoreAccessError()
     return _product_response(use_case.execute(store_slug, product_id, request.available))
 
 

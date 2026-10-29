@@ -44,10 +44,13 @@ async function refusal(response: Response, fallback: string): Promise<OrderRejec
 
 export class HttpOrders implements OrdersPort {
   private readonly client: HttpClient
+  private readonly tokenProvider?: () => string | null
 
-  constructor(client: HttpClient) {
+  constructor(client: HttpClient, tokenProvider?: () => string | null) {
     this.client = client
+    this.tokenProvider = tokenProvider
   }
+
 
   async place(draft: OrderDraft): Promise<PlacedOrder> {
     const response = await this.client.post('/orders', {
@@ -66,7 +69,7 @@ export class HttpOrders implements OrdersPort {
 
   async list(businessDate: string, storeSlug: string): Promise<OrderSummary[]> {
     const path = `/orders?date=${encodeURIComponent(businessDate)}&loja=${encodeURIComponent(storeSlug)}`
-    const response = await this.client.get(path)
+    const response = await this.client.get(path, undefined, this.tokenProvider?.())
     if (response.status === 404) {
       const body = (await response.json()) as ErrorJson
       throw new StoreNotFoundError(typeof body.detail === 'string' ? body.detail : 'Loja não encontrada.')
@@ -83,11 +86,16 @@ export class HttpOrders implements OrdersPort {
   }
 
   async setStatus(orderId: string, status: OrderSummary['status']): Promise<OrderSummary> {
-    const response = await this.client.patch(`/orders/${encodeURIComponent(orderId)}`, { status })
+    const response = await this.client.patch(
+      `/orders/${encodeURIComponent(orderId)}`,
+      { status },
+      this.tokenProvider?.(),
+    )
     if (response.status === 404 || response.status === 409) {
       throw await refusal(response, 'Não foi possível mudar o pedido.')
     }
     if (!response.ok) throw new Error(`PATCH /orders/${orderId} answered ${response.status}`)
     return toSummary((await response.json()) as OrderJson)
   }
+
 }

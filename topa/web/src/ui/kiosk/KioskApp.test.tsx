@@ -44,6 +44,12 @@ function fakes(
     connection: { isReachable },
     menu: { load, setAvailability: vi.fn() },
     orders: { place, list: vi.fn(), setStatus: vi.fn(), statusOf },
+    auth: {
+      login: vi.fn(),
+      logout: vi.fn(),
+      getToken: () => null,
+      getMerchant: () => null,
+    },
     nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
     tag: { available: false, publish: vi.fn(), withdraw: vi.fn() },
     buzzer: { buzz },

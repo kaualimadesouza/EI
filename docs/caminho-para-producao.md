@@ -25,14 +25,11 @@ a fase 2.
    chama `/health/ready` a cada 10 minutos para manter a Lambda e o banco aquecidos. No cliente
    web (`topa/web/src/adapters/http/http-connection.ts`), a checagem de prontidão tolera até
    6 s com retry imediato antes de reportar o servidor como inacessível.
-4. **Autenticação.** A API não tem login. Quem souber o endereço:
-   - marca produto esgotado (`PATCH /products/{id}`);
-   - muda o status de um pedido (`PATCH /orders/{id}`);
-   - lê todos os pedidos do dia com os totais, ou seja, o faturamento (`GET /orders`).
-
-   O mínimo é um login do lojista exigido nessas três rotas, e `POST /orders` anônimo com
-   limite de requisições. O login guarda dado pessoal do lojista, então a LGPD já entra aqui:
-   política de privacidade e base legal.
+4. **Autenticação.** Feito: autenticação por token Bearer (HMAC-SHA256) com senhas em scrypt e
+   tabela `merchants` vinculada por loja. Rotas protegidas (`PATCH /products/{id}`, `PATCH /orders/{id}`,
+   `GET /orders`) exigem login e validam o `store_slug`. Rota `POST /orders` com rate limit em memória
+   (10 requisições por minuto por IP) e cabeçalho `Retry-After`. Frontend com tela de login, aviso LGPD
+   e ação de logout. Política de privacidade documentada em `docs/privacidade.md`.
 5. **Cardápio real.** O cardápio de hoje é o de demonstração, gravado pela primeira migration
    (`topa/api/migrations/versions/20261026_36d9f509b9ec_products_and_orders.py`). Para o
    lojista cadastrar o dele, falta:

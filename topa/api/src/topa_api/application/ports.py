@@ -1,8 +1,10 @@
 import uuid
 from collections.abc import Collection
+from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Protocol
 
+from topa_api.domain.auth import AuthenticatedMerchant, Merchant
 from topa_api.domain.catalog import Product, Store
 from topa_api.domain.orders import Order, OrderStatus
 
@@ -59,3 +61,45 @@ class OrderRepository(Protocol):
         ...
 
     def set_status(self, order_id: uuid.UUID, status: OrderStatus) -> None: ...
+
+
+@dataclass(frozen=True)
+class MerchantRecord:
+    merchant: Merchant
+    password_hash: str
+
+
+class MerchantRepositoryPort(Protocol):
+    def get_by_email(self, email: str) -> MerchantRecord | None: ...
+
+    def add(self, merchant: Merchant, password_hash: str) -> None: ...
+
+
+MerchantRepository = MerchantRepositoryPort
+
+
+class PasswordHasherPort(Protocol):
+    def hash_password(self, password: str) -> str: ...
+
+    def verify_password(self, plain_password: str, hashed_password: str) -> bool: ...
+
+
+PasswordHasher = PasswordHasherPort
+
+
+class TokenServicePort(Protocol):
+    def create_token(
+        self, merchant: AuthenticatedMerchant, expires_in_seconds: int = 86400
+    ) -> str: ...
+
+    def verify_token(self, token: str) -> AuthenticatedMerchant: ...
+
+
+TokenService = TokenServicePort
+
+
+class RateLimiterPort(Protocol):
+    def check_rate_limit(self, key: str) -> None: ...
+
+
+RateLimiter = RateLimiterPort

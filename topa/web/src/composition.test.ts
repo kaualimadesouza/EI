@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { HttpAuth } from './adapters/http/http-auth'
 import { HttpConnection } from './adapters/http/http-connection'
 import { HttpMenu } from './adapters/http/http-menu'
 import { HttpOrders } from './adapters/http/http-orders'
+import { LocalAuth } from './adapters/local/local-auth'
 import { LocalConnection } from './adapters/local/local-connection'
 import { LocalMenu } from './adapters/local/local-menu'
 import { LocalOrders } from './adapters/local/local-orders'
@@ -59,6 +61,12 @@ describe('createAdapters', () => {
     expect(adapters.connection).toBeInstanceOf(HttpConnection)
     expect(adapters.menu).toBeInstanceOf(HttpMenu)
     expect(adapters.orders).toBeInstanceOf(HttpOrders)
+    expect(adapters.auth).toBeInstanceOf(HttpAuth)
+
+    const menuProvider = (adapters.menu as unknown as { tokenProvider: () => string | null }).tokenProvider
+    const ordersProvider = (adapters.orders as unknown as { tokenProvider: () => string | null }).tokenProvider
+    expect(menuProvider()).toBeNull()
+    expect(ordersProvider()).toBeNull()
   })
 
   it('falls back to demo mode when there is no API URL', () => {
@@ -68,6 +76,7 @@ describe('createAdapters', () => {
     expect(adapters.connection).toBeInstanceOf(LocalConnection)
     expect(adapters.menu).toBeInstanceOf(LocalMenu)
     expect(adapters.orders).toBeInstanceOf(LocalOrders)
+    expect(adapters.auth).toBeInstanceOf(LocalAuth)
   })
 
   it('treats an empty API URL as no API', () => {

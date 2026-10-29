@@ -13,7 +13,10 @@ from sqlalchemy.orm import Session
 from tests.fakes import FixedClock
 from topa_api.adapters.db.models import OrderItemRow, OrderRow, ProductRow, StoreRow
 from topa_api.adapters.db.session import get_engine
+from topa_api.adapters.security.token_service import HmacTokenService
+from topa_api.domain.auth import AuthenticatedMerchant
 from topa_api.entrypoints.rest_application import create_app, get_session
+from topa_api.settings import Settings
 
 INVALID_REQUEST = "Não foi possível processar a solicitação. Tente de novo."
 QUANTITY_OUT_OF_RANGE = "Escolha de 1 a 20 unidades de cada produto."
@@ -221,89 +224,114 @@ def test_an_order_whose_commit_fails_is_never_confirmed(app: FastAPI, db_engine:
     assert _stored_orders(db_engine) == 0
 
 
-def test_the_days_orders_are_listed_by_number_as_they_were_placed(client: TestClient) -> None:
+def test_the_days_orders_are_listed_by_number_as_they_were_placed(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
     first = client.post(
         "/orders", json=_order(("xsalada", 2), ("refri", 1), dine_in=False, payment_method="card")
     ).json()
     second = client.post("/orders", json=_order(("cafe", 1))).json()
 
-    response = client.get("/orders")
+    response = client.get("/orders", headers=auth_headers)
 
     assert response.status_code == 200
     assert response.json() == [first, second]
 
 
-def test_listed_items_follow_the_menu_order(client: TestClient) -> None:
+def test_listed_items_follow_the_menu_order(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
     """The kitchen reads lanches before bebidas, whatever order the customer tapped them in."""
     client.post("/orders", json=_order(("refri", 1), ("cafe", 1), ("xsalada", 1)))
 
-    items = client.get("/orders").json()[0]["items"]
+    items = client.get("/orders", headers=auth_headers).json()[0]["items"]
 
     assert [item["product_id"] for item in items] == ["xsalada", "cafe", "refri"]
 
 
 def test_another_days_orders_are_listed_when_asked_for(
-    client: TestClient, clock: FixedClock
+    client: TestClient, clock: FixedClock, auth_headers: dict[str, str]
 ) -> None:
     monday = client.post("/orders", json=_order(("cafe", 1))).json()
     clock.moment += timedelta(days=1)
     tuesday = client.post("/orders", json=_order(("agua", 1))).json()
 
-    assert client.get("/orders", params={"date": "2026-10-26"}).json() == [monday]
-    assert client.get("/orders").json() == [tuesday]
+    assert client.get("/orders", params={"date": "2026-10-26"}, headers=auth_headers).json() == [
+        monday
+    ]
+    assert client.get("/orders", headers=auth_headers).json() == [tuesday]
 
 
-def test_a_day_without_orders_lists_nothing(client: TestClient) -> None:
+def test_a_day_without_orders_lists_nothing(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
     client.post("/orders", json=_order(("cafe", 1)))
 
-    response = client.get("/orders", params={"date": "2026-01-01"})
+    response = client.get("/orders", params={"date": "2026-01-01"}, headers=auth_headers)
 
     assert response.status_code == 200
     assert response.json() == []
 
 
 @pytest.mark.parametrize("day", ["26/10/2026", "2026-02-30", "ontem"])
-def test_a_malformed_date_gets_the_generic_message(client: TestClient, day: str) -> None:
-    response = client.get("/orders", params={"date": day})
+def test_a_malformed_date_gets_the_generic_message(
+    client: TestClient, day: str, auth_headers: dict[str, str]
+) -> None:
+    response = client.get("/orders", params={"date": day}, headers=auth_headers)
 
     assert response.status_code == 422
     assert response.json() == {"detail": INVALID_REQUEST}
 
 
-def test_moving_an_order_returns_it_with_the_new_status(client: TestClient) -> None:
+def test_moving_an_order_returns_it_with_the_new_status(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
     placed = client.post("/orders", json=_order(("xsalada", 1), ("refri", 2))).json()
 
-    response = client.patch(f"/orders/{placed['id']}", json={"status": "preparing"})
+    response = client.patch(
+        f"/orders/{placed['id']}", json={"status": "preparing"}, headers=auth_headers
+    )
 
     assert response.status_code == 200
     assert response.json() == {**placed, "status": "preparing"}
-    assert client.get("/orders").json() == [{**placed, "status": "preparing"}]
+    assert client.get("/orders", headers=auth_headers).json() == [{**placed, "status": "preparing"}]
 
 
-def test_an_order_walks_to_delivered_and_back_one_step_at_a_time(client: TestClient) -> None:
+def test_an_order_walks_to_delivered_and_back_one_step_at_a_time(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
     order_id = client.post("/orders", json=_order(("cafe", 1))).json()["id"]
     steps = ["preparing", "ready", "delivered", "ready", "preparing", "received"]
 
-    responses = [client.patch(f"/orders/{order_id}", json={"status": step}) for step in steps]
+    responses = [
+        client.patch(f"/orders/{order_id}", json={"status": step}, headers=auth_headers)
+        for step in steps
+    ]
 
     assert [(response.status_code, response.json()["status"]) for response in responses] == [
         (200, step) for step in steps
     ]
 
 
-def test_skipping_a_step_is_refused_and_the_order_stays_put(client: TestClient) -> None:
+def test_skipping_a_step_is_refused_and_the_order_stays_put(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
     placed = client.post("/orders", json=_order(("cafe", 1))).json()
 
-    response = client.patch(f"/orders/{placed['id']}", json={"status": "delivered"})
+    response = client.patch(
+        f"/orders/{placed['id']}", json={"status": "delivered"}, headers=auth_headers
+    )
 
     assert response.status_code == 409
     assert response.json() == {"detail": "O pedido 001 não pode passar de recebido para entregue."}
-    assert client.get("/orders").json() == [placed]
+    assert client.get("/orders", headers=auth_headers).json() == [placed]
 
 
-def test_one_order_is_read_as_it_stands_now(client: TestClient) -> None:
+def test_one_order_is_read_as_it_stands_now(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
     placed = client.post("/orders", json=_order(("xsalada", 1), ("refri", 2))).json()
-    client.patch(f"/orders/{placed['id']}", json={"status": "preparing"})
+    client.patch(f"/orders/{placed['id']}", json={"status": "preparing"}, headers=auth_headers)
 
     response = client.get(f"/orders/{placed['id']}")
 
@@ -325,8 +353,12 @@ def test_reading_an_order_by_a_malformed_id_gets_the_generic_message(client: Tes
     assert response.json() == {"detail": INVALID_REQUEST}
 
 
-def test_moving_an_unknown_order_is_not_found(client: TestClient) -> None:
-    response = client.patch(f"/orders/{uuid.uuid4()}", json={"status": "preparing"})
+def test_moving_an_unknown_order_is_not_found(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
+    response = client.patch(
+        f"/orders/{uuid.uuid4()}", json={"status": "preparing"}, headers=auth_headers
+    )
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Pedido não encontrado."}
@@ -343,10 +375,14 @@ def test_moving_an_unknown_order_is_not_found(client: TestClient) -> None:
     ids=["unknown-status", "label-instead-of-value", "no-status", "id-not-a-uuid"],
 )
 def test_a_malformed_status_change_gets_the_generic_message(
-    client: TestClient, caplog: pytest.LogCaptureFixture, order_id: str, payload: dict[str, str]
+    client: TestClient,
+    caplog: pytest.LogCaptureFixture,
+    order_id: str,
+    payload: dict[str, str],
+    auth_headers: dict[str, str],
 ) -> None:
     with caplog.at_level(logging.WARNING):
-        response = client.patch(f"/orders/{order_id}", json=payload)
+        response = client.patch(f"/orders/{order_id}", json=payload, headers=auth_headers)
 
     assert response.status_code == 422
     assert response.json() == {"detail": INVALID_REQUEST}
@@ -354,7 +390,7 @@ def test_a_malformed_status_change_gets_the_generic_message(
 
 
 def test_orders_and_daily_numbers_are_isolated_per_store(
-    client: TestClient, db_engine: Engine
+    client: TestClient, db_engine: Engine, auth_headers: dict[str, str]
 ) -> None:
     with db_engine.begin() as connection:
         connection.execute(insert(StoreRow).values(slug="cantina-central", name="Cantina Central"))
@@ -386,8 +422,17 @@ def test_orders_and_daily_numbers_are_isolated_per_store(
         1,
         700,
     )
-    assert client.get("/orders").json() == [bem_te_vi]
-    assert client.get("/orders", params={"loja": "cantina-central"}).json() == [cantina]
+    cantina_token = HmacTokenService(Settings().auth_secret_key).create_token(
+        AuthenticatedMerchant(
+            id=uuid.uuid4(), email="cantina@topa.com", store_slug="cantina-central"
+        )
+    )
+    assert client.get("/orders", headers=auth_headers).json() == [bem_te_vi]
+    assert client.get(
+        "/orders",
+        params={"loja": "cantina-central"},
+        headers={"Authorization": f"Bearer {cantina_token}"},
+    ).json() == [cantina]
 
 
 def test_placing_or_listing_orders_for_an_unknown_store_is_not_found(
@@ -396,17 +441,26 @@ def test_placing_or_listing_orders_for_an_unknown_store_is_not_found(
     placed = client.post(
         "/orders", json={**_order(("cafe", 1)), "store_slug": "padaria-inexistente"}
     )
-    listed = client.get("/orders", params={"loja": "padaria-inexistente"})
+    token = HmacTokenService(Settings().auth_secret_key).create_token(
+        AuthenticatedMerchant(
+            id=uuid.uuid4(), email="padaria@topa.com", store_slug="padaria-inexistente"
+        )
+    )
+    listed = client.get(
+        "/orders",
+        params={"loja": "padaria-inexistente"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
 
     assert (placed.status_code, placed.json()) == (404, {"detail": "Loja não encontrada."})
     assert (listed.status_code, listed.json()) == (404, {"detail": "Loja não encontrada."})
 
 
 def test_a_malformed_store_slug_on_orders_gets_the_generic_message(
-    client: TestClient,
+    client: TestClient, auth_headers: dict[str, str]
 ) -> None:
     placed = client.post("/orders", json={**_order(("cafe", 1)), "store_slug": "Cantina"})
-    listed = client.get("/orders", params={"loja": "Cantina"})
+    listed = client.get("/orders", params={"loja": "Cantina"}, headers=auth_headers)
 
     assert (placed.status_code, placed.json()) == (422, {"detail": INVALID_REQUEST})
     assert (listed.status_code, listed.json()) == (422, {"detail": INVALID_REQUEST})

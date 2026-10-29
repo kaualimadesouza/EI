@@ -6,11 +6,13 @@ import { ageMinutes, displayNumber, type OrderSummary } from '../../domain/order
 import { nextStatus } from '../../domain/status'
 import { DEMO_STORE_SLUG } from '../../domain/store'
 import type { Adapters } from '../../ports/adapters'
+import type { AuthenticatedMerchant } from '../../ports/auth'
 import { StoreNotFoundError } from '../../ports/menu'
 import { OrderRejectedError } from '../../ports/orders'
-import { AlertIcon, BoardIcon, ChartIcon, ExternalIcon, ListIcon, StoreMark, UndoIcon } from '../icons'
+import { AlertIcon, BoardIcon, ChartIcon, ExternalIcon, ListIcon, LogoutIcon, StoreMark, UndoIcon } from '../icons'
 import { HourlyChart } from './HourlyChart'
 import { KpiRow } from './KpiRow'
+import { LoginScreen } from './LoginScreen'
 import { MenuTable } from './MenuTable'
 import { OrdersBoard } from './OrdersBoard'
 
@@ -53,6 +55,7 @@ function dayBefore(date: Date): Date {
 }
 
 export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => new Date(), onSwitchToTotem }: PainelAppProps) {
+  const [merchant, setMerchant] = useState<AuthenticatedMerchant | null>(() => adapters.auth.getMerchant())
   const [storeName, setStoreName] = useState<string | null>(null)
   const [notFound, setNotFound] = useState(false)
   const [orders, setOrders] = useState<OrderSummary[]>([])
@@ -65,6 +68,11 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
 
   const today = now()
   const todayKey = businessDate(today)
+
+  const handleLogout = useCallback(async () => {
+    await adapters.auth.logout()
+    setMerchant(null)
+  }, [adapters.auth])
 
   const refresh = useCallback(() => {
     adapters.orders.list(todayKey, storeSlug).then(
@@ -84,18 +92,20 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
 
   // polling keeps a kiosk tab and this one in step, through the API or the shared browser storage
   useEffect(() => {
-    if (notFound) return
+    if (!merchant || merchant.storeSlug !== storeSlug || notFound) return
     refresh()
     const timer = setInterval(refresh, POLL_MS)
     return () => clearInterval(timer)
-  }, [notFound, refresh])
+  }, [merchant, notFound, refresh, storeSlug])
 
   useEffect(() => {
+    if (!merchant || merchant.storeSlug !== storeSlug) return
     const yesterdayKey = businessDate(dayBefore(new Date(`${todayKey}T12:00:00`)))
     adapters.orders.list(yesterdayKey, storeSlug).then(setYesterday, () => setYesterday([]))
-  }, [adapters.orders, storeSlug, todayKey])
+  }, [adapters.orders, merchant, storeSlug, todayKey])
 
   useEffect(() => {
+    if (!merchant || merchant.storeSlug !== storeSlug) return
     adapters.menu.load(storeSlug).then(
       (menu) => {
         setStoreName(menu.store.name)
@@ -109,7 +119,7 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
         }
       },
     )
-  }, [adapters.menu, storeSlug])
+  }, [adapters.menu, merchant, storeSlug])
 
   useEffect(() => {
     if (!undo) return
@@ -161,6 +171,32 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
   if (late.length > 1) alerts.push(`${late.length} pedidos esperam há mais de 10 min.`)
   if (soldOut.length > 0) alerts.push(`Esgotados no totem: ${soldOut.map((p) => p.name).join(', ')}.`)
 
+  if (!merchant) {
+    return <LoginScreen auth={adapters.auth} storeSlug={storeSlug} onLoginSuccess={setMerchant} />
+  }
+
+  if (merchant.storeSlug !== storeSlug) {
+    return (
+      <section
+        role="alert"
+        className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-cream px-8 text-center text-ink"
+      >
+        <h1 className="text-title font-bold">Acesso não autorizado</h1>
+        <p className="max-w-[42ch] text-body text-muted">
+          Seu usuário pertence à loja {merchant.storeSlug}. Você não tem permissão para gerenciar a loja {storeSlug}.
+        </p>
+        <button
+          type="button"
+          onClick={() => void handleLogout()}
+          className="mt-2 flex h-11 items-center gap-2 rounded-[12px] bg-ink px-5 text-[15px] font-semibold text-white"
+        >
+          <LogoutIcon size={18} />
+          <span>Sair</span>
+        </button>
+      </section>
+    )
+  }
+
   if (notFound) {
     return (
       <section role="alert" className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-cream px-8 text-center text-ink">
@@ -199,26 +235,37 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
             </a>
           ))}
         </nav>
-        {onSwitchToTotem ? (
+        <div className="mt-auto flex flex-col gap-1">
+          {onSwitchToTotem ? (
+            <button
+              type="button"
+              onClick={onSwitchToTotem}
+              aria-label="Abrir o totem"
+              className="flex h-12 cursor-pointer items-center gap-3 rounded-[12px] px-3 text-[15px] font-medium text-teal hover:bg-white max-xl:justify-center"
+            >
+              <ExternalIcon size={20} />
+              <span className="max-xl:hidden">Abrir o totem</span>
+            </button>
+          ) : (
+            <a
+              href={import.meta.env.BASE_URL}
+              aria-label="Abrir o totem"
+              className="flex h-12 items-center gap-3 rounded-[12px] px-3 text-[15px] font-medium text-teal hover:bg-white max-xl:justify-center"
+            >
+              <ExternalIcon size={20} />
+              <span className="max-xl:hidden">Abrir o totem</span>
+            </a>
+          )}
           <button
             type="button"
-            onClick={onSwitchToTotem}
-            aria-label="Abrir o totem"
-            className="mt-auto flex h-12 cursor-pointer items-center gap-3 rounded-[12px] px-3 text-[15px] font-medium text-teal hover:bg-white max-xl:justify-center"
+            onClick={() => void handleLogout()}
+            aria-label="Sair"
+            className="flex h-12 cursor-pointer items-center gap-3 rounded-[12px] px-3 text-[15px] font-medium text-muted hover:bg-white hover:text-ink max-xl:justify-center"
           >
-            <ExternalIcon size={20} />
-            <span className="max-xl:hidden">Abrir o totem</span>
+            <LogoutIcon size={20} />
+            <span className="max-xl:hidden">Sair</span>
           </button>
-        ) : (
-          <a
-            href={import.meta.env.BASE_URL}
-            aria-label="Abrir o totem"
-            className="mt-auto flex h-12 items-center gap-3 rounded-[12px] px-3 text-[15px] font-medium text-teal hover:bg-white max-xl:justify-center"
-          >
-            <ExternalIcon size={20} />
-            <span className="max-xl:hidden">Abrir o totem</span>
-          </a>
-        )}
+        </div>
       </aside>
       <main className="flex min-w-0 flex-1 flex-col gap-8 px-8 py-6 max-md:px-4">
         <header className="flex flex-wrap items-end justify-between gap-2">
@@ -238,6 +285,15 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
                 <span>Abrir o totem</span>
               </button>
             )}
+            <button
+              type="button"
+              onClick={() => void handleLogout()}
+              aria-label="Sair"
+              className="hidden cursor-pointer items-center gap-2 rounded-[10px] border border-line bg-surface px-3 py-1.5 text-[14px] font-medium text-muted hover:bg-ground-2 hover:text-ink max-md:inline-flex"
+            >
+              <LogoutIcon size={18} />
+              <span>Sair</span>
+            </button>
             <p className="text-[14px] text-muted">
               {adapters.mode === 'demo' ? 'Modo demonstração: dados deste navegador' : 'Dados do servidor'}, atualizados a cada 3 s
             </p>

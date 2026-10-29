@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     # (the site's Vercel URLs, previews included); both are set in infrastructure/main.tf
     cors_origins: list[str] = []
     cors_origin_regex: str | None = None
+    auth_secret_key: str = "dev-insecure-secret-change-in-production"
 
     @field_validator("database_url")
     @classmethod

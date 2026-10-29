@@ -12,8 +12,8 @@ and UI copy is in Portuguese; code is in English.
 ## MVP code
 
 - `topa/web/`: Vite + React 19 + TypeScript + Tailwind 4, tested with Vitest. Hexagonal: `src/domain`
-  (pure rules), `src/ports` (interfaces, plus the `Adapters` the UI receives: the mode and its ports),
-  `src/adapters/http` (the API), `src/adapters/local` (demo mode, no backend) and `src/ui`.
+  (pure rules), `src/ports` (interfaces, plus the `Adapters` the UI receives: the mode and its ports, including `AuthPort`),
+  `src/adapters/http` (the API, bearer auth client), `src/adapters/local` (demo mode, local auth) and `src/ui`.
   `src/composition.ts` is the only place that picks adapters:
   `VITE_API_URL` set means the API, unset or empty means demo mode: `/api` under `make run`, the
   deployed API in every production build, read from `topa/web/.env.production` (one environment;
@@ -22,7 +22,8 @@ and UI copy is in Portuguese; code is in English.
   Tokens live in the `@theme` block of `src/index.css`, which resets Tailwind's default palette.
   `npm run check` runs lint, typecheck, tests (100% coverage) and build, as CI does.
 - `topa/api/`: FastAPI + SQLAlchemy 2 + Alembic + Postgres, managed with uv. Hexagonal; import-linter
-  keeps `domain` and `application` free of frameworks. See `topa/api/README.md`.
+  keeps `domain` and `application` free of frameworks. Merchant authentication uses scrypt hashing,
+  HMAC-SHA256 bearer tokens and IP rate limiting on orders. See `topa/api/README.md`.
 - `topa/web/src-tauri/`: Tauri 2 wraps the web build as a desktop app and two Android apps (customer
   app `topa` which opens directly into phone ordering, and store app `topa.loja` which runs the totem
   or painel with NFC HCE tag emulation via `TagEmulationService.kt`). Dynamic `versionCode` is computed
