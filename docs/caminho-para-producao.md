@@ -89,7 +89,7 @@ taxas, contrato e o SDK para Android. Hoje o pagamento é simulado: o QR do Pix 
     `io.github.kaualimadesouza.topa.loja` (app da loja, com o totem e o painel alternáveis por
     gesto de 5 toques ou botão no painel, e emulação de tag NFC via HCE);
   - `versionCode` dinâmico (feito na issue #36): calculado no Gradle a partir do semver
-    (`major * 10000 + minor * 100 + patch`), garantindo valor estritamente crescente > 1;
+    (`major * 100000 + minor * 1000 + patch`), garantindo valor estritamente crescente > 1;
   - uma keystore fixa guardada como secret. Hoje cada build do CI assina com uma chave de debug
     nova, e o Android recusa instalar um APK por cima de outro assinado com chave diferente;
   - build de release em vez de debug. O debug usa o id `...topa.debug`, então o de release se

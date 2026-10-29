@@ -189,8 +189,8 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Painel do lojista' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Comer aqui/ })).not.toBeInTheDocument()
 
-    const switchBtn = screen.getByRole('button', { name: 'Abrir o totem' })
-    fireEvent.click(switchBtn)
+    const switchBtns = screen.getAllByRole('button', { name: 'Abrir o totem' })
+    fireEvent.click(switchBtns[0])
     expect(onSwitchRole).toHaveBeenCalledOnce()
   })
 

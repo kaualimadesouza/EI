@@ -4,9 +4,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 fun semverToVersionCode(versionName: String, fallback: Int = 1): Int {
-    val parts = versionName.split(".").mapNotNull { it.toIntOrNull() }
+    val cleanVersion = versionName.substringBefore('-')
+    val parts = cleanVersion.split('.').mapNotNull { it.toIntOrNull() }
     return if (parts.size >= 3) {
-        parts[0] * 10000 + parts[1] * 100 + parts[2]
+        parts[0] * 100000 + parts[1] * 1000 + parts[2]
     } else {
         fallback
     }
@@ -15,11 +16,14 @@ fun semverToVersionCode(versionName: String, fallback: Int = 1): Int {
 class VersionCodeTest {
     @Test
     fun derivesVersionCodeFromSemver() {
-        assertEquals(103, semverToVersionCode("0.1.3"))
-        assertEquals(104, semverToVersionCode("0.1.4"))
-        assertEquals(200, semverToVersionCode("0.2.0"))
-        assertEquals(10000, semverToVersionCode("1.0.0"))
-        assertEquals(10204, semverToVersionCode("1.2.4"))
+        assertEquals(1003, semverToVersionCode("0.1.3"))
+        assertEquals(1003, semverToVersionCode("0.1.3-rc1"))
+        assertEquals(1003, semverToVersionCode("0.1.3-beta.2"))
+        assertEquals(1004, semverToVersionCode("0.1.4"))
+        assertEquals(1100, semverToVersionCode("0.1.100"))
+        assertEquals(2000, semverToVersionCode("0.2.0"))
+        assertEquals(100000, semverToVersionCode("1.0.0"))
+        assertEquals(102004, semverToVersionCode("1.2.4"))
     }
 
     @Test

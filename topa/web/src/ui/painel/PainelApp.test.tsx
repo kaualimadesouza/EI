@@ -399,4 +399,18 @@ describe('PainelApp', () => {
     await act(() => vi.advanceTimersByTimeAsync(POLL_MS * 3))
     expect(list).toHaveBeenCalledTimes(calls)
   })
+
+  it('triggers onSwitchToTotem when clicking the totem return buttons', async () => {
+    const user = userEvent.setup()
+    const { adapters } = demoStore()
+    const onSwitch = vi.fn()
+
+    render(<PainelApp adapters={adapters} storeSlug={DEMO_STORE_SLUG} now={() => NOW} onSwitchToTotem={onSwitch} />)
+
+    const buttons = await screen.findAllByRole('button', { name: 'Abrir o totem' })
+    expect(buttons.length).toBe(2)
+    await user.click(buttons[0])
+    await user.click(buttons[1])
+    expect(onSwitch).toHaveBeenCalledTimes(2)
+  })
 })

@@ -1,4 +1,4 @@
-package io.github.kaualimadesouza.topa
+package io.github.kaualimadesouza.topa.loja
 
 import android.nfc.cardemulation.HostApduService
 import android.os.Bundle

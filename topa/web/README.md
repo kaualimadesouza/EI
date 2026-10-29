@@ -115,5 +115,5 @@ folder it adds: there is no iOS build.
 
 release-please keeps the version in `tauri.conf.json` and `Cargo.toml` equal to `package.json`.
 `build.gradle.kts` computes `versionCode` dynamically from the semver string:
-`major * 10000 + minor * 100 + patch` (e.g. `0.1.3` produces `103`), guaranteeing an integer
+`major * 100000 + minor * 1000 + patch` (e.g. `0.1.3` produces `1003`), guaranteeing an integer
 strictly greater than 1 that increases on each semver release.

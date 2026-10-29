@@ -226,9 +226,22 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
             <h1 className="text-[32px] leading-tight font-bold">Painel do lojista</h1>
             <p className="text-[15px] text-muted first-letter:uppercase">{longDate.format(today)}</p>
           </div>
-          <p className="text-[14px] text-muted">
-            {adapters.mode === 'demo' ? 'Modo demonstração: dados deste navegador' : 'Dados do servidor'}, atualizados a cada 3 s
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            {onSwitchToTotem && (
+              <button
+                type="button"
+                onClick={onSwitchToTotem}
+                aria-label="Abrir o totem"
+                className="hidden cursor-pointer items-center gap-2 rounded-[10px] border border-line bg-surface px-3 py-1.5 text-[14px] font-medium text-teal hover:bg-ground-2 max-md:inline-flex"
+              >
+                <ExternalIcon size={18} />
+                <span>Abrir o totem</span>
+              </button>
+            )}
+            <p className="text-[14px] text-muted">
+              {adapters.mode === 'demo' ? 'Modo demonstração: dados deste navegador' : 'Dados do servidor'}, atualizados a cada 3 s
+            </p>
+          </div>
         </header>
         {(alerts.length > 0 || problem) && (
           <div role="alert" className="flex items-start gap-3 rounded-[16px] bg-warning-tint px-5 py-3 text-[15px] font-medium text-warning">
