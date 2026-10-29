@@ -15,15 +15,16 @@ a fase 2.
 1. **Publicar a API e o banco.** Feito: a API roda na AWS Lambda (imagem
    `topa/api/Dockerfile.lambda`), atrás de um API Gateway, com o Postgres no Neon, no mesmo
    molde do kbjmodas-api. O deploy (`.github/workflows/api-deploy.yml`) roda
-   `alembic upgrade head` antes de cada versão. Falta monitorar pelo `/health/ready`, que já
-   existe.
+   `alembic upgrade head` antes de cada versão. O monitoramento contínuo pelo `/health/ready`
+   está ativo via workflow agendado (`.github/workflows/health-monitor.yml`).
 2. **Ligar o site e o app à API.** Feito: todo build de produção lê o endereço da API de
    `topa/web/.env.production`, e a API libera CORS para as URLs do projeto na Vercel e para os
    apps (`topa/api/infrastructure/main.tf`). Há um ambiente só: DEV, previews e apps gravam no
    mesmo banco que o PROD.
-3. **Partida a frio.** A primeira requisição depois de um tempo parado leva alguns segundos,
-   e a pílula de status do servidor desiste em 3 s (`topa/web/src/adapters/http/http-connection.ts`).
-   Um agendamento que chama a API a cada poucos minutos a mantém quente.
+3. **Partida a frio.** Feito: o workflow agendado (`.github/workflows/health-monitor.yml`)
+   chama `/health/ready` a cada 10 minutos para manter a Lambda e o banco aquecidos. No cliente
+   web (`topa/web/src/adapters/http/http-connection.ts`), a checagem de prontidão tolera até
+   6 s com retry imediato antes de reportar o servidor como inacessível.
 4. **Autenticação.** A API não tem login. Quem souber o endereço:
    - marca produto esgotado (`PATCH /products/{id}`);
    - muda o status de um pedido (`PATCH /orders/{id}`);
