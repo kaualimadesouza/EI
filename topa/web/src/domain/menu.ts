@@ -2,13 +2,14 @@ export interface Product {
   id: string
   name: string
   description: string
-  category: 'combos' | 'lanches' | 'salgados' | 'bebidas' | 'doces'
+  category: string
   priceCents: number
   available: boolean
+  photoUrl?: string
 }
 
 export interface Category {
-  id: Product['category']
+  id: string
   label: string
 }
 

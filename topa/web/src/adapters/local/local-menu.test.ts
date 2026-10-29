@@ -62,4 +62,175 @@ describe('LocalMenu', () => {
 
     expect(JSON.parse(localStorage.getItem('topa.sold-out')!)).toEqual(['suco'])
   })
+
+  it('creates and persists a new product', async () => {
+    const storage = new MemoryStorage()
+    const menu = new LocalMenu(storage)
+
+    const created = await menu.create(
+      {
+        id: 'pastel-queijo',
+        name: 'Pastel de Queijo',
+        description: 'Massa crocante.',
+        category: 'salgados',
+        priceCents: 900,
+        photoUrl: 'https://example.com/pastel.jpg',
+        available: false,
+      },
+      DEMO_STORE_SLUG,
+    )
+
+    expect(created).toEqual({
+      id: 'pastel-queijo',
+      name: 'Pastel de Queijo',
+      description: 'Massa crocante.',
+      category: 'salgados',
+      priceCents: 900,
+      photoUrl: 'https://example.com/pastel.jpg',
+      available: false,
+    })
+
+    const { products } = await new LocalMenu(storage).load(DEMO_STORE_SLUG)
+    expect(products.find((p) => p.id === 'pastel-queijo')).toEqual(created)
+  })
+
+  it('generates an id when creating a product without one', async () => {
+    const menu = new LocalMenu(new MemoryStorage())
+    const created = await menu.create(
+      {
+        name: 'Torta de Limao',
+        description: '',
+        category: 'doces',
+        priceCents: 1200,
+      },
+      DEMO_STORE_SLUG,
+    )
+
+    expect(created.id).toBe('torta-de-limao')
+    expect(created.available).toBe(true)
+
+    const fallbackId = await menu.create(
+      {
+        name: '!!!',
+        description: '',
+        category: 'doces',
+        priceCents: 1000,
+      },
+      DEMO_STORE_SLUG,
+    )
+    expect(fallbackId.id).toMatch(/^p-\d+$/)
+  })
+
+  it('updates a custom product without modifying availability if omitted', async () => {
+    const storage = new MemoryStorage()
+    const menu = new LocalMenu(storage)
+
+    const created = await menu.create(
+      {
+        id: 'trufa-chocolate',
+        name: 'Trufa de Chocolate',
+        description: 'Docinho.',
+        category: 'doces',
+        priceCents: 400,
+        available: false,
+      },
+      DEMO_STORE_SLUG,
+    )
+    expect(created.available).toBe(false)
+
+    const updated = await menu.update(
+      'trufa-chocolate',
+      {
+        name: 'Trufa Gourmet',
+        description: 'Chocolate belga.',
+        category: 'doces',
+        priceCents: 500,
+      },
+      DEMO_STORE_SLUG,
+    )
+    expect(updated.name).toBe('Trufa Gourmet')
+    expect(updated.available).toBe(false)
+
+    const restored = await menu.update(
+      'trufa-chocolate',
+      {
+        name: 'Trufa Gourmet',
+        description: 'Chocolate belga.',
+        category: 'doces',
+        priceCents: 500,
+        available: true,
+      },
+      DEMO_STORE_SLUG,
+    )
+    expect(restored.available).toBe(true)
+  })
+
+  it('refuses creating duplicate product id or in unknown store', async () => {
+    const menu = new LocalMenu(new MemoryStorage())
+
+    await expect(
+      menu.create(
+        { id: 'coxinha', name: 'Coxinha', description: '', category: 'salgados', priceCents: 890 },
+        DEMO_STORE_SLUG,
+      ),
+    ).rejects.toThrow('Produto já cadastrado.')
+
+    await expect(
+      menu.create(
+        { name: 'Empada', description: '', category: 'salgados', priceCents: 890 },
+        'outra-loja',
+      ),
+    ).rejects.toEqual(new StoreNotFoundError('Loja não encontrada.'))
+  })
+
+  it('updates an existing product', async () => {
+    const storage = new MemoryStorage()
+    const menu = new LocalMenu(storage)
+
+    const updated = await menu.update(
+      'coxinha',
+      {
+        name: 'Coxinha de Frango',
+        description: 'Receita da vovo.',
+        category: 'salgados-especiais',
+        priceCents: 950,
+        photoUrl: 'https://example.com/coxinha.jpg',
+        available: false,
+      },
+      DEMO_STORE_SLUG,
+    )
+
+    expect(updated).toEqual({
+      id: 'coxinha',
+      name: 'Coxinha de Frango',
+      description: 'Receita da vovo.',
+      category: 'salgados-especiais',
+      priceCents: 950,
+      photoUrl: 'https://example.com/coxinha.jpg',
+      available: false,
+    })
+
+    const { products } = await new LocalMenu(storage).load(DEMO_STORE_SLUG)
+    expect(products.find((p) => p.id === 'coxinha')).toEqual(updated)
+  })
+
+  it('refuses updating unknown product or in unknown store', async () => {
+    const menu = new LocalMenu(new MemoryStorage())
+
+    await expect(
+      menu.update(
+        'inexistente',
+        { name: 'X', description: '', category: 'salgados', priceCents: 500 },
+        DEMO_STORE_SLUG,
+      ),
+    ).rejects.toThrow('Produto não encontrado.')
+
+    await expect(
+      menu.update(
+        'coxinha',
+        { name: 'X', description: '', category: 'salgados', priceCents: 500 },
+        'outra-loja',
+      ),
+    ).rejects.toEqual(new StoreNotFoundError('Loja não encontrada.'))
+  })
 })

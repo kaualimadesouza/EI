@@ -17,7 +17,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from topa_api.adapters.db.base import Base
-from topa_api.domain.catalog import DEFAULT_STORE_SLUG, Category
+from topa_api.domain.catalog import DEFAULT_STORE_SLUG
 from topa_api.domain.orders import OrderStatus, PaymentMethod
 
 
@@ -37,7 +37,6 @@ class ProductRow(Base):
     __tablename__ = "products"
     __table_args__ = (
         UniqueConstraint("store_slug", "position"),
-        _one_of("category", Category),
         CheckConstraint("price_cents >= 0", name="price_cents"),
     )
 
@@ -54,6 +53,7 @@ class ProductRow(Base):
     category: Mapped[str] = mapped_column(Text)
     price_cents: Mapped[int] = mapped_column(Integer)
     available: Mapped[bool] = mapped_column(Boolean)
+    photo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class OrderRow(Base):

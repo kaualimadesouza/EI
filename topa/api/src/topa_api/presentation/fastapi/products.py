@@ -3,16 +3,20 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
+from topa_api.application.create_product import CreateProductUseCase
 from topa_api.application.get_store_menu import GetStoreMenuUseCase
 from topa_api.application.set_product_availability import SetProductAvailabilityUseCase
+from topa_api.application.update_product import UpdateProductUseCase
 from topa_api.domain.auth import AuthenticatedMerchant
-from topa_api.domain.catalog import DEFAULT_STORE_SLUG, Category, Product
+from topa_api.domain.catalog import DEFAULT_STORE_SLUG, Product
 from topa_api.domain.errors import ForbiddenStoreAccessError
 from topa_api.presentation.fastapi.dependencies import (
     StoreSlug,
+    get_create_product_use_case,
     get_current_merchant,
     get_set_product_availability_use_case,
     get_store_menu_use_case,
+    get_update_product_use_case,
 )
 from topa_api.presentation.fastapi.errors import ErrorResponse
 
@@ -21,6 +25,26 @@ router = APIRouter(tags=["products"])
 
 class AvailabilityRequest(BaseModel):
     available: bool
+
+
+class CreateProductRequest(BaseModel):
+    id: str | None = None
+    name: str
+    description: str
+    category: str
+    price_cents: int
+    photo_url: str | None = None
+    available: bool = True
+    position: int | None = None
+
+
+class UpdateProductRequest(BaseModel):
+    name: str
+    description: str
+    category: str
+    price_cents: int
+    photo_url: str | None = None
+    available: bool | None = None
 
 
 class StoreResponse(BaseModel):
@@ -32,9 +56,10 @@ class ProductResponse(BaseModel):
     id: str
     name: str
     description: str
-    category: Category
+    category: str
     price_cents: int
     available: bool
+    photo_url: str | None = None
 
 
 class StoreMenuResponse(BaseModel):
@@ -76,6 +101,72 @@ def list_products(
     return [_product_response(product) for product in use_case.execute(store_slug).products]
 
 
+@router.post(
+    "/products",
+    status_code=201,
+    responses={
+        401: {"model": ErrorResponse, "description": "missing or invalid auth token"},
+        403: {"model": ErrorResponse, "description": "merchant does not belong to this store"},
+        404: {"model": ErrorResponse, "description": "unknown store"},
+        409: {"model": ErrorResponse, "description": "product id already exists"},
+        422: {"model": ErrorResponse, "description": "invalid product data"},
+    },
+)
+def create_product(
+    request: CreateProductRequest,
+    use_case: Annotated[CreateProductUseCase, Depends(get_create_product_use_case)],
+    merchant: Annotated[AuthenticatedMerchant, Depends(get_current_merchant)],
+    store_slug: Annotated[StoreSlug, Query(alias="loja")] = DEFAULT_STORE_SLUG,
+) -> ProductResponse:
+    """Creates a new product in the store catalog."""
+    if merchant.store_slug != store_slug:
+        raise ForbiddenStoreAccessError()
+    product = use_case.execute(
+        store_slug=store_slug,
+        id=request.id,
+        name=request.name,
+        description=request.description,
+        category=request.category,
+        price_cents=request.price_cents,
+        photo_url=request.photo_url,
+        available=request.available,
+        position=request.position,
+    )
+    return _product_response(product)
+
+
+@router.put(
+    "/products/{product_id}",
+    responses={
+        401: {"model": ErrorResponse, "description": "missing or invalid auth token"},
+        403: {"model": ErrorResponse, "description": "merchant does not belong to this store"},
+        404: {"model": ErrorResponse, "description": "unknown store or product"},
+        422: {"model": ErrorResponse, "description": "invalid product data"},
+    },
+)
+def update_product(
+    product_id: str,
+    request: UpdateProductRequest,
+    use_case: Annotated[UpdateProductUseCase, Depends(get_update_product_use_case)],
+    merchant: Annotated[AuthenticatedMerchant, Depends(get_current_merchant)],
+    store_slug: Annotated[StoreSlug, Query(alias="loja")] = DEFAULT_STORE_SLUG,
+) -> ProductResponse:
+    """Updates fields of an existing product."""
+    if merchant.store_slug != store_slug:
+        raise ForbiddenStoreAccessError()
+    product = use_case.execute(
+        store_slug=store_slug,
+        product_id=product_id,
+        name=request.name,
+        description=request.description,
+        category=request.category,
+        price_cents=request.price_cents,
+        photo_url=request.photo_url,
+        available=request.available,
+    )
+    return _product_response(product)
+
+
 @router.patch(
     "/products/{product_id}",
     responses={
@@ -108,4 +199,5 @@ def _product_response(product: Product) -> ProductResponse:
         category=product.category,
         price_cents=product.price_cents,
         available=product.available,
+        photo_url=product.photo_url,
     )

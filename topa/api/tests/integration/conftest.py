@@ -56,16 +56,43 @@ def db_engine(alembic_config: Config) -> Iterator[Engine]:
         connection.execute(text(f"DROP DATABASE {TEST_DATABASE}"))
 
 
+SEEDED_PRODUCT_IDS = {
+    "combo-cafe",
+    "combo-misto",
+    "misto",
+    "xsalada",
+    "bauru",
+    "americano",
+    "paoqueijo",
+    "coxinha",
+    "esfiha",
+    "enroladinho",
+    "cafe",
+    "suco",
+    "refri",
+    "agua",
+    "bolo",
+    "pudim",
+    "brigadeiro",
+    "brownie",
+}
+
+
 @pytest.fixture(autouse=True)
 def reset_database(db_engine: Engine) -> Iterator[None]:
     """The seeded store and menu stay, all back on sale; extra stores and orders go."""
     yield
     with db_engine.begin() as connection:
         connection.execute(delete(OrderRow))
-        connection.execute(delete(ProductRow).where(ProductRow.store_slug != DEFAULT_STORE_SLUG))
+        connection.execute(
+            delete(ProductRow).where(
+                (ProductRow.store_slug != DEFAULT_STORE_SLUG)
+                | (ProductRow.id.not_in(SEEDED_PRODUCT_IDS))
+            )
+        )
         connection.execute(delete(MerchantRow).where(MerchantRow.email != "admin@bemtevi.topa.com"))
         connection.execute(delete(StoreRow).where(StoreRow.slug != DEFAULT_STORE_SLUG))
-        connection.execute(update(ProductRow).values(available=True))
+        connection.execute(update(ProductRow).values(available=True, photo_url=None))
 
 
 @pytest.fixture

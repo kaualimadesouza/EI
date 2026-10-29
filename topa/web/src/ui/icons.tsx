@@ -1,5 +1,3 @@
-import type { Product } from '../domain/menu'
-
 interface IconProps {
   size?: number
   className?: string
@@ -24,7 +22,7 @@ function Stroke({ d, size = 32, className }: IconProps & { d: string }) {
   )
 }
 
-const CATEGORY_PATHS: Record<Product['category'], string> = {
+const CATEGORY_PATHS: Record<string, string> = {
   combos: 'M3 11h8l-1 9H4zM13 13c0-1.7 1.8-3 4-3s4 1.3 4 3zM13 15.5h8M13 18h8v.5c0 .8-.7 1.5-1.5 1.5h-5c-.8 0-1.5-.7-1.5-1.5z',
   lanches: 'M4 11c0-3.3 3.6-6 8-6s8 2.7 8 6zM3 14h18M4 17h16v1c0 1.1-.9 2-2 2H6c-1.1 0-2-.9-2-2z',
   salgados: 'M3 16c0-5 4-9 9-9s9 4 9 9zM7 16v2.5M12 16v2.5M17 16v2.5',
@@ -32,8 +30,8 @@ const CATEGORY_PATHS: Record<Product['category'], string> = {
   doces: 'M6 12h12l-1.5 8h-9zM5 12c0-2.8 3.1-5 7-5s7 2.2 7 5M12 4v3',
 }
 
-export function CategoryIcon({ category, ...props }: IconProps & { category: Product['category'] }) {
-  return <Stroke d={CATEGORY_PATHS[category]} {...props} />
+export function CategoryIcon({ category, ...props }: IconProps & { category: string }) {
+  return <Stroke d={CATEGORY_PATHS[category] ?? CATEGORY_PATHS.lanches} {...props} />
 }
 
 export const DineInIcon = (props: IconProps) => (

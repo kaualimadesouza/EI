@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from topa_api.domain.errors import (
     DomainError,
+    DuplicateProductError,
     EmptyOrderError,
     ForbiddenStoreAccessError,
     InvalidCredentialsError,
@@ -31,6 +32,7 @@ ERROR_STATUS: dict[type[DomainError], int] = {
     StoreNotFoundError: 404,
     OrderNotFoundError: 404,
     ProductNotFoundError: 404,
+    DuplicateProductError: 409,
     StatusChangeNotAllowedError: 409,
     InvalidCredentialsError: 401,
     InvalidTokenError: 401,

@@ -6,6 +6,7 @@ interface MenuTableProps {
   products: readonly Product[]
   orders: readonly OrderSummary[]
   onAvailability: (product: Product, available: boolean) => void
+  onEdit?: (product: Product) => void
 }
 
 function soldToday(orders: readonly OrderSummary[]): Map<string, number> {
@@ -17,12 +18,18 @@ function soldToday(orders: readonly OrderSummary[]): Map<string, number> {
 }
 
 /** Every product by category, sold-out ones first so the merchant sees what the totems are missing. */
-export function MenuTable({ products, orders, onAvailability }: MenuTableProps) {
+export function MenuTable({ products, orders, onAvailability, onEdit }: MenuTableProps) {
   const sold = soldToday(orders)
+  const knownIds = new Set(CATEGORIES.map((c) => c.id))
+  const extraIds = Array.from(new Set(products.map((p) => p.category))).filter((id) => !knownIds.has(id))
+  const allCategories = [
+    ...CATEGORIES,
+    ...extraIds.map((id) => ({ id, label: id.charAt(0).toUpperCase() + id.slice(1) })),
+  ]
 
   return (
     <div className="overflow-x-auto rounded-[20px] border border-line bg-white">
-      <table className="w-full min-w-[640px] text-left text-[15px]">
+      <table className="w-full min-w-[700px] text-left text-[15px]">
         <thead className="text-[13px] text-muted">
           <tr className="border-b border-line">
             <th scope="col" className="px-5 py-3 font-medium">Produto</th>
@@ -30,16 +37,17 @@ export function MenuTable({ products, orders, onAvailability }: MenuTableProps) 
             <th scope="col" className="px-3 py-3 text-right font-medium">Vendidos hoje</th>
             <th scope="col" className="px-3 py-3 font-medium">Sugestão no totem</th>
             <th scope="col" className="px-5 py-3 text-right font-medium">À venda</th>
+            <th scope="col" className="px-5 py-3 text-right font-medium">Ações</th>
           </tr>
         </thead>
-        {CATEGORIES.map((category) => {
+        {allCategories.map((category) => {
           const rows = products
             .filter((product) => product.category === category.id)
             .sort((a, b) => Number(a.available) - Number(b.available))
           return (
             <tbody key={category.id} className="border-b border-line last:border-b-0">
               <tr>
-                <th scope="rowgroup" colSpan={5} className="bg-ground-2 px-5 py-2 text-[13px] font-semibold">
+                <th scope="rowgroup" colSpan={6} className="bg-ground-2 px-5 py-2 text-[13px] font-semibold">
                   {category.label}
                 </th>
               </tr>
@@ -70,6 +78,16 @@ export function MenuTable({ products, orders, onAvailability }: MenuTableProps) 
                           product.available ? 'translate-x-7' : 'translate-x-1'
                         }`}
                       />
+                    </button>
+                  </td>
+                  <td className="px-5 py-2 text-right">
+                    <button
+                      type="button"
+                      aria-label={`Editar ${product.name}`}
+                      onClick={() => onEdit?.(product)}
+                      className="cursor-pointer rounded-[8px] border border-line px-3 py-1 text-[13px] font-medium text-ink hover:bg-ground-2"
+                    >
+                      Editar
                     </button>
                   </td>
                 </tr>

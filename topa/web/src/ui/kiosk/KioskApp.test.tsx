@@ -42,7 +42,7 @@ function fakes(
   const adapters: Adapters = {
     mode: 'demo',
     connection: { isReachable },
-    menu: { load, setAvailability: vi.fn() },
+    menu: { load, setAvailability: vi.fn(), create: vi.fn(), update: vi.fn() },
     orders: { place, list: vi.fn(), setStatus: vi.fn(), statusOf },
     auth: {
       login: vi.fn(),

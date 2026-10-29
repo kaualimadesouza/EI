@@ -88,4 +88,113 @@ describe('HttpMenu', () => {
       'PATCH /products/gone answered 404',
     )
   })
+
+  it('creates a product via POST /products with auth token and returns domain product', async () => {
+    const fetchSpy = json({
+      id: 'quiche',
+      name: 'Quiche',
+      description: 'Queijo.',
+      category: 'salgados',
+      price_cents: 1100,
+      photo_url: 'https://example.com/quiche.jpg',
+      available: true,
+    }, 201)
+
+    const menu = new HttpMenu(new HttpClient('/api'), () => 'auth-token-123')
+    const product = await menu.create(
+      {
+        name: 'Quiche',
+        description: 'Queijo.',
+        category: 'salgados',
+        priceCents: 1100,
+        photoUrl: 'https://example.com/quiche.jpg',
+      },
+      'cantina-central',
+    )
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/products?loja=cantina-central',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({ Authorization: 'Bearer auth-token-123' }),
+      }),
+    )
+    expect(product).toEqual({
+      id: 'quiche',
+      name: 'Quiche',
+      description: 'Queijo.',
+      category: 'salgados',
+      priceCents: 1100,
+      photoUrl: 'https://example.com/quiche.jpg',
+      available: true,
+    })
+  })
+
+  it('fails loudly when create product fails', async () => {
+    json({}, 500)
+    const menu = new HttpMenu(new HttpClient('/api'))
+
+    await expect(
+      menu.create(
+        { name: 'Quiche', description: '', category: 'salgados', priceCents: 1000 },
+        'cantina-central',
+      ),
+    ).rejects.toThrow('POST /products answered 500')
+  })
+
+  it('updates a product via PUT /products/{id} with auth token and returns domain product', async () => {
+    const fetchSpy = json({
+      id: 'quiche',
+      name: 'Quiche de Alho Poro',
+      description: 'Especial.',
+      category: 'salgados-especiais',
+      price_cents: 1200,
+      photo_url: null,
+      available: true,
+    })
+
+    const menu = new HttpMenu(new HttpClient('/api'), () => 'auth-token-123')
+    const product = await menu.update(
+      'quiche',
+      {
+        name: 'Quiche de Alho Poro',
+        description: 'Especial.',
+        category: 'salgados-especiais',
+        priceCents: 1200,
+        photoUrl: undefined,
+        available: true,
+      },
+      'cantina-central',
+    )
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/products/quiche?loja=cantina-central',
+      expect.objectContaining({
+        method: 'PUT',
+        headers: expect.objectContaining({ Authorization: 'Bearer auth-token-123' }),
+      }),
+    )
+    expect(product).toEqual({
+      id: 'quiche',
+      name: 'Quiche de Alho Poro',
+      description: 'Especial.',
+      category: 'salgados-especiais',
+      priceCents: 1200,
+      photoUrl: undefined,
+      available: true,
+    })
+  })
+
+  it('fails loudly when update product fails', async () => {
+    json({}, 500)
+    const menu = new HttpMenu(new HttpClient('/api'))
+
+    await expect(
+      menu.update(
+        'quiche',
+        { name: 'Quiche', description: '', category: 'salgados', priceCents: 1000 },
+        'cantina-central',
+      ),
+    ).rejects.toThrow('PUT /products/quiche answered 500')
+  })
 })

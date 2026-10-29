@@ -25,9 +25,10 @@ class Product:
     id: str
     name: str
     description: str
-    category: Category
+    category: str
     price_cents: int
     available: bool
+    photo_url: str | None = None
 
 
 @dataclass(frozen=True)

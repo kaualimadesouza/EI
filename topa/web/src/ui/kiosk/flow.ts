@@ -8,7 +8,7 @@ export interface KioskState {
   screen: 'start' | 'menu' | 'bag' | 'payment' | 'done' | 'queue'
   dineIn: boolean
   lines: CartLine[]
-  category: Product['category']
+  category: string
   justAdded: string | null
   upsell: Upsell | null
   upsellOffered: boolean
@@ -42,7 +42,7 @@ export function openQueue(): KioskState {
   return { ...START, screen: 'queue' }
 }
 
-export function pickCategory(state: KioskState, category: Product['category']): KioskState {
+export function pickCategory(state: KioskState, category: string): KioskState {
   return { ...state, category }
 }
 

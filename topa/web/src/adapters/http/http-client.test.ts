@@ -44,6 +44,19 @@ describe('HttpClient', () => {
     })
   })
 
+  it('puts JSON with a timeout signal', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{}'))
+
+    await new HttpClient('/api').put('/products/suco', { name: 'Suco Natural' })
+
+    expect(fetchSpy).toHaveBeenCalledWith('/api/products/suco', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{"name":"Suco Natural"}',
+      signal: expect.any(AbortSignal),
+    })
+  })
+
   it('attaches bearer token when set on client', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('[]'))
     const client = new HttpClient('/api')

@@ -19,6 +19,8 @@ function phoneAdapters(): Adapters {
         }),
       ),
       setAvailability: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
     },
     nfc: { scan: () => Promise.resolve({ kind: 'url', url: 'https://topa-totem.vercel.app/?loja=cantina-central' }) },
     tag: { available: true, publish: vi.fn(), withdraw: vi.fn() },

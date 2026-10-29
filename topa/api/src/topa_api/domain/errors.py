@@ -42,6 +42,11 @@ class ProductNotFoundError(DomainError):
         super().__init__("Produto não encontrado.")
 
 
+class DuplicateProductError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Produto já cadastrado.")
+
+
 class StatusChangeNotAllowedError(DomainError):
     def __init__(self, number: int, current: str, requested: str) -> None:
         super().__init__(f"O pedido {number:03d} não pode passar de {current} para {requested}.")

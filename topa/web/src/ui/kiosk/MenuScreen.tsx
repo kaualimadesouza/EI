@@ -8,9 +8,9 @@ import { photoOf } from './photo'
 interface MenuScreenProps {
   products: readonly Product[]
   lines: readonly CartLine[]
-  category: Product['category']
+  category: string
   banner: Suggestion | null
-  onCategory: (category: Product['category']) => void
+  onCategory: (category: string) => void
   onAdd: (product: Product) => void
   onRemove: (productId: string) => void
   onReview: () => void
@@ -18,9 +18,11 @@ interface MenuScreenProps {
 
 export function MenuScreen(props: MenuScreenProps) {
   const { products, lines, category, banner, onCategory, onAdd, onRemove, onReview } = props
-  const categories = CATEGORIES.filter((c) => products.some((p) => p.category === c.id))
-  const activeCategory = categories.some((c) => c.id === category) ? category : categories[0].id
-  const label = CATEGORIES.find((c) => c.id === activeCategory)!.label
+  const presetMap = new Map(CATEGORIES.map((c) => [c.id, c.label]))
+  const categoryIds = Array.from(new Set(products.map((p) => p.category)))
+  const categories = categoryIds.map((id) => ({ id, label: presetMap.get(id) ?? (id.charAt(0).toUpperCase() + id.slice(1)) }))
+  const activeCategory = categories.some((c) => c.id === category) ? category : (categories[0]?.id ?? category)
+  const label = categories.find((c) => c.id === activeCategory)?.label ?? activeCategory
   const bannerProduct = banner ? findProduct(products, banner.productId) : undefined
   const count = itemCount(lines)
 
@@ -56,7 +58,7 @@ export function MenuScreen(props: MenuScreenProps) {
                 aria-label={`Adicionar ${bannerProduct.name} por ${formatBRL(bannerProduct.priceCents)}`}
                 className="flex h-[120px] flex-none items-center gap-4 rounded-[24px] bg-teal p-[15px] text-left text-white max-sm:h-auto max-sm:gap-3 max-sm:p-3 lg:landscape:w-[min(100%,640px)]"
               >
-                <img src={photoOf(bannerProduct.id)} alt="" className="h-[90px] w-[120px] flex-none rounded-[16px] object-cover max-sm:h-16 max-sm:w-20 max-sm:rounded-[12px]" />
+                <img src={photoOf(bannerProduct)} alt="" className="h-[90px] w-[120px] flex-none rounded-[16px] object-cover max-sm:h-16 max-sm:w-20 max-sm:rounded-[12px]" />
                 <span className="flex min-w-0 flex-1 flex-col gap-1 max-sm:gap-0">
                   <span className="text-[18px] text-on-teal max-sm:hidden">Sugestão para agora</span>
                   <span className="truncate text-[22px] font-semibold max-sm:line-clamp-2 max-sm:text-[18px] max-sm:leading-tight max-sm:whitespace-normal">{bannerProduct.name}</span>
@@ -128,7 +130,7 @@ function ProductCard({ product, quantity, onAdd, onRemove }: ProductCardProps) {
       >
         <span className="relative block">
           <img
-            src={photoOf(product.id)}
+            src={photoOf(product)}
             alt=""
             loading="lazy"
             className={`aspect-[4/3] w-full object-cover lg:landscape:aspect-[16/10] ${product.available ? '' : 'opacity-40'}`}

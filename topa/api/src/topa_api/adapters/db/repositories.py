@@ -14,7 +14,7 @@ from topa_api.adapters.db.models import (
 )
 from topa_api.application.ports import MerchantRecord
 from topa_api.domain.auth import Merchant
-from topa_api.domain.catalog import DEFAULT_STORE_SLUG, Category, Product, Store
+from topa_api.domain.catalog import DEFAULT_STORE_SLUG, Product, Store
 from topa_api.domain.orders import Order, OrderItem, OrderStatus, PaymentMethod
 
 # namespace of the per-store-day number lock, so it never meets another advisory lock
@@ -54,12 +54,53 @@ class SqlAlchemyProductRepository:
         )
         return [_product_of(row) for row in rows]
 
+    def get(self, store_slug: str, product_id: str) -> Product | None:
+        row = self._session.get(ProductRow, (store_slug, product_id))
+        return None if row is None else _product_of(row)
+
+    def next_position(self, store_slug: str) -> int:
+        highest = self._session.scalar(
+            select(func.max(ProductRow.position)).where(ProductRow.store_slug == store_slug)
+        )
+        return (highest or 0) + 1
+
+    def create(self, store_slug: str, product: Product, position: int) -> Product:
+        row = ProductRow(
+            store_slug=store_slug,
+            id=product.id,
+            position=position,
+            name=product.name,
+            description=product.description,
+            category=product.category,
+            price_cents=product.price_cents,
+            available=product.available,
+            photo_url=product.photo_url,
+        )
+        self._session.add(row)
+        self._session.flush()
+        return _product_of(row)
+
+    def update(self, store_slug: str, product: Product) -> Product | None:
+        row = self._session.get(ProductRow, (store_slug, product.id))
+        if row is None:
+            return None
+        row.name = product.name
+        row.description = product.description
+        row.category = product.category
+        row.price_cents = product.price_cents
+        row.available = product.available
+        row.photo_url = product.photo_url
+        return _product_of(row)
+
     def set_availability(self, store_slug: str, product_id: str, available: bool) -> Product | None:
         row = self._session.get(ProductRow, (store_slug, product_id))
         if row is None:
             return None
         row.available = available
         return _product_of(row)
+
+
+SqlAlchemyCatalogRepository = SqlAlchemyProductRepository
 
 
 class SqlAlchemyOrderRepository:
@@ -139,9 +180,10 @@ def _product_of(row: ProductRow) -> Product:
         id=row.id,
         name=row.name,
         description=row.description,
-        category=Category(row.category),
+        category=row.category,
         price_cents=row.price_cents,
         available=row.available,
+        photo_url=row.photo_url,
     )
 
 

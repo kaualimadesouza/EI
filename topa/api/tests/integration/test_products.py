@@ -15,6 +15,7 @@ COXINHA = {
     "description": "Frango com catupiry.",
     "category": "salgados",
     "price_cents": 890,
+    "photo_url": None,
 }
 
 # the seed of the products migration, in menu order: (id, category, name, description, price)
@@ -52,6 +53,7 @@ def test_the_menu_lists_every_product_in_menu_order(client: TestClient) -> None:
             "category": category,
             "price_cents": price_cents,
             "available": True,
+            "photo_url": None,
         }
         for product_id, category, name, description, price_cents in MENU
     ]
@@ -166,3 +168,138 @@ def test_a_malformed_availability_gets_the_generic_message(
     assert response.status_code == 422
     assert response.json() == {"detail": INVALID_REQUEST}
     assert all(product["available"] for product in client.get("/products").json())
+
+
+def test_merchant_can_create_a_new_product(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
+    payload = {
+        "id": "pastel-especial",
+        "name": "Pastel Especial",
+        "description": "Carne com queijo.",
+        "category": "pasteis",
+        "price_cents": 1200,
+        "photo_url": "https://images.example.com/pastel.jpg",
+        "available": True,
+    }
+    response = client.post("/products", json=payload, headers=auth_headers)
+
+    assert response.status_code == 201
+    assert response.json() == {
+        "id": "pastel-especial",
+        "name": "Pastel Especial",
+        "description": "Carne com queijo.",
+        "category": "pasteis",
+        "price_cents": 1200,
+        "photo_url": "https://images.example.com/pastel.jpg",
+        "available": True,
+    }
+
+
+def test_merchant_cannot_create_duplicate_product(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
+    payload = {
+        "id": "coxinha",
+        "name": "Coxinha Duplicada",
+        "description": "Desc.",
+        "category": "salgados",
+        "price_cents": 890,
+    }
+    response = client.post("/products", json=payload, headers=auth_headers)
+
+    assert response.status_code == 409
+    assert response.json() == {"detail": "Produto já cadastrado."}
+
+
+def test_create_product_rejects_cross_store_access(client: TestClient) -> None:
+    token = HmacTokenService(Settings().auth_secret_key).create_token(
+        AuthenticatedMerchant(id=uuid.uuid4(), email="outra@topa.com", store_slug="outra-loja")
+    )
+    payload = {
+        "name": "Pastel",
+        "description": "Desc.",
+        "category": "salgados",
+        "price_cents": 890,
+    }
+    response = client.post(
+        "/products",
+        params={"loja": "lanchonete-bem-te-vi"},
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 403
+    assert response.json() == {"detail": "Acesso não permitido para esta loja."}
+
+
+def test_merchant_can_update_an_existing_product(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
+    client.post(
+        "/products",
+        json={
+            "id": "pastel-de-frango",
+            "name": "Pastel de Frango",
+            "description": "Frango desfiado.",
+            "category": "salgados",
+            "price_cents": 900,
+        },
+        headers=auth_headers,
+    )
+    payload = {
+        "name": "Pastel de Frango com Catupiry",
+        "description": "Frango desfiado com catupiry legitimo.",
+        "category": "salgados-premium",
+        "price_cents": 1150,
+        "photo_url": "https://images.example.com/pastel-premium.jpg",
+        "available": True,
+    }
+    response = client.put("/products/pastel-de-frango", json=payload, headers=auth_headers)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": "pastel-de-frango",
+        "name": "Pastel de Frango com Catupiry",
+        "description": "Frango desfiado com catupiry legitimo.",
+        "category": "salgados-premium",
+        "price_cents": 1150,
+        "photo_url": "https://images.example.com/pastel-premium.jpg",
+        "available": True,
+    }
+
+
+def test_update_product_rejects_cross_store_access(client: TestClient) -> None:
+    token = HmacTokenService(Settings().auth_secret_key).create_token(
+        AuthenticatedMerchant(id=uuid.uuid4(), email="outra@topa.com", store_slug="outra-loja")
+    )
+    payload = {
+        "name": "Coxinha",
+        "description": "Desc.",
+        "category": "salgados",
+        "price_cents": 890,
+    }
+    response = client.put(
+        "/products/coxinha",
+        params={"loja": "lanchonete-bem-te-vi"},
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 403
+    assert response.json() == {"detail": "Acesso não permitido para esta loja."}
+
+
+def test_update_unknown_product_returns_404(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
+    payload = {
+        "name": "Nao Existe",
+        "description": "Desc.",
+        "category": "salgados",
+        "price_cents": 500,
+    }
+    response = client.put("/products/item-inexistente", json=payload, headers=auth_headers)
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Produto não encontrado."}

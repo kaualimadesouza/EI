@@ -99,7 +99,7 @@ describe('App', () => {
             initialMerchant: { email: 'admin@bemtevi.topa.com', storeSlug: 'cantina-central' },
             initialToken: 'token',
           }),
-          menu: { load, setAvailability: vi.fn() },
+          menu: { load, setAvailability: vi.fn(), create: vi.fn(), update: vi.fn() },
           orders: { place: vi.fn(), list, setStatus: vi.fn(), statusOf: vi.fn() },
         }}
         path="/painel"

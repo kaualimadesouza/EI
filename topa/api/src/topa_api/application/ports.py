@@ -34,9 +34,29 @@ class ProductRepository(Protocol):
         """That store's products matching those ids; an unknown id is absent."""
         ...
 
+    def get(self, store_slug: str, product_id: str) -> Product | None:
+        """A single product from that store, or None when absent."""
+        ...
+
+    def next_position(self, store_slug: str) -> int:
+        """The next display position in that store's menu."""
+        ...
+
+    def create(self, store_slug: str, product: Product, position: int) -> Product:
+        """Adds a new product to that store's menu."""
+        ...
+
+    def update(self, store_slug: str, product: Product) -> Product | None:
+        """Updates product fields, or None when that store has no such product."""
+        ...
+
     def set_availability(self, store_slug: str, product_id: str, available: bool) -> Product | None:
         """The product as it now stands, or None when that store has no such product."""
         ...
+
+
+ProductRepositoryPort = ProductRepository
+CatalogRepositoryPort = ProductRepository
 
 
 class OrderRepository(Protocol):

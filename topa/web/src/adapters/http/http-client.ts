@@ -27,6 +27,10 @@ export class HttpClient {
     return this.send('POST', path, body, token)
   }
 
+  put(path: string, body: object, token?: string | null): Promise<Response> {
+    return this.send('PUT', path, body, token)
+  }
+
   patch(path: string, body: object, token?: string | null): Promise<Response> {
     return this.send('PATCH', path, body, token)
   }
@@ -37,7 +41,7 @@ export class HttpClient {
   }
 
   private send(
-    method: 'POST' | 'PATCH',
+    method: 'POST' | 'PATCH' | 'PUT',
     path: string,
     body: object,
     token?: string | null,

@@ -35,8 +35,9 @@ erDiagram
         integer position UK "ordem no cardápio da loja"
         text name
         text description
-        text category "combos, lanches, salgados, bebidas ou doces"
+        text category "categoria textual configurável (ex: combos, lanches, bebidas)"
         integer price_cents "preço em centavos, 0 ou mais"
+        text photo_url "URL opcional da foto do produto (nullable)"
         boolean available "false quando esgotado"
     }
 
@@ -63,16 +64,19 @@ erDiagram
 
 ## O que o desenho não mostra
 
-- Todas as colunas são `NOT NULL`. O banco recusa, por `CHECK`, `category`, `status` e
-  `payment_method` fora das listas acima, `price_cents` e `unit_price_cents` negativos e
-  `quantity` menor que 1. `total_cents` não tem `CHECK`.
+- Quase todas as colunas são `NOT NULL`, exceto `photo_url` em `products` que é opcional (`nullable`).
+  O banco recusa, por `CHECK`, `status` e `payment_method` fora das listas acima, `price_cents` e
+  `unit_price_cents` negativos e `quantity` menor que 1. A restrição `CHECK` de `category` foi
+  removida na migration `20261029_f6a7b8c9d0e1` para permitir categorias dinâmicas criadas pelo lojista.
+  `total_cents` não tem `CHECK`.
 - `store_slug` tem valor padrão `'lanchonete-bem-te-vi'` em `products`, `orders` e `order_items`
   para manter compatibilidade com a versão anterior (v0.1.3) da Lambda durante o rolling deploy;
   quando o cadastro de novas lojas for implementado, o `server_default` será retirado por migration.
 - `orders` declara `(id, store_slug)` como par único para que `order_items` referencie tanto
   `(order_id, store_slug)` quanto `(store_slug, product_id)` por chave estrangeira composta,
   impedindo no banco que um pedido aponte para produto de outra loja.
-- O `id` do produto também é o nome da foto: `topa/web/public/photos/<id>.jpg`.
+- Quando `photo_url` estiver preenchida, o frontend utiliza essa URL direta para a imagem do produto.
+  Caso contrário, utiliza como fallback local o padrão `topa/web/public/photos/<id>.jpg`.
 - `position` dá a ordem do cardápio de cada loja e também a dos itens que a API devolve em cada
   pedido; a ordem em que o cliente tocou nos produtos não é guardada.
 - `business_date` é a data de `created_at` em São Paulo, e `number`, o número que o cliente vê,
