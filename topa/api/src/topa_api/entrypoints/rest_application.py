@@ -8,13 +8,23 @@ from sqlalchemy.orm import Session
 
 from topa_api.adapters.clock import SystemClock
 from topa_api.adapters.db.repositories import (
+    SqlAlchemyMerchantRepository,
     SqlAlchemyOrderRepository,
     SqlAlchemyProductRepository,
     SqlAlchemyStoreRepository,
 )
 from topa_api.adapters.db.session import DatabaseReadinessProbe, get_engine
-from topa_api.application.ports import OrderRepository, ProductRepository, StoreRepository
+from topa_api.adapters.rate_limiter import InMemoryRateLimiter
+from topa_api.adapters.security.password_hasher import ScryptPasswordHasher
+from topa_api.adapters.security.token_service import HmacTokenService
+from topa_api.application.ports import (
+    MerchantRepositoryPort,
+    OrderRepository,
+    ProductRepository,
+    StoreRepository,
+)
 from topa_api.presentation.fastapi import dependencies as ports
+from topa_api.presentation.fastapi.auth import router as auth_router
 from topa_api.presentation.fastapi.errors import install_error_handlers
 from topa_api.presentation.fastapi.health import router as health_router
 from topa_api.presentation.fastapi.orders import router as orders_router
@@ -47,6 +57,12 @@ def order_repository(
     return SqlAlchemyOrderRepository(session)
 
 
+def merchant_repository(
+    session: Annotated[Session, Depends(get_session, scope="function")],
+) -> MerchantRepositoryPort:
+    return SqlAlchemyMerchantRepository(session)
+
+
 def create_app() -> FastAPI:
     """Composition root: the one place that picks the adapter behind each port."""
     app = FastAPI(title="TOPA API")
@@ -62,16 +78,24 @@ def create_app() -> FastAPI:
     )
     install_error_handlers(app)
     probe = DatabaseReadinessProbe(get_engine())
+    hasher = ScryptPasswordHasher()
+    tokens = HmacTokenService(secret_key=settings.auth_secret_key)
+    limiter = InMemoryRateLimiter(limit=10, window_seconds=60)
     app.dependency_overrides.update(
         {
             ports.get_readiness_probe: lambda: probe,
             ports.get_store_repository: store_repository,
             ports.get_product_repository: product_repository,
             ports.get_order_repository: order_repository,
+            ports.get_merchant_repository: merchant_repository,
+            ports.get_password_hasher: lambda: hasher,
+            ports.get_token_service: lambda: tokens,
+            ports.get_rate_limiter: lambda: limiter,
             ports.get_clock: SystemClock,
         }
     )
     app.include_router(health_router)
+    app.include_router(auth_router)
     app.include_router(products_router)
     app.include_router(orders_router)
     return app

@@ -44,6 +44,74 @@ describe('HttpClient', () => {
     })
   })
 
+  it('attaches bearer token when set on client', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('[]'))
+    const client = new HttpClient('/api')
+    client.setToken('test-token-123')
+    expect(client.getToken()).toBe('test-token-123')
+
+    await client.get('/orders')
+    expect(fetchSpy).toHaveBeenCalledWith('/api/orders', {
+      headers: { Authorization: 'Bearer test-token-123' },
+      signal: expect.any(AbortSignal),
+    })
+
+    await client.patch('/orders/o1', { status: 'preparing' })
+    expect(fetchSpy).toHaveBeenCalledWith('/api/orders/o1', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer test-token-123',
+      },
+      body: '{"status":"preparing"}',
+      signal: expect.any(AbortSignal),
+    })
+
+    await client.post('/orders', { dine_in: true })
+    expect(fetchSpy).toHaveBeenCalledWith('/api/orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer test-token-123',
+      },
+      body: '{"dine_in":true}',
+      signal: expect.any(AbortSignal),
+    })
+  })
+
+  it('allows overriding token explicitly per request', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('[]'))
+    const client = new HttpClient('/api', 'default-token')
+
+    await client.get('/orders', 10_000, 'override-token')
+    expect(fetchSpy).toHaveBeenCalledWith('/api/orders', {
+      headers: { Authorization: 'Bearer override-token' },
+      signal: expect.any(AbortSignal),
+    })
+
+    await client.patch('/orders/o1', { status: 'ready' }, 'override-patch-token')
+    expect(fetchSpy).toHaveBeenCalledWith('/api/orders/o1', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer override-patch-token',
+      },
+      body: '{"status":"ready"}',
+      signal: expect.any(AbortSignal),
+    })
+
+    await client.post('/orders', { dine_in: true }, 'override-post-token')
+    expect(fetchSpy).toHaveBeenCalledWith('/api/orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer override-post-token',
+      },
+      body: '{"dine_in":true}',
+      signal: expect.any(AbortSignal),
+    })
+  })
+
   it('aborts a request that hangs for 10 seconds so payment cannot lock the kiosk forever', async () => {
     vi.useFakeTimers()
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(

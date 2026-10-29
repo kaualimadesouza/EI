@@ -57,3 +57,11 @@ def test_the_origin_pattern_follows_the_topa_prefixed_variable(
     monkeypatch.setenv("TOPA_CORS_ORIGIN_REGEX", "^https://topa-totem[.]vercel[.]app$")
 
     assert Settings().cors_origin_regex == "^https://topa-totem[.]vercel[.]app$"
+
+
+def test_auth_secret_key_follows_the_topa_prefixed_variable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("TOPA_AUTH_SECRET_KEY", "custom-super-secret-key")
+
+    assert Settings().auth_secret_key == "custom-super-secret-key"

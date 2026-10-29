@@ -1,7 +1,12 @@
+import uuid
 from collections.abc import Callable
 
 import pytest
 from fastapi.testclient import TestClient
+
+from topa_api.adapters.security.token_service import HmacTokenService
+from topa_api.domain.auth import AuthenticatedMerchant
+from topa_api.settings import Settings
 
 INVALID_REQUEST = "Não foi possível processar a solicitação. Tente de novo."
 COXINHA = {
@@ -65,9 +70,9 @@ def test_a_sold_out_product_stays_on_the_menu_marked_unavailable(
 
 
 def test_a_product_marked_sold_out_comes_back_unavailable_and_stays_so(
-    client: TestClient,
+    client: TestClient, auth_headers: dict[str, str]
 ) -> None:
-    response = client.patch("/products/coxinha", json={"available": False})
+    response = client.patch("/products/coxinha", json={"available": False}, headers=auth_headers)
 
     assert response.status_code == 200
     assert response.json() == {**COXINHA, "available": False}
@@ -78,11 +83,11 @@ def test_a_product_marked_sold_out_comes_back_unavailable_and_stays_so(
 
 
 def test_a_product_back_on_sale_comes_back_available(
-    client: TestClient, sell_out: Callable[[str], None]
+    client: TestClient, sell_out: Callable[[str], None], auth_headers: dict[str, str]
 ) -> None:
     sell_out("coxinha")
 
-    response = client.patch("/products/coxinha", json={"available": True})
+    response = client.patch("/products/coxinha", json={"available": True}, headers=auth_headers)
 
     assert response.status_code == 200
     assert response.json() == {**COXINHA, "available": True}
@@ -90,7 +95,7 @@ def test_a_product_back_on_sale_comes_back_available(
 
 
 def test_the_kiosk_refuses_a_product_the_dashboard_sold_out_until_it_is_back(
-    client: TestClient,
+    client: TestClient, auth_headers: dict[str, str]
 ) -> None:
     order = {
         "items": [{"product_id": "coxinha", "quantity": 1}],
@@ -98,38 +103,52 @@ def test_the_kiosk_refuses_a_product_the_dashboard_sold_out_until_it_is_back(
         "payment_method": "pix",
     }
 
-    client.patch("/products/coxinha", json={"available": False})
+    client.patch("/products/coxinha", json={"available": False}, headers=auth_headers)
     refused = client.post("/orders", json=order)
-    client.patch("/products/coxinha", json={"available": True})
+    client.patch("/products/coxinha", json={"available": True}, headers=auth_headers)
     accepted = client.post("/orders", json=order)
 
     assert (refused.status_code, refused.json()) == (409, {"detail": "Coxinha esgotou."})
     assert accepted.status_code == 201
 
 
-def test_an_unknown_product_is_not_found(client: TestClient) -> None:
-    response = client.patch("/products/pastel", json={"available": False})
+def test_an_unknown_product_is_not_found(client: TestClient, auth_headers: dict[str, str]) -> None:
+    response = client.patch("/products/pastel", json={"available": False}, headers=auth_headers)
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Produto não encontrado."}
 
 
 def test_products_for_an_unknown_store_are_not_found(client: TestClient) -> None:
+    token = HmacTokenService(Settings().auth_secret_key).create_token(
+        AuthenticatedMerchant(
+            id=uuid.uuid4(), email="padaria@topa.com", store_slug="padaria-inexistente"
+        )
+    )
+    headers = {"Authorization": f"Bearer {token}"}
     listed = client.get("/products", params={"loja": "padaria-inexistente"})
     patched = client.patch(
         "/products/coxinha",
         params={"loja": "padaria-inexistente"},
         json={"available": False},
+        headers=headers,
     )
 
     assert (listed.status_code, listed.json()) == (404, {"detail": "Loja não encontrada."})
     assert (patched.status_code, patched.json()) == (404, {"detail": "Loja não encontrada."})
 
 
-def test_products_for_a_malformed_store_slug_get_the_generic_message(client: TestClient) -> None:
+def test_products_for_a_malformed_store_slug_get_the_generic_message(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
     for slug in ("", "Cantina", "a" * 65):
         listed = client.get("/products", params={"loja": slug})
-        patched = client.patch("/products/coxinha", params={"loja": slug}, json={"available": True})
+        patched = client.patch(
+            "/products/coxinha",
+            params={"loja": slug},
+            json={"available": True},
+            headers=auth_headers,
+        )
         assert (listed.status_code, listed.json()) == (422, {"detail": INVALID_REQUEST})
         assert (patched.status_code, patched.json()) == (422, {"detail": INVALID_REQUEST})
 
@@ -140,9 +159,9 @@ def test_products_for_a_malformed_store_slug_get_the_generic_message(client: Tes
     ids=["no-availability", "not-a-boolean", "null"],
 )
 def test_a_malformed_availability_gets_the_generic_message(
-    client: TestClient, payload: dict[str, object]
+    client: TestClient, payload: dict[str, object], auth_headers: dict[str, str]
 ) -> None:
-    response = client.patch("/products/coxinha", json=payload)
+    response = client.patch("/products/coxinha", json=payload, headers=auth_headers)
 
     assert response.status_code == 422
     assert response.json() == {"detail": INVALID_REQUEST}

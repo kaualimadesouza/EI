@@ -34,9 +34,11 @@ function toProduct(row: ProductJson): Product {
 
 export class HttpMenu implements MenuPort {
   private readonly client: HttpClient
+  private readonly tokenProvider?: () => string | null
 
-  constructor(client: HttpClient) {
+  constructor(client: HttpClient, tokenProvider?: () => string | null) {
     this.client = client
+    this.tokenProvider = tokenProvider
   }
 
   async load(storeSlug: string): Promise<StoreMenu> {
@@ -55,7 +57,7 @@ export class HttpMenu implements MenuPort {
 
   async setAvailability(productId: string, available: boolean, storeSlug: string): Promise<Product> {
     const path = `/products/${encodeURIComponent(productId)}?loja=${encodeURIComponent(storeSlug)}`
-    const response = await this.client.patch(path, { available })
+    const response = await this.client.patch(path, { available }, this.tokenProvider?.())
     if (!response.ok) throw new Error(`PATCH /products/${productId} answered ${response.status}`)
     return toProduct((await response.json()) as ProductJson)
   }

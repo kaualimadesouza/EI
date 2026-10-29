@@ -1,8 +1,13 @@
+import uuid
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine, insert
 
 from topa_api.adapters.db.models import ProductRow, StoreRow
+from topa_api.adapters.security.token_service import HmacTokenService
+from topa_api.domain.auth import AuthenticatedMerchant
+from topa_api.settings import Settings
 
 INVALID_REQUEST = "Não foi possível processar a solicitação. Tente de novo."
 
@@ -54,7 +59,17 @@ def test_each_store_serves_its_own_menu_and_availability(
     client: TestClient, db_engine: Engine
 ) -> None:
     _seed_cantina(db_engine)
-    client.patch("/products/coxinha", params={"loja": "cantina-central"}, json={"available": False})
+    token = HmacTokenService(Settings().auth_secret_key).create_token(
+        AuthenticatedMerchant(
+            id=uuid.uuid4(), email="cantina@topa.com", store_slug="cantina-central"
+        )
+    )
+    client.patch(
+        "/products/coxinha",
+        params={"loja": "cantina-central"},
+        json={"available": False},
+        headers={"Authorization": f"Bearer {token}"},
+    )
 
     cantina = client.get("/menu", params={"loja": "cantina-central"}).json()
     bem_te_vi = client.get("/menu", params={"loja": "lanchonete-bem-te-vi"}).json()

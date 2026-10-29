@@ -117,3 +117,13 @@ class OrderItemRow(Base):
         ),
         viewonly=True,
     )
+
+
+class MerchantRow(Base):
+    __tablename__ = "merchants"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
+    email: Mapped[str] = mapped_column(Text, unique=True)
+    password_hash: Mapped[str] = mapped_column(Text)
+    store_slug: Mapped[str] = mapped_column(Text, ForeignKey("stores.slug"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

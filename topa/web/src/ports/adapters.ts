@@ -1,3 +1,4 @@
+import type { AuthPort } from './auth'
 import type { BuzzerPort } from './buzzer'
 import type { ConnectionPort } from './connection'
 import type { MenuPort } from './menu'
@@ -16,4 +17,5 @@ export interface Adapters {
   tag: TagPort
   buzzer: BuzzerPort
   wakeLock: WakeLockPort
+  auth: AuthPort
 }

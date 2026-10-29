@@ -5,7 +5,15 @@ from datetime import date
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session, selectinload
 
-from topa_api.adapters.db.models import OrderItemRow, OrderRow, ProductRow, StoreRow
+from topa_api.adapters.db.models import (
+    MerchantRow,
+    OrderItemRow,
+    OrderRow,
+    ProductRow,
+    StoreRow,
+)
+from topa_api.application.ports import MerchantRecord
+from topa_api.domain.auth import Merchant
 from topa_api.domain.catalog import DEFAULT_STORE_SLUG, Category, Product, Store
 from topa_api.domain.orders import Order, OrderItem, OrderStatus, PaymentMethod
 
@@ -158,3 +166,33 @@ def _order_of(row: OrderRow) -> Order:
         ),
         created_at=row.created_at,
     )
+
+
+class SqlAlchemyMerchantRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def get_by_email(self, email: str) -> MerchantRecord | None:
+        row = self._session.scalars(
+            select(MerchantRow).where(MerchantRow.email == email.lower().strip())
+        ).first()
+        if row is None:
+            return None
+        merchant = Merchant(
+            id=row.id,
+            email=row.email,
+            store_slug=row.store_slug,
+            created_at=row.created_at,
+        )
+        return MerchantRecord(merchant=merchant, password_hash=row.password_hash)
+
+    def add(self, merchant: Merchant, password_hash: str) -> None:
+        self._session.add(
+            MerchantRow(
+                id=merchant.id,
+                email=merchant.email.lower().strip(),
+                password_hash=password_hash,
+                store_slug=merchant.store_slug,
+                created_at=merchant.created_at,
+            )
+        )

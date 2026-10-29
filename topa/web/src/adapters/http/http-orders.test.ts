@@ -54,6 +54,12 @@ describe('HttpOrders', () => {
     vi.restoreAllMocks()
     json({ detail: 'Loja não encontrada.' }, 404)
     await expect(orders.place(draft)).rejects.toEqual(new OrderRejectedError('Loja não encontrada.'))
+
+    vi.restoreAllMocks()
+    json({ detail: 'Muitos pedidos enviados. Aguarde um momento.' }, 429)
+    await expect(orders.place(draft)).rejects.toEqual(
+      new OrderRejectedError('Muitos pedidos enviados. Aguarde um momento.'),
+    )
   })
 
   it('uses a generic message when the refusal is a validation list', async () => {
@@ -146,6 +152,41 @@ describe('HttpOrders', () => {
 
     expect(fetchSpy).toHaveBeenCalledWith('/api/orders/o1', expect.objectContaining({ method: 'PATCH', body: '{"status":"ready"}' }))
     expect(order).toMatchObject({ id: 'o1', status: 'ready', dineIn: false })
+  })
+
+  it('passes auth token from token provider on list and setStatus', async () => {
+    const fetchSpy = json([])
+    const orders = new HttpOrders(new HttpClient('/api'), () => 'auth-token-xyz')
+
+    await orders.list('2026-10-29', 'lanchonete-bem-te-vi')
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/orders?date=2026-10-29&loja=lanchonete-bem-te-vi',
+      expect.objectContaining({ headers: { Authorization: 'Bearer auth-token-xyz' } }),
+    )
+
+    fetchSpy.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          id: 'o1',
+          number: 1,
+          status: 'preparing',
+          dine_in: true,
+          payment_method: 'pix',
+          total_cents: 500,
+          created_at: '2026-10-29T12:00:00Z',
+          items: [],
+        }),
+        { status: 200 },
+      ),
+    )
+    await orders.setStatus('o1', 'preparing')
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/orders/o1',
+      expect.objectContaining({
+        method: 'PATCH',
+        headers: expect.objectContaining({ Authorization: 'Bearer auth-token-xyz' }),
+      }),
+    )
   })
 
   it('passes on the API words when a move is refused or the order is gone', async () => {

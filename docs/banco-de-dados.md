@@ -12,12 +12,21 @@ migration escrita à mão, como a `7db80bf0a5ff`.
 erDiagram
     stores ||--o{ products : "vende"
     stores ||--o{ orders : "recebe"
+    stores ||--o{ merchants : "possui"
     products ||--o{ order_items : "aparece em"
     orders ||--o{ order_items : "contém"
 
     stores {
         text slug PK "identificador, como lanchonete-bem-te-vi"
         text name
+    }
+
+    merchants {
+        uuid id PK "gerado pela API"
+        text email UK "e-mail de acesso do lojista"
+        text password_hash "hash scrypt com salt"
+        text store_slug FK "loja vinculada"
+        timestamptz created_at
     }
 
     products {
@@ -74,6 +83,9 @@ erDiagram
   de um produto num item só, somando a `quantity`.
 - Apagar um pedido apaga os itens (`ON DELETE CASCADE`); apagar um produto que já foi pedido ou
   uma loja que já possui produtos ou pedidos vinculados é recusado pelo banco.
+- A tabela `merchants` guarda as contas de acesso dos lojistas ao painel administrativo. O hash da senha
+  utiliza scrypt com salt aleatório (`scrypt$N$r$p$salt$hash`). O e-mail é único no sistema e vinculado
+  por chave estrangeira à loja correspondente.
 - Não há estado de pagamento: o pagamento ainda é simulado, e o app grava o pedido ao pagar.
 - O Alembic mantém também a tabela `alembic_version`, com a revisão aplicada.
 

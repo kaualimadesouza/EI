@@ -59,6 +59,28 @@ describe('HttpMenu', () => {
     expect(product).toMatchObject({ id: 'suco', priceCents: 990, available: false })
   })
 
+  it('passes auth token from token provider on setAvailability', async () => {
+    const fetchSpy = json({
+      id: 'suco',
+      name: 'Suco',
+      description: 'Suco natural.',
+      category: 'bebidas',
+      price_cents: 990,
+      available: false,
+    })
+    const menu = new HttpMenu(new HttpClient('/api'), () => 'menu-auth-token')
+
+    await menu.setAvailability('suco', false, 'cantina-central')
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/products/suco?loja=cantina-central',
+      expect.objectContaining({
+        method: 'PATCH',
+        headers: expect.objectContaining({ Authorization: 'Bearer menu-auth-token' }),
+      }),
+    )
+  })
+
   it('fails loudly when the availability change is refused', async () => {
     json({ detail: 'Produto não encontrado.' }, 404)
 

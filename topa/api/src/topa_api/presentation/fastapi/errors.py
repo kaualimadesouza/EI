@@ -8,10 +8,14 @@ from pydantic import BaseModel
 from topa_api.domain.errors import (
     DomainError,
     EmptyOrderError,
+    ForbiddenStoreAccessError,
+    InvalidCredentialsError,
+    InvalidTokenError,
     OrderNotFoundError,
     ProductNotFoundError,
     ProductUnavailableError,
     QuantityOutOfRangeError,
+    RateLimitExceededError,
     StatusChangeNotAllowedError,
     StoreNotFoundError,
     UnknownProductError,
@@ -28,6 +32,10 @@ ERROR_STATUS: dict[type[DomainError], int] = {
     OrderNotFoundError: 404,
     ProductNotFoundError: 404,
     StatusChangeNotAllowedError: 409,
+    InvalidCredentialsError: 401,
+    InvalidTokenError: 401,
+    ForbiddenStoreAccessError: 403,
+    RateLimitExceededError: 429,
 }
 
 INVALID_REQUEST = "Não foi possível processar a solicitação. Tente de novo."
@@ -42,9 +50,13 @@ class ErrorResponse(BaseModel):
 def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(DomainError)
     async def handle_domain_error(request: Request, error: DomainError) -> JSONResponse:
+        headers = {}
+        if isinstance(error, RateLimitExceededError):
+            headers["Retry-After"] = str(error.retry_after)
         return JSONResponse(
             status_code=ERROR_STATUS[type(error)],
             content=ErrorResponse(detail=str(error)).model_dump(),
+            headers=headers if headers else None,
         )
 
     @app.exception_handler(RequestValidationError)

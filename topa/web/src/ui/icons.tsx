@@ -85,3 +85,6 @@ export const BoardIcon = (props: IconProps) => <Stroke d="M4 4h4v16H4zM10 4h4v10
 export const ChartIcon = (props: IconProps) => <Stroke d="M4 20h16M7 16v-4M12 16V7M17 16v-7" {...props} />
 export const ListIcon = (props: IconProps) => <Stroke d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" {...props} />
 export const ExternalIcon = (props: IconProps) => <Stroke d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6" {...props} />
+export const LogoutIcon = (props: IconProps) => (
+  <Stroke d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" {...props} />
+)

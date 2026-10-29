@@ -7,6 +7,7 @@ import type { OrderDraft, OrderSummary } from '../../domain/order'
 import { DEMO_STORE_SLUG } from '../../domain/store'
 import type { Adapters } from '../../ports/adapters'
 import { OrderRejectedError } from '../../ports/orders'
+import { LocalAuth } from '../../adapters/local/local-auth'
 import { LocalMenu } from '../../adapters/local/local-menu'
 import { LocalOrders } from '../../adapters/local/local-orders'
 import { UnavailableBuzzer } from '../../adapters/unavailable/unavailable-buzzer'
@@ -31,7 +32,7 @@ const at = (day: number, hour: number, minute = 0) => () => new Date(2026, 9, da
 const xsalada: OrderDraft = { storeSlug: DEMO_STORE_SLUG, lines: [{ productId: 'xsalada', quantity: 2 }], dineIn: true, paymentMethod: 'card' }
 const coxinha: OrderDraft = { storeSlug: DEMO_STORE_SLUG, lines: [{ productId: 'coxinha', quantity: 1 }], dineIn: false, paymentMethod: 'pix' }
 
-function demoStore() {
+function demoStore(storeSlug: string = DEMO_STORE_SLUG) {
   const storage = new MemoryStorage()
   const menu = new LocalMenu(storage)
   const ordersAt = (clock: () => Date) => new LocalOrders(menu, storage, clock)
@@ -40,6 +41,11 @@ function demoStore() {
     connection: { isReachable: () => Promise.resolve(true) },
     menu,
     orders: ordersAt(() => NOW),
+    auth: new LocalAuth({
+      storage,
+      initialMerchant: { email: 'admin@bemtevi.topa.com', storeSlug },
+      initialToken: 'demo-token',
+    }),
     nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
     tag: new UnavailableTag(),
     buzzer: new UnavailableBuzzer(),
@@ -278,6 +284,12 @@ describe('PainelApp', () => {
       connection: { isReachable: () => Promise.resolve(false) },
       menu: { load: () => Promise.reject(new Error('down')), setAvailability: vi.fn() },
       orders: { place: vi.fn(), list: () => Promise.reject(new Error('down')), setStatus: vi.fn(), statusOf: vi.fn() },
+      auth: {
+        login: vi.fn(),
+        logout: vi.fn(),
+        getToken: () => 'token',
+        getMerchant: () => ({ email: 'admin@bemtevi.topa.com', storeSlug: DEMO_STORE_SLUG }),
+      },
       nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
       tag: new UnavailableTag(),
       buzzer: new UnavailableBuzzer(),
@@ -317,6 +329,12 @@ describe('PainelApp', () => {
         setAvailability: () => Promise.reject(new Error('network')),
       },
       orders: { place: vi.fn(), list: () => Promise.resolve([order]), setStatus, statusOf: vi.fn() },
+      auth: {
+        login: vi.fn(),
+        logout: vi.fn(),
+        getToken: () => 'token',
+        getMerchant: () => ({ email: 'admin@bemtevi.topa.com', storeSlug: DEMO_STORE_SLUG }),
+      },
       nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
       tag: new UnavailableTag(),
       buzzer: new UnavailableBuzzer(),
@@ -356,6 +374,12 @@ describe('PainelApp', () => {
       connection: { isReachable: () => Promise.resolve(true) },
       menu: { load, setAvailability },
       orders: { place: vi.fn(), list, setStatus: vi.fn(), statusOf: vi.fn() },
+      auth: {
+        login: vi.fn(),
+        logout: vi.fn(),
+        getToken: () => 'token',
+        getMerchant: () => ({ email: 'admin@bemtevi.topa.com', storeSlug: 'cantina-central' }),
+      },
       nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
       tag: new UnavailableTag(),
       buzzer: new UnavailableBuzzer(),
@@ -375,7 +399,7 @@ describe('PainelApp', () => {
 
   it('never shows another store name while the store is still loading', () => {
     const adapters: Adapters = {
-      ...demoStore().adapters,
+      ...demoStore('cantina-central').adapters,
       menu: { load: () => new Promise(() => {}), setAvailability: vi.fn() },
       orders: { place: vi.fn(), list: () => new Promise(() => {}), setStatus: vi.fn(), statusOf: vi.fn() },
     }
@@ -387,7 +411,7 @@ describe('PainelApp', () => {
 
   it('tells the merchant the store in the address does not exist, and stops asking for its orders', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
-    const { adapters } = demoStore()
+    const { adapters } = demoStore('padaria-inexistente')
     const list = vi.spyOn(adapters.orders, 'list')
 
     render(<PainelApp adapters={adapters} storeSlug="padaria-inexistente" now={() => NOW} />)
@@ -412,5 +436,73 @@ describe('PainelApp', () => {
     await user.click(buttons[0])
     await user.click(buttons[1])
     expect(onSwitch).toHaveBeenCalledTimes(2)
+  })
+
+  it('renders login screen when not logged in', () => {
+    const { adapters } = demoStore()
+    adapters.auth.logout()
+
+    render(<PainelApp adapters={adapters} storeSlug={DEMO_STORE_SLUG} now={() => NOW} />)
+
+    expect(screen.getByLabelText('E-mail')).toBeInTheDocument()
+    expect(screen.getByLabelText('Senha')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        /Ao entrar, você concorda com a Política de Privacidade \(LGPD\)\. Seus dados de acesso são utilizados exclusivamente para autenticação e gestão da loja\./,
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Pedidos em andamento')).not.toBeInTheDocument()
+  })
+
+  it('logs in via login form and shows the dashboard', async () => {
+    const user = userEvent.setup()
+    const { adapters } = demoStore()
+    adapters.auth.logout()
+
+    render(<PainelApp adapters={adapters} storeSlug={DEMO_STORE_SLUG} now={() => NOW} />)
+
+    await user.type(screen.getByLabelText('E-mail'), 'admin@bemtevi.topa.com')
+    await user.type(screen.getByLabelText('Senha'), 'topa123')
+    await user.click(screen.getByRole('button', { name: 'Entrar' }))
+
+    expect(await screen.findByText('Pedidos em andamento')).toBeInTheDocument()
+  })
+
+  it('shows unauthorized screen when merchant store does not match painel store', async () => {
+    const user = userEvent.setup()
+    const { adapters } = demoStore('outra-loja')
+
+    render(<PainelApp adapters={adapters} storeSlug={DEMO_STORE_SLUG} now={() => NOW} />)
+
+    expect(await screen.findByRole('heading', { name: 'Acesso não autorizado' })).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        `Seu usuário pertence à loja outra-loja. Você não tem permissão para gerenciar a loja ${DEMO_STORE_SLUG}.`,
+      ),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Sair' }))
+    expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument()
+  })
+
+  it('logs out and returns to login screen when clicking Sair', async () => {
+    const user = userEvent.setup()
+    const { adapters } = demoStore()
+
+    const { unmount } = render(<PainelApp adapters={adapters} storeSlug={DEMO_STORE_SLUG} now={() => NOW} />)
+    expect(await screen.findByText('Pedidos em andamento')).toBeInTheDocument()
+    const logoutButtons = screen.getAllByRole('button', { name: 'Sair' })
+    expect(logoutButtons.length).toBe(2)
+    await user.click(logoutButtons[0])
+    expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument()
+    expect(screen.queryByText('Pedidos em andamento')).not.toBeInTheDocument()
+    unmount()
+
+    await adapters.auth.login({ email: 'admin@bemtevi.topa.com', password: 'topa123' })
+    render(<PainelApp adapters={adapters} storeSlug={DEMO_STORE_SLUG} now={() => NOW} />)
+    const headerLogout = screen.getAllByRole('button', { name: 'Sair' })[1]
+    await user.click(headerLogout)
+    expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument()
   })
 })
