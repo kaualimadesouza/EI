@@ -9,8 +9,10 @@ from topa_api.application.change_order_status import ChangeOrderStatusUseCase
 from topa_api.application.list_orders import ListOrdersUseCase
 from topa_api.application.place_order import PlaceOrder, PlaceOrderUseCase
 from topa_api.application.read_order import ReadOrderUseCase
+from topa_api.domain.catalog import DEFAULT_STORE_SLUG
 from topa_api.domain.orders import Order, OrderLine, OrderStatus, PaymentMethod
 from topa_api.presentation.fastapi.dependencies import (
+    StoreSlug,
     get_change_order_status_use_case,
     get_list_orders_use_case,
     get_place_order_use_case,
@@ -29,6 +31,7 @@ class OrderItemRequest(BaseModel):
 
 
 class PlaceOrderRequest(BaseModel):
+    store_slug: StoreSlug = DEFAULT_STORE_SLUG
     items: list[OrderItemRequest]
     dine_in: bool
     payment_method: PaymentMethod
@@ -47,6 +50,7 @@ class OrderItemResponse(BaseModel):
 
 class OrderResponse(BaseModel):
     id: uuid.UUID
+    store_slug: str
     number: int
     status: OrderStatus
     dine_in: bool
@@ -60,6 +64,7 @@ class OrderResponse(BaseModel):
     "/orders",
     status_code=201,
     responses={
+        404: {"model": ErrorResponse, "description": "no store has that slug"},
         409: {"model": ErrorResponse, "description": "a product sold out, or a retry is needed"},
         422: {"model": ErrorResponse, "description": "empty order, bad quantity, unknown product"},
     },
@@ -70,6 +75,7 @@ def place_order(
 ) -> OrderResponse:
     order = use_case.execute(
         PlaceOrder(
+            store_slug=request.store_slug,
             lines=tuple(
                 OrderLine(product_id=item.product_id, quantity=item.quantity)
                 for item in request.items
@@ -83,14 +89,18 @@ def place_order(
 
 @router.get(
     "/orders",
-    responses={422: {"model": ErrorResponse, "description": "the date is not YYYY-MM-DD"}},
+    responses={
+        404: {"model": ErrorResponse, "description": "no store has that slug"},
+        422: {"model": ErrorResponse, "description": "the date is not YYYY-MM-DD"},
+    },
 )
 def list_orders(
     use_case: Annotated[ListOrdersUseCase, Depends(get_list_orders_use_case)],
     business_date: Annotated[date | None, Query(alias="date")] = None,
+    store_slug: Annotated[StoreSlug, Query(alias="loja")] = DEFAULT_STORE_SLUG,
 ) -> list[OrderResponse]:
     """A business day's orders by number: today in São Paulo unless `date` names another."""
-    return [_order_response(order) for order in use_case.execute(business_date)]
+    return [_order_response(order) for order in use_case.execute(store_slug, business_date)]
 
 
 @router.get(
@@ -127,6 +137,7 @@ def change_order_status(
 def _order_response(order: Order) -> OrderResponse:
     return OrderResponse(
         id=order.id,
+        store_slug=order.store_slug,
         number=order.number,
         status=order.status,
         dine_in=order.dine_in,

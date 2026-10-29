@@ -57,20 +57,21 @@ export function ChoiceButtons({ secondary, primary, onSecondary, onPrimary }: Ch
 }
 
 interface HeaderProps {
+  storeName: string | null
   dineIn: boolean
   cartEmpty: boolean
   locked: boolean
   onCancel: () => void
 }
 
-export function KioskHeader({ dineIn, cartEmpty, locked, onCancel }: HeaderProps) {
+export function KioskHeader({ storeName, dineIn, cartEmpty, locked, onCancel }: HeaderProps) {
   return (
     <header className="flex h-[104px] flex-none items-center gap-4 border-b border-line bg-white px-12 short:h-20 max-sm:h-20 max-sm:gap-3 max-sm:px-4 phone:h-16 phone:gap-2 phone:pr-2">
       <span className="flex-none max-sm:hidden">
         <StoreMark size={48} />
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-[22px] font-semibold max-sm:text-[17px] phone:text-body">Lanchonete Bem-te-vi</span>
+        <span className="truncate text-[22px] font-semibold max-sm:text-[17px] phone:text-body">{storeName ?? 'TOPA'}</span>
         <span className="flex items-center gap-2 text-[18px] text-muted max-sm:text-[14px]">
           {dineIn ? <DineInIcon size={20} /> : <TakeAwayIcon size={20} />}
           {dineIn ? 'Comer aqui' : 'Para viagem'}

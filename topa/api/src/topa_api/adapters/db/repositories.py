@@ -5,31 +5,49 @@ from datetime import date
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session, selectinload
 
-from topa_api.adapters.db.models import OrderItemRow, OrderRow, ProductRow
-from topa_api.domain.catalog import Category, Product
+from topa_api.adapters.db.models import OrderItemRow, OrderRow, ProductRow, StoreRow
+from topa_api.domain.catalog import DEFAULT_STORE_SLUG, Category, Product, Store
 from topa_api.domain.orders import Order, OrderItem, OrderStatus, PaymentMethod
 
-# namespace of the per-day number lock, so it never meets another advisory lock
+# namespace of the per-store-day number lock, so it never meets another advisory lock
 ORDER_NUMBER_LOCK = 1
 
 # items in a second query, not a join: Postgres refuses FOR UPDATE on an outer join
 WITH_ITEMS = selectinload(OrderRow.items).joinedload(OrderItemRow.product)
 
 
+class SqlAlchemyStoreRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def get(self, slug: str) -> Store | None:
+        row = self._session.get(StoreRow, slug)
+        return None if row is None else Store(slug=row.slug, name=row.name)
+
+
 class SqlAlchemyProductRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def list_all(self) -> list[Product]:
-        rows = self._session.scalars(select(ProductRow).order_by(ProductRow.position))
+    def list_for_store(self, store_slug: str) -> list[Product]:
+        rows = self._session.scalars(
+            select(ProductRow)
+            .where(ProductRow.store_slug == store_slug)
+            .order_by(ProductRow.position)
+        )
         return [_product_of(row) for row in rows]
 
-    def find(self, product_ids: Collection[str]) -> list[Product]:
-        rows = self._session.scalars(select(ProductRow).where(ProductRow.id.in_(product_ids)))
+    def find(self, store_slug: str, product_ids: Collection[str]) -> list[Product]:
+        rows = self._session.scalars(
+            select(ProductRow).where(
+                ProductRow.store_slug == store_slug,
+                ProductRow.id.in_(product_ids),
+            )
+        )
         return [_product_of(row) for row in rows]
 
-    def set_availability(self, product_id: str, available: bool) -> Product | None:
-        row = self._session.get(ProductRow, product_id)
+    def set_availability(self, store_slug: str, product_id: str, available: bool) -> Product | None:
+        row = self._session.get(ProductRow, (store_slug, product_id))
         if row is None:
             return None
         row.available = available
@@ -40,19 +58,29 @@ class SqlAlchemyOrderRepository:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    def next_number(self, business_date: date) -> int:
+    def next_number(self, store_slug: str, business_date: date) -> int:
         # held to the commit; the max() below then sees the last commit, which needs READ COMMITTED
+        if store_slug == DEFAULT_STORE_SLUG:
+            # the pre-stores key, so instances still on the old image wait too during a deploy
+            self._session.execute(
+                select(func.pg_advisory_xact_lock(ORDER_NUMBER_LOCK, business_date.toordinal()))
+            )
+        lock_key = f"{store_slug}:{business_date.isoformat()}"
         self._session.execute(
-            select(func.pg_advisory_xact_lock(ORDER_NUMBER_LOCK, business_date.toordinal()))
+            select(func.pg_advisory_xact_lock(func.hashtextextended(lock_key, ORDER_NUMBER_LOCK)))
         )
         highest = self._session.scalar(
-            select(func.max(OrderRow.number)).where(OrderRow.business_date == business_date)
+            select(func.max(OrderRow.number)).where(
+                OrderRow.store_slug == store_slug,
+                OrderRow.business_date == business_date,
+            )
         )
         return (highest or 0) + 1
 
     def add(self, order: Order) -> None:
         row = OrderRow(
             id=order.id,
+            store_slug=order.store_slug,
             business_date=order.business_date,
             number=order.number,
             status=order.status.value,
@@ -62,6 +90,7 @@ class SqlAlchemyOrderRepository:
             created_at=order.created_at,
             items=[
                 OrderItemRow(
+                    store_slug=order.store_slug,
                     product_id=item.product_id,
                     quantity=item.quantity,
                     unit_price_cents=item.unit_price_cents,
@@ -71,10 +100,13 @@ class SqlAlchemyOrderRepository:
         )
         self._session.add(row)
 
-    def list_for_day(self, business_date: date) -> list[Order]:
+    def list_for_day(self, store_slug: str, business_date: date) -> list[Order]:
         rows = self._session.scalars(
             select(OrderRow)
-            .where(OrderRow.business_date == business_date)
+            .where(
+                OrderRow.store_slug == store_slug,
+                OrderRow.business_date == business_date,
+            )
             .order_by(OrderRow.number)
             .options(WITH_ITEMS)
         )
@@ -108,6 +140,7 @@ def _product_of(row: ProductRow) -> Product:
 def _order_of(row: OrderRow) -> Order:
     return Order(
         id=row.id,
+        store_slug=row.store_slug,
         number=row.number,
         business_date=row.business_date,
         status=OrderStatus(row.status),

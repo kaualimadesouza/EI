@@ -27,6 +27,11 @@ class ProductUnavailableError(DomainError):
         super().__init__(f"{product_name} esgotou.")
 
 
+class StoreNotFoundError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Loja não encontrada.")
+
+
 class OrderNotFoundError(DomainError):
     def __init__(self) -> None:
         super().__init__("Pedido não encontrado.")

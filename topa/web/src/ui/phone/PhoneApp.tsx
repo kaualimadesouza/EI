@@ -16,7 +16,6 @@ export function PhoneApp({ adapters, onSwitchRole }: PhoneAppProps) {
   const [store, setStore] = useState<StoreRef | null>(null)
 
   if (!store) return <PhoneHome nfc={adapters.nfc} onStore={setStore} onSwitchRole={onSwitchRole} />
-  // demo mode serves one catalog whatever the slug; the API will pick the store's menu from it
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
       <button
@@ -27,7 +26,7 @@ export function PhoneApp({ adapters, onSwitchRole }: PhoneAppProps) {
         <ArrowLeftIcon size={20} />
         Ler outro totem
       </button>
-      <KioskApp adapters={adapters} onCustomerPhone />
+      <KioskApp key={store.slug} adapters={adapters} storeSlug={store.slug} surface="phone" />
     </div>
   )
 }

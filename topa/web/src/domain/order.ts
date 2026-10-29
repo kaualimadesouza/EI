@@ -1,6 +1,7 @@
 import type { CartLine } from './cart'
 
 export interface OrderDraft {
+  storeSlug: string
   lines: CartLine[]
   dineIn: boolean
   paymentMethod: 'card' | 'pix'

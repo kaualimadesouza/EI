@@ -156,6 +156,7 @@ class TestBusinessDate:
 def test_order_total_is_the_sum_of_its_items() -> None:
     order = Order(
         id=uuid.uuid4(),
+        store_slug="lanchonete-bem-te-vi",
         number=1,
         business_date=date(2026, 10, 26),
         status=OrderStatus.RECEIVED,
@@ -174,6 +175,7 @@ def test_order_total_is_the_sum_of_its_items() -> None:
 def _order_in(status: OrderStatus, number: int = 47) -> Order:
     return Order(
         id=uuid.uuid4(),
+        store_slug="lanchonete-bem-te-vi",
         number=number,
         business_date=date(2026, 10, 26),
         status=status,

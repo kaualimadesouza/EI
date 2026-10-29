@@ -114,6 +114,26 @@ def test_an_unknown_product_is_not_found(client: TestClient) -> None:
     assert response.json() == {"detail": "Produto não encontrado."}
 
 
+def test_products_for_an_unknown_store_are_not_found(client: TestClient) -> None:
+    listed = client.get("/products", params={"loja": "padaria-inexistente"})
+    patched = client.patch(
+        "/products/coxinha",
+        params={"loja": "padaria-inexistente"},
+        json={"available": False},
+    )
+
+    assert (listed.status_code, listed.json()) == (404, {"detail": "Loja não encontrada."})
+    assert (patched.status_code, patched.json()) == (404, {"detail": "Loja não encontrada."})
+
+
+def test_products_for_a_malformed_store_slug_get_the_generic_message(client: TestClient) -> None:
+    for slug in ("", "Cantina", "a" * 65):
+        listed = client.get("/products", params={"loja": slug})
+        patched = client.patch("/products/coxinha", params={"loja": slug}, json={"available": True})
+        assert (listed.status_code, listed.json()) == (422, {"detail": INVALID_REQUEST})
+        assert (patched.status_code, patched.json()) == (422, {"detail": INVALID_REQUEST})
+
+
 @pytest.mark.parametrize(
     "payload",
     [{}, {"available": "talvez"}, {"available": None}],

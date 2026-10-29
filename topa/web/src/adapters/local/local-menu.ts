@@ -1,9 +1,10 @@
 import { DEMO_CATALOG } from '../../domain/demo-catalog'
 import { findProduct, type Product } from '../../domain/menu'
-import type { MenuPort } from '../../ports/menu'
+import { DEMO_STORE_NAME, DEMO_STORE_SLUG, type StoreMenu } from '../../domain/store'
+import { StoreNotFoundError, type MenuPort } from '../../ports/menu'
 import { browserStorage, StoredValue, type KeyValueStore } from './browser-storage'
 
-/** The demo catalog plus what the dashboard marked sold out, shared by every tab of this browser. */
+/** The demo store plus what the dashboard marked sold out, shared by every tab of this browser. */
 export class LocalMenu implements MenuPort {
   private readonly soldOut: StoredValue<string[]>
 
@@ -11,12 +12,17 @@ export class LocalMenu implements MenuPort {
     this.soldOut = new StoredValue<string[]>(storage, 'topa.sold-out', [])
   }
 
-  list(): Promise<Product[]> {
+  load(storeSlug: string): Promise<StoreMenu> {
+    if (storeSlug !== DEMO_STORE_SLUG) return Promise.reject(new StoreNotFoundError())
     const soldOut = this.soldOut.read()
-    return Promise.resolve(DEMO_CATALOG.map((product) => ({ ...product, available: !soldOut.includes(product.id) })))
+    return Promise.resolve({
+      store: { slug: DEMO_STORE_SLUG, name: DEMO_STORE_NAME },
+      products: DEMO_CATALOG.map((product) => ({ ...product, available: !soldOut.includes(product.id) })),
+    })
   }
 
-  setAvailability(productId: string, available: boolean): Promise<Product> {
+  setAvailability(productId: string, available: boolean, storeSlug: string): Promise<Product> {
+    if (storeSlug !== DEMO_STORE_SLUG) return Promise.reject(new StoreNotFoundError())
     const product = findProduct(DEMO_CATALOG, productId)
     if (!product) return Promise.reject(new Error(`No product ${productId} in the demo catalog`))
     const others = this.soldOut.read().filter((id) => id !== productId)

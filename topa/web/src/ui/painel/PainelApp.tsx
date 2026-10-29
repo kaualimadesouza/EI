@@ -4,7 +4,9 @@ import { metricsOf } from '../../domain/metrics'
 import type { Product } from '../../domain/menu'
 import { ageMinutes, displayNumber, type OrderSummary } from '../../domain/order'
 import { nextStatus } from '../../domain/status'
+import { DEMO_STORE_SLUG } from '../../domain/store'
 import type { Adapters } from '../../ports/adapters'
+import { StoreNotFoundError } from '../../ports/menu'
 import { OrderRejectedError } from '../../ports/orders'
 import { AlertIcon, BoardIcon, ChartIcon, ExternalIcon, ListIcon, StoreMark, UndoIcon } from '../icons'
 import { HourlyChart } from './HourlyChart'
@@ -14,6 +16,7 @@ import { OrdersBoard } from './OrdersBoard'
 
 interface PainelAppProps {
   adapters: Adapters
+  storeSlug?: string
   now?: () => Date
 }
 
@@ -48,7 +51,9 @@ function dayBefore(date: Date): Date {
   return previous
 }
 
-export function PainelApp({ adapters, now = () => new Date() }: PainelAppProps) {
+export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => new Date() }: PainelAppProps) {
+  const [storeName, setStoreName] = useState<string | null>(null)
+  const [notFound, setNotFound] = useState(false)
   const [orders, setOrders] = useState<OrderSummary[]>([])
   const [yesterday, setYesterday] = useState<OrderSummary[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -61,29 +66,49 @@ export function PainelApp({ adapters, now = () => new Date() }: PainelAppProps) 
   const todayKey = businessDate(today)
 
   const refresh = useCallback(() => {
-    adapters.orders.list(todayKey).then(
+    adapters.orders.list(todayKey, storeSlug).then(
       (list) => {
         setOrders(list)
         setOffline(false)
       },
-      () => setOffline(true),
+      (error: unknown) => {
+        if (error instanceof StoreNotFoundError) {
+          setNotFound(true)
+        } else {
+          setOffline(true)
+        }
+      },
     )
-  }, [adapters.orders, todayKey])
+  }, [adapters.orders, storeSlug, todayKey])
 
   // polling keeps a kiosk tab and this one in step, through the API or the shared browser storage
   useEffect(() => {
+    if (notFound) return
     refresh()
     const timer = setInterval(refresh, POLL_MS)
     return () => clearInterval(timer)
-  }, [refresh])
+  }, [notFound, refresh])
 
   useEffect(() => {
-    adapters.orders.list(businessDate(dayBefore(new Date(`${todayKey}T12:00:00`)))).then(setYesterday, () => setYesterday([]))
-  }, [adapters.orders, todayKey])
+    const yesterdayKey = businessDate(dayBefore(new Date(`${todayKey}T12:00:00`)))
+    adapters.orders.list(yesterdayKey, storeSlug).then(setYesterday, () => setYesterday([]))
+  }, [adapters.orders, storeSlug, todayKey])
 
   useEffect(() => {
-    adapters.menu.list().then(setProducts, () => setOffline(true))
-  }, [adapters.menu])
+    adapters.menu.load(storeSlug).then(
+      (menu) => {
+        setStoreName(menu.store.name)
+        setProducts(menu.products)
+      },
+      (error: unknown) => {
+        if (error instanceof StoreNotFoundError) {
+          setNotFound(true)
+        } else {
+          setOffline(true)
+        }
+      },
+    )
+  }, [adapters.menu, storeSlug])
 
   useEffect(() => {
     if (!undo) return
@@ -118,7 +143,7 @@ export function PainelApp({ adapters, now = () => new Date() }: PainelAppProps) 
 
   const setAvailability = async (product: Product, available: boolean) => {
     try {
-      const updated = await adapters.menu.setAvailability(product.id, available)
+      const updated = await adapters.menu.setAvailability(product.id, available, storeSlug)
       setProducts((list) => list.map((p) => (p.id === updated.id ? updated : p)))
       setProblem(null)
     } catch {
@@ -135,13 +160,24 @@ export function PainelApp({ adapters, now = () => new Date() }: PainelAppProps) 
   if (late.length > 1) alerts.push(`${late.length} pedidos esperam há mais de 10 min.`)
   if (soldOut.length > 0) alerts.push(`Esgotados no totem: ${soldOut.map((p) => p.name).join(', ')}.`)
 
+  if (notFound) {
+    return (
+      <section role="alert" className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-cream px-8 text-center text-ink">
+        <h1 className="text-title font-bold">Loja não encontrada</h1>
+        <p className="max-w-[36ch] text-body text-muted">
+          Confira o identificador da loja no endereço do painel.
+        </p>
+      </section>
+    )
+  }
+
   return (
     <div className="flex min-h-dvh bg-cream text-ink">
       <aside className="sticky top-0 flex h-dvh w-60 flex-none flex-col gap-8 border-r border-line bg-ground-2 px-4 py-6 max-xl:w-[76px] max-xl:px-3 max-md:hidden">
         <div className="flex items-center gap-3 px-2 max-xl:justify-center max-xl:px-0">
           <StoreMark size={40} />
           <span className="flex flex-col max-xl:hidden">
-            <span className="text-[16px] font-semibold">Lanchonete Bem-te-vi</span>
+            <span className="text-[16px] font-semibold">{storeName ?? 'TOPA'}</span>
             <span className="text-[13px] text-muted">Painel do lojista</span>
           </span>
         </div>

@@ -7,11 +7,11 @@ from typing import Annotated
 import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy import Engine, func, select
+from sqlalchemy import Engine, func, insert, select
 from sqlalchemy.orm import Session
 
 from tests.fakes import FixedClock
-from topa_api.adapters.db.models import OrderItemRow, OrderRow
+from topa_api.adapters.db.models import OrderItemRow, OrderRow, ProductRow, StoreRow
 from topa_api.adapters.db.session import get_engine
 from topa_api.entrypoints.rest_application import create_app, get_session
 
@@ -45,6 +45,7 @@ def test_placing_an_order_returns_its_number_and_the_priced_items(client: TestCl
     body = response.json()
     assert uuid.UUID(body.pop("id"))
     assert body == {
+        "store_slug": "lanchonete-bem-te-vi",
         "number": 1,
         "status": "received",
         "dine_in": False,
@@ -350,3 +351,62 @@ def test_a_malformed_status_change_gets_the_generic_message(
     assert response.status_code == 422
     assert response.json() == {"detail": INVALID_REQUEST}
     assert f"invalid request to /orders/{order_id}" in caplog.text
+
+
+def test_orders_and_daily_numbers_are_isolated_per_store(
+    client: TestClient, db_engine: Engine
+) -> None:
+    with db_engine.begin() as connection:
+        connection.execute(insert(StoreRow).values(slug="cantina-central", name="Cantina Central"))
+        connection.execute(
+            insert(ProductRow).values(
+                store_slug="cantina-central",
+                id="cafe",
+                position=1,
+                name="Café expresso",
+                description="50 ml.",
+                category="bebidas",
+                price_cents=700,
+                available=True,
+            )
+        )
+
+    bem_te_vi = client.post("/orders", json=_order(("cafe", 1))).json()
+    cantina = client.post(
+        "/orders", json={**_order(("cafe", 1)), "store_slug": "cantina-central"}
+    ).json()
+
+    assert (bem_te_vi["store_slug"], bem_te_vi["number"], bem_te_vi["total_cents"]) == (
+        "lanchonete-bem-te-vi",
+        1,
+        550,
+    )
+    assert (cantina["store_slug"], cantina["number"], cantina["total_cents"]) == (
+        "cantina-central",
+        1,
+        700,
+    )
+    assert client.get("/orders").json() == [bem_te_vi]
+    assert client.get("/orders", params={"loja": "cantina-central"}).json() == [cantina]
+
+
+def test_placing_or_listing_orders_for_an_unknown_store_is_not_found(
+    client: TestClient,
+) -> None:
+    placed = client.post(
+        "/orders", json={**_order(("cafe", 1)), "store_slug": "padaria-inexistente"}
+    )
+    listed = client.get("/orders", params={"loja": "padaria-inexistente"})
+
+    assert (placed.status_code, placed.json()) == (404, {"detail": "Loja não encontrada."})
+    assert (listed.status_code, listed.json()) == (404, {"detail": "Loja não encontrada."})
+
+
+def test_a_malformed_store_slug_on_orders_gets_the_generic_message(
+    client: TestClient,
+) -> None:
+    placed = client.post("/orders", json={**_order(("cafe", 1)), "store_slug": "Cantina"})
+    listed = client.get("/orders", params={"loja": "Cantina"})
+
+    assert (placed.status_code, placed.json()) == (422, {"detail": INVALID_REQUEST})
+    assert (listed.status_code, listed.json()) == (422, {"detail": INVALID_REQUEST})

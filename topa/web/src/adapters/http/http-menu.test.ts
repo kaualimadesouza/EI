@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { StoreNotFoundError } from '../../ports/menu'
 import { HttpClient } from './http-client'
 import { HttpMenu } from './http-menu'
 
@@ -9,39 +10,59 @@ const json = (body: unknown, status = 200) =>
 afterEach(() => vi.restoreAllMocks())
 
 describe('HttpMenu', () => {
-  it('reads the products and maps them to the domain shape', async () => {
-    const fetchFn = json([
-      { id: 'suco', name: 'Suco de laranja', description: 'Natural, 300 ml.', category: 'bebidas', price_cents: 990, available: false },
-    ])
+  it('loads a store and maps its products to the domain shape', async () => {
+    const fetchFn = json({
+      store: { slug: 'cantina-central', name: 'Cantina Central' },
+      products: [
+        { id: 'suco', name: 'Suco de laranja', description: 'Natural, 300 ml.', category: 'bebidas', price_cents: 990, available: false },
+      ],
+    })
 
-    const products = await new HttpMenu(new HttpClient('/api')).list()
+    const menu = await new HttpMenu(new HttpClient('/api')).load('cantina-central')
 
-    expect(fetchFn).toHaveBeenCalledWith('/api/products', { signal: expect.any(AbortSignal) })
-    expect(products).toEqual([
-      { id: 'suco', name: 'Suco de laranja', description: 'Natural, 300 ml.', category: 'bebidas', priceCents: 990, available: false },
-    ])
+    expect(fetchFn).toHaveBeenCalledWith('/api/menu?loja=cantina-central', { signal: expect.any(AbortSignal) })
+    expect(menu).toEqual({
+      store: { slug: 'cantina-central', name: 'Cantina Central' },
+      products: [
+        { id: 'suco', name: 'Suco de laranja', description: 'Natural, 300 ml.', category: 'bebidas', priceCents: 990, available: false },
+      ],
+    })
+  })
+
+  it('turns an unknown store into StoreNotFoundError', async () => {
+    const menu = new HttpMenu(new HttpClient('/api'))
+
+    json({ detail: 'Loja não encontrada.' }, 404)
+    await expect(menu.load('padaria-inexistente')).rejects.toEqual(new StoreNotFoundError('Loja não encontrada.'))
+
+    vi.restoreAllMocks()
+    json({ detail: [{ msg: 'odd' }] }, 404)
+    await expect(menu.load('padaria-inexistente')).rejects.toEqual(new StoreNotFoundError('Loja não encontrada.'))
   })
 
   it('fails loudly when the API errors', async () => {
     json({}, 500)
     const menu = new HttpMenu(new HttpClient('/api'))
 
-    await expect(menu.list()).rejects.toThrow('GET /products answered 500')
+    await expect(menu.load('lanchonete-bem-te-vi')).rejects.toThrow('GET /menu answered 500')
   })
 
-  it('marks a product sold out and returns it in the domain shape', async () => {
+  it('marks a product sold out for that store and returns it in the domain shape', async () => {
     const fetchSpy = json({ id: 'suco', name: 'Suco de laranja', description: 'Natural, 300 ml.', category: 'bebidas', price_cents: 990, available: false })
 
-    const product = await new HttpMenu(new HttpClient('/api')).setAvailability('suco', false)
+    const product = await new HttpMenu(new HttpClient('/api')).setAvailability('suco', false, 'cantina-central')
 
-    expect(fetchSpy).toHaveBeenCalledWith('/api/products/suco', expect.objectContaining({ method: 'PATCH', body: '{"available":false}' }))
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/products/suco?loja=cantina-central',
+      expect.objectContaining({ method: 'PATCH', body: '{"available":false}' }),
+    )
     expect(product).toMatchObject({ id: 'suco', priceCents: 990, available: false })
   })
 
   it('fails loudly when the availability change is refused', async () => {
     json({ detail: 'Produto não encontrado.' }, 404)
 
-    await expect(new HttpMenu(new HttpClient('/api')).setAvailability('gone', true)).rejects.toThrow(
+    await expect(new HttpMenu(new HttpClient('/api')).setAvailability('gone', true, 'lanchonete-bem-te-vi')).rejects.toThrow(
       'PATCH /products/gone answered 404',
     )
   })

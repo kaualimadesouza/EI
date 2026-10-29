@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { StoreNotFoundError } from '../../ports/menu'
 import { OrderRejectedError } from '../../ports/orders'
 import { HttpClient } from './http-client'
 import { HttpOrders } from './http-orders'
@@ -8,6 +9,7 @@ const json = (body: unknown, status = 200) =>
   vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(body), { status }))
 
 const draft = {
+  storeSlug: 'cantina-central',
   lines: [{ productId: 'misto', quantity: 2 }],
   dineIn: false,
   paymentMethod: 'pix' as const,
@@ -15,6 +17,7 @@ const draft = {
 
 const order = (id: string, status: string) => ({
   id,
+  store_slug: 'cantina-central',
   number: 3,
   status,
   dine_in: false,
@@ -27,13 +30,14 @@ const order = (id: string, status: string) => ({
 afterEach(() => vi.restoreAllMocks())
 
 describe('HttpOrders', () => {
-  it('posts the order in the API shape and returns its number and total', async () => {
+  it('posts the order with its store in the API shape and returns its number and total', async () => {
     const fetchFn = json({ ...order('o47', 'received'), number: 47, total_cents: 2980 }, 201)
 
     const placed = await new HttpOrders(new HttpClient('/api')).place(draft)
 
     expect(fetchFn).toHaveBeenCalledWith('/api/orders', expect.objectContaining({ method: 'POST' }))
     expect(JSON.parse(fetchFn.mock.calls[0][1]!.body as string)).toEqual({
+      store_slug: 'cantina-central',
       items: [{ product_id: 'misto', quantity: 2 }],
       dine_in: false,
       payment_method: 'pix',
@@ -41,11 +45,15 @@ describe('HttpOrders', () => {
     expect(placed).toEqual({ id: 'o47', number: 47, totalCents: 2980 })
   })
 
-  it('turns a refusal into the message the API wrote for the customer', async () => {
-    json({ detail: 'Coxinha esgotou.' }, 409)
+  it('turns a refusal or an unknown store into the message the API wrote for the customer', async () => {
     const orders = new HttpOrders(new HttpClient('/api'))
 
+    json({ detail: 'Coxinha esgotou.' }, 409)
     await expect(orders.place(draft)).rejects.toEqual(new OrderRejectedError('Coxinha esgotou.'))
+
+    vi.restoreAllMocks()
+    json({ detail: 'Loja não encontrada.' }, 404)
+    await expect(orders.place(draft)).rejects.toEqual(new OrderRejectedError('Loja não encontrada.'))
   })
 
   it('uses a generic message when the refusal is a validation list', async () => {
@@ -64,10 +72,11 @@ describe('HttpOrders', () => {
     await expect(orders.place(draft)).rejects.toThrow('POST /orders answered 500')
   })
 
-  it('lists one day of orders in the domain shape', async () => {
+  it('lists one day of orders for that store in the domain shape', async () => {
     const fetchSpy = json([
       {
         id: 'o1',
+        store_slug: 'cantina-central',
         number: 3,
         status: 'preparing',
         dine_in: true,
@@ -78,9 +87,12 @@ describe('HttpOrders', () => {
       },
     ])
 
-    const orders = await new HttpOrders(new HttpClient('/api')).list('2026-10-26')
+    const orders = await new HttpOrders(new HttpClient('/api')).list('2026-10-26', 'cantina-central')
 
-    expect(fetchSpy).toHaveBeenCalledWith('/api/orders?date=2026-10-26', { signal: expect.any(AbortSignal) })
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/orders?date=2026-10-26&loja=cantina-central',
+      { signal: expect.any(AbortSignal) },
+    )
     expect(orders).toEqual([
       {
         id: 'o1',
@@ -98,12 +110,29 @@ describe('HttpOrders', () => {
   it('fails loudly when the day cannot be listed', async () => {
     json({}, 500)
 
-    await expect(new HttpOrders(new HttpClient('/api')).list('2026-10-26')).rejects.toThrow('GET /orders answered 500')
+    await expect(new HttpOrders(new HttpClient('/api')).list('2026-10-26', 'cantina-central')).rejects.toThrow(
+      'GET /orders answered 500',
+    )
+  })
+
+  it('tells an unknown store apart from a server failure when listing', async () => {
+    json({ detail: 'Loja não encontrada.' }, 404)
+
+    await expect(new HttpOrders(new HttpClient('/api')).list('2026-10-26', 'padaria')).rejects.toEqual(
+      new StoreNotFoundError('Loja não encontrada.'),
+    )
+
+    vi.restoreAllMocks()
+    json({}, 404)
+    await expect(new HttpOrders(new HttpClient('/api')).list('2026-10-26', 'padaria')).rejects.toEqual(
+      new StoreNotFoundError('Loja não encontrada.'),
+    )
   })
 
   it('moves an order and returns it as the API now has it', async () => {
     const fetchSpy = json({
       id: 'o1',
+      store_slug: 'cantina-central',
       number: 3,
       status: 'ready',
       dine_in: false,

@@ -13,6 +13,7 @@ from topa_api.domain.errors import (
     ProductUnavailableError,
     QuantityOutOfRangeError,
     StatusChangeNotAllowedError,
+    StoreNotFoundError,
     UnknownProductError,
 )
 
@@ -23,6 +24,7 @@ ERROR_STATUS: dict[type[DomainError], int] = {
     QuantityOutOfRangeError: 422,
     UnknownProductError: 422,
     ProductUnavailableError: 409,
+    StoreNotFoundError: 404,
     OrderNotFoundError: 404,
     ProductNotFoundError: 404,
     StatusChangeNotAllowedError: 409,

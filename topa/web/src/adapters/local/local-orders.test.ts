@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { DEMO_STORE_SLUG } from '../../domain/store'
+import { StoreNotFoundError } from '../../ports/menu'
 import { OrderRejectedError } from '../../ports/orders'
 import { LocalMenu } from './local-menu'
 import { LocalOrders } from './local-orders'
@@ -15,6 +17,7 @@ class MemoryStorage {
 }
 
 const draft = {
+  storeSlug: DEMO_STORE_SLUG,
   lines: [
     { productId: 'misto', quantity: 2 },
     { productId: 'suco', quantity: 1 },
@@ -32,7 +35,7 @@ function store(now = monday) {
 }
 
 describe('LocalOrders', () => {
-  it('numbers orders per day and prices them from the menu', async () => {
+  it('numbers orders per store and day and prices them from the menu', async () => {
     const { storage, menu } = store()
 
     const first = await new LocalOrders(menu, storage, monday).place(draft)
@@ -44,11 +47,11 @@ describe('LocalOrders', () => {
     expect(nextDay.number).toBe(1)
   })
 
-  it('lists one day of orders the way the dashboard reads them', async () => {
+  it('lists one day of orders for that store only', async () => {
     const { orders } = store()
     await orders.place(draft)
 
-    const [order] = await orders.list('2026-10-26')
+    const [order] = await orders.list('2026-10-26', DEMO_STORE_SLUG)
 
     expect(order).toMatchObject({
       number: 1,
@@ -63,32 +66,51 @@ describe('LocalOrders', () => {
       ],
     })
     expect(order.id).toEqual(expect.any(String))
-    expect(await orders.list('2026-10-27')).toEqual([])
+    expect(await orders.list('2026-10-27', DEMO_STORE_SLUG)).toEqual([])
   })
 
-  it('refuses a product that left the menu or sold out, like the API', async () => {
-    const { orders, menu } = store()
-    await menu.setAvailability('suco', false)
+  it('refuses to list an unknown store, as the API answers 404', async () => {
+    const { orders } = store()
 
+    await expect(orders.list('2026-10-26', 'outra-loja')).rejects.toBeInstanceOf(StoreNotFoundError)
+  })
+
+  it('refuses an unknown store, a missing product or a sold-out product, like the API', async () => {
+    const { orders, menu } = store()
+    await menu.setAvailability('suco', false, DEMO_STORE_SLUG)
+
+    await expect(orders.place({ ...draft, storeSlug: 'outra-loja' })).rejects.toEqual(
+      new OrderRejectedError('Loja não encontrada.'),
+    )
     await expect(orders.place({ ...draft, lines: [{ productId: 'gone', quantity: 1 }] })).rejects.toEqual(
       new OrderRejectedError('Um dos produtos não está mais no cardápio.'),
     )
     await expect(orders.place(draft)).rejects.toEqual(new OrderRejectedError('Suco de laranja esgotou.'))
-    expect(await orders.list('2026-10-26')).toEqual([])
+    expect(await orders.list('2026-10-26', DEMO_STORE_SLUG)).toEqual([])
+  })
+
+  it('rethrows unexpected menu failures untouched', async () => {
+    const brokenMenu = {
+      load: () => Promise.reject(new Error('storage offline')),
+      setAvailability: () => Promise.reject(new Error('storage offline')),
+    }
+    const orders = new LocalOrders(brokenMenu, new MemoryStorage(), monday)
+
+    await expect(orders.place(draft)).rejects.toThrow('storage offline')
   })
 
   it('moves one order a step at a time, back for an undo, and leaves the others alone', async () => {
     const { orders, storage, menu } = store()
     await orders.place(draft)
     await orders.place(draft)
-    const [order] = await orders.list('2026-10-26')
+    const [order] = await orders.list('2026-10-26', DEMO_STORE_SLUG)
 
     const preparing = await orders.setStatus(order.id, 'preparing')
     await orders.setStatus(order.id, 'received')
     await orders.setStatus(order.id, 'preparing')
 
     expect(preparing.status).toBe('preparing')
-    const reread = await new LocalOrders(menu, storage, monday).list('2026-10-26')
+    const reread = await new LocalOrders(menu, storage, monday).list('2026-10-26', DEMO_STORE_SLUG)
     expect(reread.map((o) => [o.number, o.status])).toEqual([
       [1, 'preparing'],
       [2, 'received'],
@@ -98,7 +120,7 @@ describe('LocalOrders', () => {
   it('refuses a jump and an unknown order with the messages the API uses', async () => {
     const { orders } = store()
     await orders.place(draft)
-    const [order] = await orders.list('2026-10-26')
+    const [order] = await orders.list('2026-10-26', DEMO_STORE_SLUG)
 
     await expect(orders.setStatus(order.id, 'delivered')).rejects.toEqual(
       new OrderRejectedError('O pedido 001 não pode passar de recebido para entregue.'),
@@ -135,7 +157,7 @@ describe('LocalOrders', () => {
 
     expect(await later(4_999).statusOf(id)).toBe('received')
     expect(await later(5_000).statusOf(id)).toBe('ready')
-    const dashboard = await later(5_000).list('2026-10-26')
+    const dashboard = await later(5_000).list('2026-10-26', DEMO_STORE_SLUG)
     expect(dashboard.map((o) => [o.number, o.status])).toEqual([
       [1, 'ready'],
       [2, 'received'],
@@ -148,7 +170,7 @@ describe('LocalOrders', () => {
 
     const anHourLater = new LocalOrders(menu, storage, () => new Date(monday().getTime() + 3_600_000))
 
-    expect((await anHourLater.list('2026-10-26'))[0].status).toBe('received')
+    expect((await anHourLater.list('2026-10-26', DEMO_STORE_SLUG))[0].status).toBe('received')
   })
 
   it('leaves an order the merchant already started to the merchant', async () => {
@@ -171,6 +193,6 @@ describe('LocalOrders', () => {
     const placed = await new LocalOrders(new LocalMenu()).place(draft)
 
     expect(placed.number).toBe(1)
-    expect(JSON.parse(localStorage.getItem('topa.orders.v2')!)).toHaveLength(1)
+    expect(JSON.parse(localStorage.getItem('topa.orders.v3')!)).toHaveLength(1)
   })
 })

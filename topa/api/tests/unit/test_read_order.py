@@ -10,6 +10,7 @@ from topa_api.domain.orders import Order, OrderItem, OrderStatus, PaymentMethod
 
 PLACED = Order(
     id=uuid.uuid4(),
+    store_slug="lanchonete-bem-te-vi",
     number=7,
     business_date=date(2026, 10, 26),
     status=OrderStatus.READY,

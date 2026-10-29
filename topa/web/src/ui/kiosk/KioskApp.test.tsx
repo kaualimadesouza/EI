@@ -1,11 +1,13 @@
-import { act, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DEMO_CATALOG } from '../../domain/demo-catalog'
-import type { Adapters } from '../../ports/adapters'
 import type { Product } from '../../domain/menu'
 import type { OrderDraft, OrderSummary, PlacedOrder } from '../../domain/order'
+import { DEMO_STORE_NAME, DEMO_STORE_SLUG, type StoreMenu } from '../../domain/store'
+import type { Adapters } from '../../ports/adapters'
+import { StoreNotFoundError } from '../../ports/menu'
 import { OrderRejectedError } from '../../ports/orders'
 import { KioskApp } from './KioskApp'
 import { FOLLOW_MS } from './PagerScreen'
@@ -13,16 +15,21 @@ import { Qr } from './Qr'
 
 interface Fakes {
   adapters: Adapters
+  isReachable: ReturnType<typeof vi.fn<() => Promise<boolean>>>
   place: ReturnType<typeof vi.fn<(draft: OrderDraft) => Promise<PlacedOrder>>>
-  list: ReturnType<typeof vi.fn<() => Promise<Product[]>>>
+  load: ReturnType<typeof vi.fn<(storeSlug: string) => Promise<StoreMenu>>>
   statusOf: ReturnType<typeof vi.fn<(orderId: string) => Promise<OrderSummary['status']>>>
   buzz: ReturnType<typeof vi.fn<() => void>>
   hold: ReturnType<typeof vi.fn<() => () => void>>
   letGo: ReturnType<typeof vi.fn<() => void>>
 }
 
-function fakes(products: Product[] = DEMO_CATALOG.map((p) => ({ ...p }))): Fakes {
-  const list = vi.fn<() => Promise<Product[]>>().mockResolvedValue(products)
+function fakes(
+  products: Product[] = DEMO_CATALOG.map((p) => ({ ...p })),
+  store = { slug: DEMO_STORE_SLUG, name: DEMO_STORE_NAME },
+): Fakes {
+  const isReachable = vi.fn<() => Promise<boolean>>().mockResolvedValue(true)
+  const load = vi.fn<(storeSlug: string) => Promise<StoreMenu>>().mockResolvedValue({ store, products })
   const place = vi
     .fn<(draft: OrderDraft) => Promise<PlacedOrder>>()
     .mockImplementation((draft) =>
@@ -34,15 +41,15 @@ function fakes(products: Product[] = DEMO_CATALOG.map((p) => ({ ...p }))): Fakes
   const hold = vi.fn<() => () => void>(() => letGo)
   const adapters: Adapters = {
     mode: 'demo',
-    connection: { isReachable: () => Promise.resolve(true) },
-    menu: { list, setAvailability: vi.fn() },
+    connection: { isReachable },
+    menu: { load, setAvailability: vi.fn() },
     orders: { place, list: vi.fn(), setStatus: vi.fn(), statusOf },
     nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
     tag: { available: false, publish: vi.fn(), withdraw: vi.fn() },
     buzzer: { buzz },
     wakeLock: { hold },
   }
-  return { adapters, place, list, statusOf, buzz, hold, letGo }
+  return { adapters, isReachable, place, load, statusOf, buzz, hold, letGo }
 }
 
 const PHONE_MENU_URL = 'https://topa-totem.vercel.app/?loja=lanchonete-bem-te-vi'
@@ -51,14 +58,14 @@ const morning = () => new Date(2026, 9, 26, 8, 0)
 
 function setup(f: Fakes = fakes(), now: () => Date = morning) {
   const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) })
-  render(<KioskApp adapters={f.adapters} now={now} />)
+  render(<KioskApp adapters={f.adapters} now={now} storeSlug={DEMO_STORE_SLUG} surface="totem" />)
   return { user, ...f }
 }
 
 // the kiosk opened on the customer's own phone: the phone app, or a store link in its browser
-function setupPhone(f: Fakes = fakes()) {
+function setupPhone(f: Fakes = fakes(), storeSlug = 'cantina-central') {
   const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) })
-  render(<KioskApp adapters={f.adapters} now={morning} onCustomerPhone />)
+  render(<KioskApp adapters={f.adapters} now={morning} storeSlug={storeSlug} surface="phone" />)
   return { user, ...f }
 }
 
@@ -115,6 +122,7 @@ describe('KioskApp', () => {
 
     expect(await screen.findByLabelText('Pedido número 047')).toBeInTheDocument()
     expect(place).toHaveBeenCalledWith({
+      storeSlug: 'lanchonete-bem-te-vi',
       lines: [{ productId: 'combo-cafe', quantity: 1 }],
       dineIn: false,
       paymentMethod: 'card',
@@ -548,7 +556,10 @@ describe('KioskApp', () => {
     await startOrder(user)
     await user.click(button('Salgados'))
     await user.click(button('Adicionar Coxinha'))
-    f.list.mockResolvedValue(DEMO_CATALOG.map((p) => ({ ...p, available: p.id !== 'coxinha' })))
+    f.load.mockResolvedValue({
+      store: { slug: DEMO_STORE_SLUG, name: DEMO_STORE_NAME },
+      products: DEMO_CATALOG.map((p) => ({ ...p, available: p.id !== 'coxinha' })),
+    })
     await user.click(button('Ver pedido'))
     await user.click(button('Pagar'))
 
@@ -592,7 +603,10 @@ describe('KioskApp', () => {
     await user.click(button('Salgados'))
     await user.click(button('Adicionar Coxinha'))
     await user.click(button('Adicionar Pão de queijo'))
-    f.list.mockResolvedValue(DEMO_CATALOG.map((p) => ({ ...p, available: p.id !== 'coxinha' })))
+    f.load.mockResolvedValue({
+      store: { slug: DEMO_STORE_SLUG, name: DEMO_STORE_NAME },
+      products: DEMO_CATALOG.map((p) => ({ ...p, available: p.id !== 'coxinha' })),
+    })
     await user.click(button('Ver pedido'))
     await user.click(button('Pagar'))
 
@@ -613,7 +627,7 @@ describe('KioskApp', () => {
     await startOrder(user)
     await user.click(button('Salgados'))
     await user.click(button('Adicionar Coxinha'))
-    f.list.mockRejectedValue(new Error('offline'))
+    f.load.mockRejectedValue(new Error('offline'))
     await user.click(button('Ver pedido'))
     await user.click(button('Pagar'))
 
@@ -691,18 +705,103 @@ describe('KioskApp', () => {
     expect(tag.publish).toHaveBeenCalledOnce()
   })
 
-  it('on the customer phone it serves no tag and offers no queue', () => {
+  it('on the customer phone it serves no tag, offers no queue and shows no server status pill', () => {
     const f = fakes()
     const tag = { available: true, publish: vi.fn(), withdraw: vi.fn() }
-    render(<KioskApp adapters={{ ...f.adapters, tag }} now={morning} onCustomerPhone />)
+    render(<KioskApp adapters={{ ...f.adapters, tag }} now={morning} storeSlug="cantina-central" surface="phone" />)
 
     expect(tag.publish).not.toHaveBeenCalled()
+    expect(f.isReachable).not.toHaveBeenCalled()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'A fila está grande? Peça pelo celular' })).not.toBeInTheDocument()
+  })
+
+  it('on the customer phone loads the scanned store, never times out on inactivity, and pays with Pix without asking to tap the totem', async () => {
+    const cantina = fakes(
+      DEMO_CATALOG.map((p) => ({ ...p })),
+      { slug: 'cantina-central', name: 'Cantina Central' },
+    )
+    const { user, load, place } = setupPhone(cantina, 'cantina-central')
+
+    expect(await screen.findByText('Cantina Central')).toBeInTheDocument()
+    expect(load).toHaveBeenCalledWith('cantina-central')
+    await startOrder(user)
+    expect(screen.getByText('Cantina Central')).toBeInTheDocument()
+
+    act(() => vi.advanceTimersByTime(120_000))
+    expect(screen.queryByRole('dialog', { name: 'Você ainda está aí?' })).not.toBeInTheDocument()
+
+    await user.click(button(COMBO_BANNER))
+    await user.click(button('Ver pedido'))
+    await user.click(button('Pagar'))
+
+    expect(screen.getByRole('heading', { name: 'Pague com Pix' })).toBeInTheDocument()
+    expect(screen.getByText('Copie o código Pix e pague no app do seu banco.')).toBeInTheDocument()
+    expect(screen.queryByText(/Cartão ou celular/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/atrás do totem|atrás da tela/)).not.toBeInTheDocument()
+
+    await user.click(button('Copiar código Pix'))
+    expect(await navigator.clipboard.readText()).toBe('TOPA-PIX-DEMO-1290-0')
+    expect(button('Código copiado')).toBeInTheDocument()
+
+    await user.click(button('Simular recusa (demo)'))
+    expect(screen.getByRole('alert')).toHaveTextContent('Pagamento não confirmado. Tente de novo.')
+    expect(screen.queryByRole('button', { name: 'Pagar com Pix' })).not.toBeInTheDocument()
+    await user.click(button('Tentar de novo'))
+
+    await user.click(button('Simular aprovação (demo)'))
+    expect(place).toHaveBeenCalledWith({
+      storeSlug: 'cantina-central',
+      lines: [{ productId: 'combo-cafe', quantity: 1 }],
+      dineIn: true,
+      paymentMethod: 'pix',
+    })
+  })
+
+  it('shows the Pix code as plain text when the browser blocks clipboard access', async () => {
+    const { user } = setupPhone()
+    await startOrder(user)
+    await user.click(button(COMBO_BANNER))
+    await user.click(button('Ver pedido'))
+    await user.click(button('Pagar'))
+    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValueOnce(new Error('blocked'))
+
+    await user.click(button('Copiar código Pix'))
+
+    expect(await screen.findByText('TOPA-PIX-DEMO-1290-0')).toBeInTheDocument()
+    await user.click(button('Copiar código Pix'))
+    expect(await screen.findByRole('button', { name: 'Código copiado' })).toBeInTheDocument()
+    expect(screen.queryByText('TOPA-PIX-DEMO-1290-0')).not.toBeInTheDocument()
+  })
+
+  it('shows the Pix code as plain text where the browser has no clipboard, as over plain http', async () => {
+    const { user } = setupPhone()
+    await startOrder(user)
+    await user.click(button(COMBO_BANNER))
+    await user.click(button('Ver pedido'))
+    await user.click(button('Pagar'))
+    Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true })
+
+    try {
+      await user.click(button('Copiar código Pix'))
+      expect(screen.getByText('TOPA-PIX-DEMO-1290-0')).toBeInTheDocument()
+    } finally {
+      Reflect.deleteProperty(navigator, 'clipboard')
+    }
+  })
+
+  it('tells the customer when the store in the link does not exist', async () => {
+    const f = fakes()
+    f.load.mockRejectedValueOnce(new StoreNotFoundError('Loja não encontrada.'))
+    setupPhone(f, 'loja-inexistente')
+
+    expect(await screen.findByRole('heading', { name: 'Loja não encontrada' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Comer aqui/ })).not.toBeInTheDocument()
   })
 
   it('stops serving the tag when the kiosk closes', () => {
     const { adapters } = fakes()
-    const { unmount } = render(<KioskApp adapters={adapters} now={morning} />)
+    const { unmount } = render(<KioskApp adapters={adapters} now={morning} storeSlug={DEMO_STORE_SLUG} surface="totem" />)
 
     unmount()
 
@@ -712,15 +811,97 @@ describe('KioskApp', () => {
   it('shows loading, then an error with retry when the menu cannot load', async () => {
     const f = fakes()
     let fail: (reason: Error) => void = () => {}
-    f.list.mockReturnValueOnce(new Promise((_, reject) => (fail = reject)))
+    f.load.mockReturnValueOnce(new Promise((_, reject) => (fail = reject)))
     const { user } = setup(f)
 
     await user.click(button(/Comer aqui/))
+    expect(screen.getByText('TOPA')).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('Carregando o cardápio...')
     await act(async () => fail(new Error('down')))
     expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível carregar o cardápio.')
     await user.click(button('Tentar de novo'))
 
     expect(await screen.findByRole('heading', { name: 'Lanches' })).toBeInTheDocument()
+  })
+  it('on a totem whose store is missing, offers a retry, keeps the staff gesture and serves no tag', async () => {
+    const f = fakes()
+    const tag = { available: true, publish: vi.fn(), withdraw: vi.fn() }
+    const onSwitchRole = vi.fn()
+    f.load.mockRejectedValueOnce(new StoreNotFoundError())
+    const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) })
+    render(
+      <KioskApp
+        adapters={{ ...f.adapters, tag }}
+        now={morning}
+        storeSlug={DEMO_STORE_SLUG}
+        surface="totem"
+        onSwitchRole={onSwitchRole}
+      />,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Loja não encontrada' })).toBeInTheDocument()
+    expect(screen.getByText('Este totem não está ligado a uma loja cadastrada. Chame o suporte do TOPA.')).toBeInTheDocument()
+    expect(tag.withdraw).toHaveBeenCalledTimes(tag.publish.mock.calls.length)
+    for (let i = 0; i < 5; i += 1) fireEvent.click(screen.getByText('por TOPA'))
+    expect(onSwitchRole).toHaveBeenCalledOnce()
+    await user.click(button('Tentar de novo'))
+
+    expect(await screen.findByRole('heading', { name: 'Peça aqui. Pague aqui.' })).toBeInTheDocument()
+  })
+
+  it('keeps the newest menu when an older refresh answers late', async () => {
+    const f = fakes()
+    f.place.mockRejectedValue(new OrderRejectedError('Coxinha esgotou.'))
+    const { user } = setup(f)
+    await startOrder(user)
+    await user.click(button('Salgados'))
+    await user.click(button('Adicionar Coxinha'))
+    let answerRefresh: (menu: StoreMenu) => void = () => {}
+    f.load.mockReturnValueOnce(new Promise((resolve) => (answerRefresh = resolve)))
+    await user.click(button('Ver pedido'))
+    await user.click(button('Pagar'))
+    await user.click(button('Simular aprovação (demo)'))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Coxinha esgotou.')
+    await user.click(button('Voltar ao pedido'))
+    await user.click(button('Cancelar pedido'))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancelar pedido' }))
+    await startOrder(user)
+
+    await act(async () =>
+      answerRefresh({
+        store: { slug: DEMO_STORE_SLUG, name: DEMO_STORE_NAME },
+        products: DEMO_CATALOG.map((p) => ({ ...p, available: p.id !== 'coxinha' })),
+      }),
+    )
+    await user.click(button('Salgados'))
+
+    expect(button('Adicionar Coxinha')).toBeEnabled()
+  })
+
+  it('keeps a menu that loaded when an older load fails late', async () => {
+    const f = fakes()
+    let failFirst: (reason: Error) => void = () => {}
+    f.load.mockReturnValueOnce(new Promise((_, reject) => (failFirst = reject)))
+    const { user } = setup(f)
+    await user.click(button(/Comer aqui/))
+    expect(screen.getByRole('status')).toHaveTextContent('Carregando o cardápio...')
+    await user.click(button('Voltar ao início'))
+
+    await act(async () => failFirst(new Error('timeout')))
+    await startOrder(user)
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('shows only the categories the store sells, starting at the first one', async () => {
+    const products = DEMO_CATALOG.filter((p) => p.category === 'salgados' || p.category === 'bebidas').map((p) => ({ ...p }))
+    const { user } = setupPhone(fakes(products, { slug: 'cantina-central', name: 'Cantina Central' }))
+
+    await user.click(await screen.findByRole('button', { name: /Comer aqui/ }))
+
+    expect(await screen.findByRole('heading', { name: 'Salgados' })).toBeInTheDocument()
+    const nav = screen.getByRole('navigation', { name: 'Categorias' })
+    expect(within(nav).getAllByRole('button').map((b) => b.textContent)).toEqual(['Salgados', 'Bebidas'])
+    expect(button('Adicionar Coxinha')).toBeEnabled()
   })
 })

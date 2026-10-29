@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { Product } from '../../domain/menu'
 import type { OrderDraft, OrderSummary } from '../../domain/order'
+import { DEMO_STORE_SLUG } from '../../domain/store'
 import type { Adapters } from '../../ports/adapters'
 import { OrderRejectedError } from '../../ports/orders'
 import { LocalMenu } from '../../adapters/local/local-menu'
@@ -27,8 +28,8 @@ class MemoryStorage {
 const NOW = new Date(2026, 9, 26, 16, 0)
 const at = (day: number, hour: number, minute = 0) => () => new Date(2026, 9, day, hour, minute)
 
-const xsalada: OrderDraft = { lines: [{ productId: 'xsalada', quantity: 2 }], dineIn: true, paymentMethod: 'card' }
-const coxinha: OrderDraft = { lines: [{ productId: 'coxinha', quantity: 1 }], dineIn: false, paymentMethod: 'pix' }
+const xsalada: OrderDraft = { storeSlug: DEMO_STORE_SLUG, lines: [{ productId: 'xsalada', quantity: 2 }], dineIn: true, paymentMethod: 'card' }
+const coxinha: OrderDraft = { storeSlug: DEMO_STORE_SLUG, lines: [{ productId: 'coxinha', quantity: 1 }], dineIn: false, paymentMethod: 'pix' }
 
 function demoStore() {
   const storage = new MemoryStorage()
@@ -48,7 +49,7 @@ function demoStore() {
 }
 
 function renderPainel(adapters: Adapters) {
-  return render(<PainelApp adapters={adapters} now={() => NOW} />)
+  return render(<PainelApp adapters={adapters} storeSlug={DEMO_STORE_SLUG} now={() => NOW} />)
 }
 
 afterEach(() => {
@@ -143,14 +144,14 @@ describe('PainelApp', () => {
     const received = screen.getByRole('region', { name: 'Recebidos' })
     expect(await within(received).findByRole('article', { name: 'Pedido 001' })).toBeInTheDocument()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
-    expect((await adapters.orders.list('2026-10-26'))[0].status).toBe('received')
+    expect((await adapters.orders.list('2026-10-26', DEMO_STORE_SLUG))[0].status).toBe('received')
   })
 
   it('files a delivered order under the day, with its time and total', async () => {
     const user = userEvent.setup()
     const { adapters, ordersAt } = demoStore()
     await ordersAt(at(26, 15, 58)).place(xsalada)
-    const [order] = await adapters.orders.list('2026-10-26')
+    const [order] = await adapters.orders.list('2026-10-26', DEMO_STORE_SLUG)
     await adapters.orders.setStatus(order.id, 'preparing')
     await adapters.orders.setStatus(order.id, 'ready')
     renderPainel(adapters)
@@ -237,7 +238,7 @@ describe('PainelApp', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Esgotados no totem: Coxinha.')
     expect(screen.getByRole('switch', { name: 'Coxinha à venda' })).toHaveAttribute('aria-checked', 'false')
     expect(within(screen.getByRole('switch', { name: 'Coxinha à venda' }).closest('tr')!).getByText('Esgotado')).toBeInTheDocument()
-    expect((await menu.list()).find((p) => p.id === 'coxinha')?.available).toBe(false)
+    expect((await menu.load(DEMO_STORE_SLUG)).products.find((p) => p.id === 'coxinha')?.available).toBe(false)
 
     await user.click(screen.getByRole('switch', { name: 'Coxinha à venda' }))
 
@@ -275,7 +276,7 @@ describe('PainelApp', () => {
     const failing: Adapters = {
       mode: 'api',
       connection: { isReachable: () => Promise.resolve(false) },
-      menu: { list: () => Promise.reject(new Error('down')), setAvailability: vi.fn() },
+      menu: { load: () => Promise.reject(new Error('down')), setAvailability: vi.fn() },
       orders: { place: vi.fn(), list: () => Promise.reject(new Error('down')), setStatus: vi.fn(), statusOf: vi.fn() },
       nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
       tag: new UnavailableTag(),
@@ -311,7 +312,10 @@ describe('PainelApp', () => {
     const adapters: Adapters = {
       mode: 'api',
       connection: { isReachable: () => Promise.resolve(true) },
-      menu: { list: () => Promise.resolve([suco]), setAvailability: () => Promise.reject(new Error('network')) },
+      menu: {
+        load: () => Promise.resolve({ store: { slug: 'cantina-central', name: 'Cantina Central' }, products: [suco] }),
+        setAvailability: () => Promise.reject(new Error('network')),
+      },
       orders: { place: vi.fn(), list: () => Promise.resolve([order]), setStatus, statusOf: vi.fn() },
       nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
       tag: new UnavailableTag(),
@@ -336,8 +340,63 @@ describe('PainelApp', () => {
   it('uses the real clock by default', async () => {
     const { adapters } = demoStore()
 
-    render(<PainelApp adapters={adapters} />)
+    render(<PainelApp adapters={adapters} storeSlug={DEMO_STORE_SLUG} />)
 
     expect(await screen.findByRole('heading', { name: 'Painel do lojista' })).toBeInTheDocument()
+  })
+
+  it('runs the store in the address: its name, its orders today and yesterday, its menu toggles', async () => {
+    const user = userEvent.setup()
+    const suco: Product = { id: 'suco', name: 'Suco de laranja', description: '', category: 'bebidas', priceCents: 990, available: true }
+    const list = vi.fn<(businessDate: string, storeSlug: string) => Promise<OrderSummary[]>>().mockResolvedValue([])
+    const load = vi.fn((slug: string) => Promise.resolve({ store: { slug, name: 'Cantina Central' }, products: [suco] }))
+    const setAvailability = vi.fn((_id: string, available: boolean) => Promise.resolve({ ...suco, available }))
+    const adapters: Adapters = {
+      mode: 'api',
+      connection: { isReachable: () => Promise.resolve(true) },
+      menu: { load, setAvailability },
+      orders: { place: vi.fn(), list, setStatus: vi.fn(), statusOf: vi.fn() },
+      nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
+      tag: new UnavailableTag(),
+      buzzer: new UnavailableBuzzer(),
+      wakeLock: new UnavailableWakeLock(),
+    }
+
+    render(<PainelApp adapters={adapters} storeSlug="cantina-central" now={() => NOW} />)
+
+    expect(await screen.findByText('Cantina Central')).toBeInTheDocument()
+    expect(screen.queryByText('Lanchonete Bem-te-vi')).not.toBeInTheDocument()
+    expect(load).toHaveBeenCalledWith('cantina-central')
+    expect(list).toHaveBeenCalledWith('2026-10-26', 'cantina-central')
+    expect(list).toHaveBeenCalledWith('2026-10-25', 'cantina-central')
+    await user.click(await screen.findByRole('switch', { name: 'Suco de laranja à venda' }))
+    expect(setAvailability).toHaveBeenCalledWith('suco', false, 'cantina-central')
+  })
+
+  it('never shows another store name while the store is still loading', () => {
+    const adapters: Adapters = {
+      ...demoStore().adapters,
+      menu: { load: () => new Promise(() => {}), setAvailability: vi.fn() },
+      orders: { place: vi.fn(), list: () => new Promise(() => {}), setStatus: vi.fn(), statusOf: vi.fn() },
+    }
+
+    render(<PainelApp adapters={adapters} storeSlug="cantina-central" now={() => NOW} />)
+
+    expect(screen.queryByText('Lanchonete Bem-te-vi')).not.toBeInTheDocument()
+  })
+
+  it('tells the merchant the store in the address does not exist, and stops asking for its orders', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const { adapters } = demoStore()
+    const list = vi.spyOn(adapters.orders, 'list')
+
+    render(<PainelApp adapters={adapters} storeSlug="padaria-inexistente" now={() => NOW} />)
+
+    expect(await screen.findByRole('heading', { name: 'Loja não encontrada' })).toBeInTheDocument()
+    expect(screen.getByText('Confira o identificador da loja no endereço do painel.')).toBeInTheDocument()
+    expect(screen.queryByText(/O servidor não responde/)).not.toBeInTheDocument()
+    const calls = list.mock.calls.length
+    await act(() => vi.advanceTimersByTimeAsync(POLL_MS * 3))
+    expect(list).toHaveBeenCalledTimes(calls)
   })
 })

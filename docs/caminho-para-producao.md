@@ -1,6 +1,6 @@
 # Caminho para produção
 
-O que falta para o TOPA atender uma loja de verdade, dividido em fases. Estado de 28/10/2026.
+O que falta para o TOPA atender uma loja de verdade, dividido em fases. Estado de 29/10/2026.
 
 Todo build de produção (site, previews e apps) usa a API publicada na AWS. O **modo
 demonstração**, com o cardápio embutido (`topa/web/src/domain/demo-catalog.ts`) e os pedidos
@@ -9,7 +9,7 @@ guardados só no aparelho, fica para o `npm run dev`. Os detalhes estão em `top
 ## Fase 1: uma loja de verdade
 
 Objetivo: a Lanchonete Bem-te-vi com dados num servidor, e totem, celular, site e painel vendo
-os mesmos pedidos e esgotados. A issue #32 já cobre parte desta fase (itens 1 e 2) junto com
+os mesmos pedidos e esgotados. A issue #32 entregou parte desta fase (itens 1 e 2) junto com
 a fase 2.
 
 1. **Publicar a API e o banco.** Feito: a API roda na AWS Lambda (imagem
@@ -44,25 +44,27 @@ a fase 2.
      cardápio de demonstração pelo id, e um texto depende dos preços dele ("Sai R$ 1,90 mais
      barato que separado").
 
-Pronto quando: um pedido feito no celular aparece no painel de outro aparelho; um esgotado
-marcado no painel aparece esgotado no celular; o lojista cadastra um produto e ele aparece no
-totem; e, sem login, ninguém altera o cardápio nem lê os pedidos.
+Pronto quando: o pedido feito no celular aparece no painel da loja; um esgotado marcado no
+painel aparece esgotado no celular (ambos entregues na issue #32); o lojista cadastra um produto
+e ele aparece no totem; e, sem login, ninguém altera o cardápio nem lê os pedidos.
 
 ## Fase 2: várias lojas
 
-A issue #32 cobre o cardápio por loja e os ajustes do celular.
+A issue #32 entregou o banco por loja, o cardápio por loja na API e os ajustes do celular.
 
-- **Banco:** uma tabela de lojas. Produtos, pedidos e a numeração diária dos pedidos passam a
-  pertencer a uma loja.
-- **API:** rotas por loja (a issue #32 propõe `GET /menu?loja=<slug>`) e pedidos gravados com a
-  loja.
-- **Totem:** configurado com a sua loja no primeiro uso, com um token que o vincula a ela.
-  Anuncia no NFC e no QR o próprio endereço e identificador. Hoje os dois são fixos em
-  `topa/web/src/domain/store.ts` (`PUBLIC_ORIGIN` e `DEMO_STORE_SLUG`).
-- **Celular:** carrega o cardápio da loja lida e acompanha o status do pedido. Na loja aberta
-  no celular, a tela de pagamento deixa de mandar encostar o cartão no totem, e a pílula de
-  status do servidor e o reinício por inatividade do totem somem.
-- **Painel:** cada lojista vê só a sua loja.
+- **Banco:** feito na migration `20261029_a4c8e190b7d2`: tabela `stores`, com produtos, pedidos,
+  itens e numeração diária escopados por `store_slug`.
+- **API:** feito: `GET /menu?loja=<slug>`, escopo por loja em `/products` e `/orders`, e pedidos
+  gravados com `store_slug`. Falta o cadastro de novas lojas.
+- **Totem:** anuncia o endereço com o identificador da loja no NFC e no QR. Falta configurar a
+  loja no primeiro uso com um token que vincule o aparelho a ela; hoje o totem parte de
+  `PUBLIC_ORIGIN` e `DEMO_STORE_SLUG` em `topa/web/src/domain/store.ts`.
+- **Celular:** feito (issue #32): carrega o cardápio da loja lida e acompanha o status do pedido.
+  Na loja aberta no celular, o pagamento é só por Pix, com botão para copiar o código e sem mandar
+  encostar o cartão no totem, e a pílula de status do servidor e o reinício por inatividade do
+  totem não aparecem.
+- **Painel:** já filtra por `?loja=<slug>`, mas falta vincular cada lojista autenticado à sua
+  própria loja.
 
 ## Fase 3: pagamento de verdade
 

@@ -1,61 +1,83 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { itemCount, totalCents } from '../../domain/cart'
 import { findProduct, formatBRL, type Product } from '../../domain/menu'
-import { phoneMenuUrl } from '../../domain/store'
+import { phoneMenuUrl, type StoreMenu } from '../../domain/store'
 import { bannerFor } from '../../domain/suggest'
 import type { Adapters } from '../../ports/adapters'
+import { StoreNotFoundError } from '../../ports/menu'
 import { OrderRejectedError } from '../../ports/orders'
+import { BrandMark } from '../BrandMark'
+import { CheckIcon } from '../icons'
 import { BagScreen } from './BagScreen'
 import { DoneScreen, QueueScreen } from './EndScreens'
 import * as flow from './flow'
 import { MenuScreen } from './MenuScreen'
 import { PagerScreen } from './PagerScreen'
 import { ChoiceButtons, KioskHeader, PRIMARY_ACTION, Sheet } from './parts'
-import { CheckIcon } from '../icons'
 import { PaymentScreen, PIX_SECONDS } from './PaymentScreen'
-import { StartScreen } from './StartScreen'
 import { photoOf } from './photo'
+import { StartScreen } from './StartScreen'
 import { useCountdown } from './use-countdown'
 
 interface KioskAppProps {
   adapters: Adapters
+  storeSlug: string
+  surface?: 'totem' | 'phone'
   now?: () => Date
   /** The staff gesture on the TOPA mark; only the Android app has a role to switch. */
   onSwitchRole?: () => void
-  /** The kiosk on the customer's own phone (phone app or store link): no tag to serve, no queue to send away. */
-  onCustomerPhone?: boolean
 }
 
 const IDLE_SECONDS = 45
 const IDLE_WARNING_SECONDS = 15
 
-export function KioskApp({ adapters, now = () => new Date(), onSwitchRole, onCustomerPhone = false }: KioskAppProps) {
-  const [state, setState] = useState<flow.KioskState>(flow.START)
+export function KioskApp({ adapters, storeSlug, surface = 'totem', now = () => new Date(), onSwitchRole }: KioskAppProps) {
+  const onCustomerPhone = surface === 'phone'
+  const [state, setState] = useState<flow.KioskState>({
+    ...flow.START,
+    paymentMethod: onCustomerPhone ? 'pix' : 'card',
+  })
+  const [storeName, setStoreName] = useState<string | null>(null)
   const [products, setProducts] = useState<Product[]>([])
-  const [menuState, setMenuState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [menuState, setMenuState] = useState<'loading' | 'ready' | 'not-found' | 'error'>('loading')
   const [touches, setTouches] = useState(0)
+  const requestId = useRef(0)
+
+  useEffect(() => () => {
+    requestId.current += 1
+  }, [])
+
+  const applyMenu = useCallback((menu: StoreMenu) => {
+    setStoreName(menu.store.name)
+    setProducts(menu.products)
+    setState((s) => flow.pruneUnavailable(s, menu.products))
+  }, [])
 
   const loadMenu = useCallback(() => {
+    const id = ++requestId.current
     setMenuState('loading')
-    adapters.menu.list().then(
-      (list) => {
-        setProducts(list)
+    adapters.menu.load(storeSlug).then(
+      (menu) => {
+        if (id !== requestId.current) return
+        applyMenu(menu)
         setMenuState('ready')
-        setState((s) => flow.pruneUnavailable(s, list))
       },
-      () => setMenuState('error'),
+      (error: unknown) => {
+        if (id !== requestId.current) return
+        setMenuState(error instanceof StoreNotFoundError ? 'not-found' : 'error')
+      },
     )
-  }, [adapters.menu])
+  }, [adapters.menu, applyMenu, storeSlug])
 
   // a fresh menu at every new customer picks up what sold out meanwhile
   useEffect(() => {
     if (state.screen === 'start') loadMenu()
   }, [state.screen, loadMenu])
 
-  const menuUrl = phoneMenuUrl(window.location.origin, import.meta.env.BASE_URL)
+  const menuUrl = phoneMenuUrl(window.location.origin, import.meta.env.BASE_URL, storeSlug)
   // only where a phone is invited to tap: from the menu on, that spot takes the payment card
-  const servesTag = !onCustomerPhone && (state.screen === 'start' || state.screen === 'queue')
+  const servesTag = !onCustomerPhone && menuState !== 'not-found' && (state.screen === 'start' || state.screen === 'queue')
   useEffect(() => {
     if (!servesTag) return
     adapters.tag.publish(menuUrl)
@@ -63,7 +85,7 @@ export function KioskApp({ adapters, now = () => new Date(), onSwitchRole, onCus
   }, [adapters.tag, menuUrl, servesTag])
 
   const shopping = ['menu', 'bag', 'payment'].includes(state.screen)
-  const idleWatch = shopping && state.sheet !== 'idle' && state.payment !== 'processing'
+  const idleWatch = !onCustomerPhone && shopping && state.sheet !== 'idle' && state.payment !== 'processing'
   const waitingPix = state.screen === 'payment' && state.paymentMethod === 'pix' && state.payment === 'choosing'
   // a touch must not stretch the wait past the Pix code, so it only restarts other timers
   const idleSeconds = waitingPix ? PIX_SECONDS : IDLE_SECONDS
@@ -74,21 +96,24 @@ export function KioskApp({ adapters, now = () => new Date(), onSwitchRole, onCus
     return () => clearTimeout(timer)
   }, [idleWatch, idleSeconds, idleReset, state.screen])
 
-  const reset = () => setState(flow.START)
+  const reset = () => setState({ ...flow.START, paymentMethod: onCustomerPhone ? 'pix' : 'card' })
 
-  const refreshMenu = () =>
-    adapters.menu.list().then(
-      (list) => {
-        setProducts(list)
-        setState((s) => flow.pruneUnavailable(s, list))
+  const refreshMenu = useCallback(() => {
+    const id = ++requestId.current
+    adapters.menu.load(storeSlug).then(
+      (menu) => {
+        if (id !== requestId.current) return
+        applyMenu(menu)
       },
       () => {},
     )
+  }, [adapters.menu, applyMenu, storeSlug])
 
   const pay = async () => {
     setState(flow.startPaying)
     try {
       const placed = await adapters.orders.place({
+        storeSlug,
         lines: state.lines,
         dineIn: state.dineIn,
         paymentMethod: state.paymentMethod,
@@ -102,15 +127,44 @@ export function KioskApp({ adapters, now = () => new Date(), onSwitchRole, onCus
     }
   }
 
+  if (menuState === 'not-found') {
+    if (!onCustomerPhone) {
+      return (
+        <section role="alert" className="flex flex-1 flex-col items-center justify-center gap-6 bg-cream px-8 text-center text-ink">
+          <h1 className="text-title font-bold">Loja não encontrada</h1>
+          <p className="max-w-[36ch] text-body text-muted">
+            Este totem não está ligado a uma loja cadastrada. Chame o suporte do TOPA.
+          </p>
+          <button type="button" onClick={loadMenu} className={`${PRIMARY_ACTION} h-20 px-10 text-[22px] phone:px-8`}>
+            Tentar de novo
+          </button>
+          <BrandMark label="por TOPA" className="mt-4 text-caption font-medium" onStaffTaps={onSwitchRole} />
+        </section>
+      )
+    }
+    return (
+      <section role="alert" className="flex flex-1 flex-col items-center justify-center gap-4 bg-cream px-8 text-center text-ink">
+        <h1 className="text-title font-bold">Loja não encontrada</h1>
+        <p className="max-w-[36ch] text-body text-muted">
+          Confira o endereço ou aproxime o celular novamente do totem.
+        </p>
+      </section>
+    )
+  }
+
   const count = itemCount(state.lines)
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-cream text-ink" onPointerDown={() => setTouches((t) => t + 1)}>
+    <div
+      className="flex min-h-0 flex-1 flex-col bg-cream text-ink"
+      onPointerDown={onCustomerPhone ? undefined : () => setTouches((t) => t + 1)}
+    >
       {state.screen === 'start' && (
         <StartScreen
-          mode={adapters.mode}
-          connection={adapters.connection}
-          onBegin={(dineIn) => setState(flow.begin(dineIn))}
+          storeName={storeName}
+          surface={surface}
+          serverStatus={onCustomerPhone ? undefined : { mode: adapters.mode, connection: adapters.connection }}
+          onBegin={(dineIn) => setState(flow.begin(dineIn, onCustomerPhone ? 'pix' : 'card'))}
           onQueue={onCustomerPhone ? undefined : () => setState(flow.openQueue())}
           onSwitchRole={onSwitchRole}
         />
@@ -132,6 +186,7 @@ export function KioskApp({ adapters, now = () => new Date(), onSwitchRole, onCus
         ))}
       {shopping && (
         <KioskHeader
+          storeName={storeName}
           dineIn={state.dineIn}
           cartEmpty={count === 0}
           locked={state.payment === 'processing'}
@@ -180,6 +235,7 @@ export function KioskApp({ adapters, now = () => new Date(), onSwitchRole, onCus
           method={state.paymentMethod}
           payment={state.payment}
           error={state.error}
+          surface={surface}
           onMethod={(method) => setState((s) => flow.choosePayment(s, method))}
           onApprove={() => void pay()}
           onDecline={() => setState(flow.declined)}

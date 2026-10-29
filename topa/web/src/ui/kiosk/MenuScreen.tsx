@@ -18,7 +18,9 @@ interface MenuScreenProps {
 
 export function MenuScreen(props: MenuScreenProps) {
   const { products, lines, category, banner, onCategory, onAdd, onRemove, onReview } = props
-  const label = CATEGORIES.find((c) => c.id === category)!.label
+  const categories = CATEGORIES.filter((c) => products.some((p) => p.category === c.id))
+  const activeCategory = categories.some((c) => c.id === category) ? category : categories[0].id
+  const label = CATEGORIES.find((c) => c.id === activeCategory)!.label
   const bannerProduct = banner ? findProduct(products, banner.productId) : undefined
   const count = itemCount(lines)
 
@@ -29,14 +31,14 @@ export function MenuScreen(props: MenuScreenProps) {
           aria-label="Categorias"
           className="flex w-[168px] flex-none flex-col gap-2 overflow-y-auto bg-ground-2 px-3 py-6 [scrollbar-width:none] short:py-3 max-sm:w-full max-sm:flex-row max-sm:overflow-x-auto max-sm:px-4 max-sm:py-3 phone:py-2"
         >
-          {CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <button
               key={c.id}
               type="button"
-              aria-pressed={c.id === category}
+              aria-pressed={c.id === activeCategory}
               onClick={() => onCategory(c.id)}
               className={`flex h-28 flex-none flex-col items-center justify-center gap-2 rounded-[24px] text-[18px] short:h-20 short:gap-1 max-sm:h-16 max-sm:flex-row max-sm:rounded-full max-sm:px-4 max-sm:text-[16px] ${
-                c.id === category ? 'bg-teal font-semibold text-white' : 'font-medium text-ink'
+                c.id === activeCategory ? 'bg-teal font-semibold text-white' : 'font-medium text-ink'
               }`}
             >
               <CategoryIcon category={c.id} className="phone:size-6" />
@@ -69,7 +71,7 @@ export function MenuScreen(props: MenuScreenProps) {
           </div>
           <ul className="grid grid-cols-2 items-start gap-6 max-sm:gap-3 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] short:grid-cols-[repeat(auto-fill,minmax(220px,1fr))]">
             {products
-              .filter((p) => p.category === category)
+              .filter((p) => p.category === activeCategory)
               .map((product) => (
                 <li key={product.id}>
                   <ProductCard
