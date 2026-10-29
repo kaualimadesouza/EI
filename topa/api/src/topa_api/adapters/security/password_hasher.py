@@ -1,7 +1,7 @@
 import base64
 import hashlib
 import hmac
-import os
+import secrets
 
 
 class ScryptPasswordHasher:
@@ -14,7 +14,7 @@ class ScryptPasswordHasher:
         self._dklen = dklen
 
     def hash_password(self, password: str) -> str:
-        salt = os.urandom(16)
+        salt = secrets.token_bytes(16)
         key = hashlib.scrypt(
             password.encode("utf-8"),
             salt=salt,
@@ -38,16 +38,15 @@ class ScryptPasswordHasher:
             p = int(parts[3])
             salt = base64.b64decode(parts[4].encode("ascii"))
             expected_key = base64.b64decode(parts[5].encode("ascii"))
+            computed = hashlib.scrypt(
+                plain_password.encode("utf-8"),
+                salt=salt,
+                n=n,
+                r=r,
+                p=p,
+                maxmem=0,
+                dklen=len(expected_key),
+            )
+            return hmac.compare_digest(computed, expected_key)
         except (ValueError, TypeError):
             return False
-
-        computed = hashlib.scrypt(
-            plain_password.encode("utf-8"),
-            salt=salt,
-            n=n,
-            r=r,
-            p=p,
-            maxmem=0,
-            dklen=len(expected_key),
-        )
-        return hmac.compare_digest(computed, expected_key)

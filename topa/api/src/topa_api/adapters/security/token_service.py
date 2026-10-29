@@ -57,5 +57,5 @@ class HmacTokenService:
                 email=str(data["email"]),
                 store_slug=str(data["store_slug"]),
             )
-        except (ValueError, KeyError, json.JSONDecodeError):
+        except (ValueError, KeyError, TypeError, AttributeError, json.JSONDecodeError):
             raise InvalidTokenError() from None

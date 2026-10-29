@@ -39,3 +39,47 @@ def test_client_ip_fallback_when_no_forwarded_or_client() -> None:
 
     req = Request({"type": "http", "headers": []})
     assert _client_ip(req) == "127.0.0.1"
+
+
+def test_client_ip_prefers_rightmost_forwarded_ip_to_prevent_spoofing() -> None:
+    from fastapi import Request
+
+    from topa_api.presentation.fastapi.orders import _client_ip
+
+    req = Request(
+        {
+            "type": "http",
+            "headers": [(b"x-forwarded-for", b"spoofed.ip.1, 203.0.113.50")],
+        }
+    )
+    assert _client_ip(req) == "203.0.113.50"
+
+
+def test_client_ip_reads_direct_client_host() -> None:
+    from fastapi import Request
+
+    from topa_api.presentation.fastapi.orders import _client_ip
+
+    req = Request(
+        {
+            "type": "http",
+            "client": ("192.168.1.100", 12345),
+            "headers": [],
+        }
+    )
+    assert _client_ip(req) == "192.168.1.100"
+
+
+def test_client_ip_falls_back_when_forwarded_is_only_commas() -> None:
+    from fastapi import Request
+
+    from topa_api.presentation.fastapi.orders import _client_ip
+
+    req = Request(
+        {
+            "type": "http",
+            "client": ("192.168.1.100", 12345),
+            "headers": [(b"x-forwarded-for", b" , , ")],
+        }
+    )
+    assert _client_ip(req) == "192.168.1.100"

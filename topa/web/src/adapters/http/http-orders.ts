@@ -59,7 +59,12 @@ export class HttpOrders implements OrdersPort {
       dine_in: draft.dineIn,
       payment_method: draft.paymentMethod,
     })
-    if (response.status === 404 || response.status === 409 || response.status === 422) {
+    if (
+      response.status === 404 ||
+      response.status === 409 ||
+      response.status === 422 ||
+      response.status === 429
+    ) {
       throw await refusal(response, 'Não foi possível registrar o pedido.')
     }
     if (!response.ok) throw new Error(`POST /orders answered ${response.status}`)

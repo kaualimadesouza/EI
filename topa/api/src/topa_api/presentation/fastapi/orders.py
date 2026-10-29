@@ -68,8 +68,10 @@ class OrderResponse(BaseModel):
 def _client_ip(request: Request) -> str:
     forwarded = request.headers.get("x-forwarded-for")
     if forwarded:
-        return forwarded.split(",")[0].strip()
-    if request.client:
+        parts = [p.strip() for p in forwarded.split(",") if p.strip()]
+        if parts:
+            return parts[-1]
+    if request.client and request.client.host:
         return request.client.host
     return "127.0.0.1"
 

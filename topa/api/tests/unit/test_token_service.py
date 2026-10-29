@@ -103,3 +103,18 @@ def test_rejects_payload_with_missing_fields() -> None:
 
     with pytest.raises(InvalidTokenError):
         service.verify_token(bad_token)
+
+
+def test_rejects_payload_that_is_not_a_json_object() -> None:
+    import base64
+    import hashlib
+    import hmac
+
+    service = HmacTokenService(secret_key="test-secret-key")
+    list_payload = base64.urlsafe_b64encode(b"[1, 2, 3]").decode("ascii").rstrip("=")
+    sig = hmac.new(b"test-secret-key", list_payload.encode("ascii"), hashlib.sha256).digest()
+    sig_b64 = base64.urlsafe_b64encode(sig).decode("ascii").rstrip("=")
+    token = f"{list_payload}.{sig_b64}"
+
+    with pytest.raises(InvalidTokenError):
+        service.verify_token(token)

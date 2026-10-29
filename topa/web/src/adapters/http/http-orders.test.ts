@@ -54,6 +54,12 @@ describe('HttpOrders', () => {
     vi.restoreAllMocks()
     json({ detail: 'Loja não encontrada.' }, 404)
     await expect(orders.place(draft)).rejects.toEqual(new OrderRejectedError('Loja não encontrada.'))
+
+    vi.restoreAllMocks()
+    json({ detail: 'Muitos pedidos enviados. Aguarde um momento.' }, 429)
+    await expect(orders.place(draft)).rejects.toEqual(
+      new OrderRejectedError('Muitos pedidos enviados. Aguarde um momento.'),
+    )
   })
 
   it('uses a generic message when the refusal is a validation list', async () => {

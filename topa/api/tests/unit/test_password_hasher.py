@@ -16,3 +16,5 @@ def test_rejects_malformed_hash_format() -> None:
     assert hasher.verify_password("topa123", "not_a_valid_hash") is False
     assert hasher.verify_password("topa123", "scrypt$invalid$format") is False
     assert hasher.verify_password("topa123", "scrypt$not_int$8$1$salt$key") is False
+    # n=3 is not a power of 2, triggers ValueError inside hashlib.scrypt
+    assert hasher.verify_password("topa123", "scrypt$3$8$1$c2FsdA==$a2V5") is False
