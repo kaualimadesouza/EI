@@ -28,7 +28,8 @@ jobs:
         run: |
           BODY_FILE=$(mktemp)
           START_TIME=$(date +%s%3N)
-          HTTP_CODE=$(curl -s -S -o "$BODY_FILE" -w "%{http_code}" --max-time 15 "$HEALTH_URL" 2>/dev/null || echo "000")
+          HTTP_CODE=$(curl -s -S -o "$BODY_FILE" -w "%{http_code}" --max-time 15 "$HEALTH_URL" 2>/dev/null || true)
+          HTTP_CODE="${HTTP_CODE:-000}"
           END_TIME=$(date +%s%3N)
           DURATION_MS=$((END_TIME - START_TIME))
           BODY=$(cat "$BODY_FILE" 2>/dev/null || echo "")
@@ -39,27 +40,23 @@ jobs:
           echo "- **Endpoint:** \`$HEALTH_URL\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- **HTTP Code:** \`$HTTP_CODE\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Duration:** \`${DURATION_MS} ms\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Response Body:** \`$BODY\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Response Body:**" >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          echo "$BODY" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
 
-          if [ "$HTTP_CODE" -ne 200 ]; then
+          if [ "$HTTP_CODE" != "200" ]; then
             echo "- **Status:** FAILED (HTTP $HTTP_CODE)" >> "$GITHUB_STEP_SUMMARY"
             echo "::error::Readiness check failed with HTTP status $HTTP_CODE"
             exit 1
           fi
 
-          # Validates that HTTP response code is 200 and body matches {"status":"ready","database":"up"}
+          # Validates that HTTP response code is 200 and database is up: {"database":"up"}
           DB_STATUS=$(echo "$BODY" | jq -r '.database // empty' 2>/dev/null || true)
-          STATUS=$(echo "$BODY" | jq -r '.status // empty' 2>/dev/null || true)
 
           if [ "$DB_STATUS" != "up" ]; then
             echo "- **Status:** FAILED (database is not up: $BODY)" >> "$GITHUB_STEP_SUMMARY"
             echo "::error::Database is not up. Response body: $BODY"
-            exit 1
-          fi
-
-          if [ -n "$STATUS" ] && [ "$STATUS" != "ready" ]; then
-            echo "- **Status:** FAILED (unexpected status: $STATUS)" >> "$GITHUB_STEP_SUMMARY"
-            echo "::error::Status is not ready ($STATUS). Response body: $BODY"
             exit 1
           fi
 

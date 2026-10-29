@@ -35,7 +35,8 @@ and UI copy is in Portuguese; code is in English.
   Both CIs demand 100% coverage. The API deploys to AWS Lambda behind API Gateway, with Postgres on
   Neon, through `.github/workflows/api-deploy.yml`: straight to prod on every push to main that
   touches the API (setup in `topa/api/infrastructure/README.md`).
-`.github/workflows/health-monitor.yml` pings `/health/ready` every 10 minutes to prevent cold starts and monitor API availability. AWS commands always take
+  `.github/workflows/health-monitor.yml` pings `/health/ready` every 10 minutes to prevent cold starts
+  and monitor API availability. AWS commands always take
   `--profile argumenta-ai`, the owner's personal account: the machine's default profile is the work
   account. `.github/workflows/web.yml` checks the web app and deploys it to the Vercel project
   `topa-totem` (a preview per PR, the DEV alias on push to main, PROD when release-please cuts a
