@@ -6,10 +6,11 @@
 \geometry{left=1.5cm, right=1.5cm, top=2.54cm, bottom=2.54cm}
 \usepackage{graphicx, setspace, amsmath, amssymb, titlesec, fancyhdr, parskip, indentfirst, etoolbox, caption, cite, xcolor}
 \usepackage{listings}
-\usepackage{url}
-\usepackage{hyperref}
 \usepackage{multicol}
-\usepackage{array}
+\usepackage{array, booktabs, tabularx}
+\usepackage[hyphens]{url}
+\usepackage{xurl}
+\usepackage[hidelinks]{hyperref}
 
 \graphicspath{{figuras/}}
 
@@ -32,9 +33,18 @@
 \date{}
 
 \captionsetup{labelfont={small,sc}, textfont={small,sc}}
+\captionsetup[table]{skip=6pt}
 \renewcommand{\figurename}{Figura}
 \renewcommand{\tablename}{Tabela}
 \renewcommand{\refname}{Referências}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\setlength{\defaultaddspace}{4pt}
+\clubpenalty=10000
+\widowpenalty=10000
+\newcommand{\nota}[1]{\par\nopagebreak{\footnotesize\itshape\setlength{\parskip}{2pt}#1\par}}
+\apptocmd{\thebibliography}{\raggedright}{}{}
 
 % Section Numbering
 \renewcommand{\thesection}{\Roman{section}.}
@@ -142,7 +152,7 @@
     \includegraphics[width=3.2cm]{topa-logo.png}
 \end{figure}
 
-O TOPA (Totem por Assinatura) é uma plataforma de autoatendimento para pequenos e médios estabelecimentos de alimentação fora do lar e comércio de proximidade. Com o fim da escala 6x1, que pode elevar em até 22\% o custo do trabalho de quem opera todos os dias \cite{fecomercio2026, abrasel2026}, esses negócios precisam cobrir o pico de movimento sem abrir novos turnos, mas não têm capital para comprar totens industriais. O TOPA é entregue como serviço mensal (\textit{Hardware-as-a-Service}), sem investimento inicial, e roda em \textit{tablet} na vertical ou \textit{smartphone} com \textit{Tap on Phone}: Pix e cartão por aproximação no próprio aparelho, sem maquininha externa. Sobre essa base, o produto aposta em três diferenciais:
+O TOPA (Totem por Assinatura) é uma plataforma de autoatendimento para pequenos e médios estabelecimentos de alimentação fora do lar e comércio de proximidade. Com o fim da escala 6x1, que pode elevar em até 22\% o custo do trabalho de quem opera todos os dias~\cite{fecomercio2026, abrasel2026}, esses negócios precisam cobrir o pico de movimento sem abrir novos turnos, mas não têm capital para comprar totens industriais. O TOPA é entregue como serviço mensal (\textit{Hardware-as-a-Service}), sem investimento inicial, e roda em \textit{tablet} na vertical ou \textit{smartphone} com \textit{Tap on Phone}: Pix e cartão por aproximação no próprio aparelho, sem maquininha externa. Sobre essa base, o produto aposta em três diferenciais:
 
 \begin{itemize}
     \item \textbf{Recomendação por visão computacional:} o terminal lê o contexto do cliente (por exemplo, uma família no almoço ou uma pessoa sozinha à tarde) e reordena a oferta em tempo real para aumentar o ticket médio.
@@ -162,31 +172,30 @@ O objetivo é verificar, antes de construir o produto, se quem vai de fato usar 
 
 \section{Hipóteses Testadas}
 
-Cada tela do protótipo isola um diferencial e testa uma hipótese sobre o comportamento do usuário final (Tabela \ref{tab:hipoteses}).
+Cada tela do protótipo isola um diferencial e testa uma hipótese sobre o comportamento do usuário final (Tabela~\ref{tab:hipoteses}).
 
 \begin{table}[h]
     \centering
     \caption{Hipótese testada em cada tela}
     \label{tab:hipoteses}
-    \renewcommand{\arraystretch}{1.3}
-    \begin{tabular}{|>{\raggedright\arraybackslash}p{2.4cm}|>{\raggedright\arraybackslash}p{4.4cm}|>{\raggedright\arraybackslash}p{9.8cm}|}
-        \hline
+    \begin{tabularx}{\textwidth}{@{}L{2.4cm}L{4.6cm}Y@{}}
+        \toprule
         \textbf{Tela} & \textbf{Diferencial} & \textbf{Hipótese} \\
-        \hline
+        \midrule
         1. Cardápio & Recomendação por visão computacional & O cliente monta o pedido sozinho e aceita a sugestão contextual sem se incomodar com a câmera. \\
-        \hline
+        \addlinespace
         2. Pagamento & Pix e \textit{Tap on Phone} no aparelho & O cliente confia em pagar no terminal em vez do caixa, mesmo sem um atendente por perto. \\
-        \hline
+        \addlinespace
         3. Fila cheia & Transbordo de fila por QR Code ou NFC & Diante de fila, o cliente troca o terminal pelo próprio celular, desde que não precise baixar aplicativo. \\
-        \hline
-    \end{tabular}
+        \bottomrule
+    \end{tabularx}
 \end{table}
 
 A operação offline fica fora das entrevistas: quando funciona, ela é invisível para o usuário final, e será medida em campo pela taxa de perda na reconciliação (valor recusado quando a rede volta, com meta abaixo de 1\%). As entrevistas também antecipam, de forma qualitativa, duas métricas que só podem ser medidas com o terminal em operação: a taxa de aceite de recomendação (tela 1) e o \textit{throughput} do terminal, o tempo do primeiro toque até o comprovante (telas 1 e 2).
 
 \section{Protótipo e Roteiro}
 
-O protótipo tem proporção de celular de propósito (Figura \ref{fig:telas}). O terminal é um \textit{tablet} na vertical e, na tela 3, o pedido pode passar do terminal para o celular do cliente; por isso a mesma interface precisa funcionar nos dois aparelhos.
+O protótipo tem proporção de celular de propósito (Figura~\ref{fig:telas}). O terminal é um \textit{tablet} na vertical e, na tela 3, o pedido pode passar do terminal para o celular do cliente; por isso a mesma interface precisa funcionar nos dois aparelhos.
 
 \begin{figure}[h]
     \centering
@@ -213,8 +222,8 @@ O protótipo tem proporção de celular de propósito (Figura \ref{fig:telas}). 
 
 \begin{enumerate}
     \item Olhando essa tela, você saberia fazer um pedido sozinho, sem ajuda?
-    \item Esse totem \textbf{resolveria} a espera ou o atendimento que você costuma enfrentar nesses lugares? \textit{Escala de 1 (nada) a 5 (totalmente).}
-    \item A ``sugestão para você'' ajuda ou incomoda? Como você se sentiria sabendo que ela é feita por uma câmera no aparelho? \textit{Aberta: anotar a reação espontânea sobre privacidade.}
+    \item Esse totem \textbf{resolveria} a espera ou o atendimento que você costuma enfrentar nesses lugares?\nota{Escala de 1 (nada) a 5 (totalmente).}
+    \item A ``sugestão para você'' ajuda ou incomoda? Como você se sentiria sabendo que ela é feita por uma câmera no aparelho?\nota{Aberta: anotar a reação espontânea sobre privacidade.}
 \end{enumerate}
 
 \subsection{Tela 2: Pagamento}
@@ -222,8 +231,8 @@ O protótipo tem proporção de celular de propósito (Figura \ref{fig:telas}). 
 \begin{enumerate}
     \setcounter{enumi}{3}
     \item Você pagaria por aqui em vez de ir ao caixa? Por quê (ou por que não)?
-    \item O que te deixaria inseguro ao pagar nesse totem? \textit{Aberta: anotar confiança, medo de erro ou falta de recibo.}
-    \item Você \textbf{pagaria} mais caro (ex.: R\$ 1 a mais) por essa comodidade, ou só usaria se fosse igual ao caixa? \textit{Sim, só se igual ou não.}
+    \item O que te deixaria inseguro ao pagar nesse totem?\nota{Aberta: anotar confiança, medo de erro ou falta de recibo.}
+    \item Você \textbf{pagaria} mais caro (ex.: R\$ 1 a mais) por essa comodidade, ou só usaria se fosse igual ao caixa?\nota{Sim, só se igual ou não.}
 \end{enumerate}
 
 \subsection{Tela 3: Fila cheia}
@@ -232,7 +241,7 @@ O protótipo tem proporção de celular de propósito (Figura \ref{fig:telas}). 
     \setcounter{enumi}{6}
     \item Se a fila estivesse grande, você pediria pelo próprio celular ou esperaria o totem? Por quê?
     \item Escanear ou aproximar o celular sem baixar app é tranquilo para você? O que travaria?
-    \item No geral: você \textbf{usaria} esse totem no lugar do caixa? \textit{Escala de 1 a 5; perguntar o motivo da nota.}
+    \item No geral: você \textbf{usaria} esse totem no lugar do caixa?\nota{Escala de 1 a 5; perguntar o motivo da nota.}
 \end{enumerate}
 
 \section{Análise}

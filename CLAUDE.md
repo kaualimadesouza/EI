@@ -66,8 +66,10 @@ sales via edge computing. `docs/situacoes_EI_2026.pdf` (proposal) and `docs/Logo
 Every deliverable starts from the preamble and member block of `docs/situacoes_EI_2026.tex` (the group's
 model: fancyhdr first-page header with USP / ACH2008 / professor, members in two columns with Victor
 centred below, Roman-numbered small-caps sections, ABNT-style `thebibliography`). `entrevistas_EI_2026.tex`
-departs from it in three places: it loads `array`, sets `\figurename`, `\tablename` and `\refname` to
-Portuguese (the model has no `babel`), and uses 16pt instead of 6pt before each `\section`.
+builds on it with `array`, `booktabs`, `tabularx` and `xurl` (`L`/`Y` column types and a `6pt` table
+caption skip), `hyphens` on `url` and `hidelinks` on `hyperref`, Portuguese `\figurename`, `\tablename`
+and `\refname` (the model has no `babel`), smaller italic question notes (`\nota`) with widow/club
+protection, a left-aligned `thebibliography`, and `16pt` instead of `6pt` before each `\section`.
 
 ```bash
 cd entrevistas-prototipo
