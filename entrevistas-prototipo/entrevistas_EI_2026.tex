@@ -9,6 +9,7 @@
 \usepackage{multicol}
 \usepackage{array, booktabs, tabularx}
 \usepackage[hyphens]{url}
+\usepackage{xurl}
 \usepackage[hidelinks]{hyperref}
 
 \graphicspath{{figuras/}}
@@ -37,7 +38,13 @@
 \renewcommand{\tablename}{Tabela}
 \renewcommand{\refname}{Referências}
 
-\newcommand{\nota}[1]{\\[1pt]{\footnotesize\itshape #1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\setlength{\defaultaddspace}{4pt}
+\clubpenalty=10000
+\widowpenalty=10000
+\newcommand{\nota}[1]{\par\nopagebreak{\footnotesize\itshape\setlength{\parskip}{2pt}#1\par}}
+\apptocmd{\thebibliography}{\raggedright}{}{}
 
 % Section Numbering
 \renewcommand{\thesection}{\Roman{section}.}
@@ -145,7 +152,7 @@
     \includegraphics[width=3.2cm]{topa-logo.png}
 \end{figure}
 
-O TOPA (Totem por Assinatura) é uma plataforma de autoatendimento para pequenos e médios estabelecimentos de alimentação fora do lar e comércio de proximidade. Com o fim da escala 6x1, que pode elevar em até 22\% o custo do trabalho de quem opera todos os dias \cite{fecomercio2026, abrasel2026}, esses negócios precisam cobrir o pico de movimento sem abrir novos turnos, mas não têm capital para comprar totens industriais. O TOPA é entregue como serviço mensal (\textit{Hardware-as-a-Service}), sem investimento inicial, e roda em \textit{tablet} na vertical ou \textit{smartphone} com \textit{Tap on Phone}: Pix e cartão por aproximação no próprio aparelho, sem maquininha externa. Sobre essa base, o produto aposta em três diferenciais:
+O TOPA (Totem por Assinatura) é uma plataforma de autoatendimento para pequenos e médios estabelecimentos de alimentação fora do lar e comércio de proximidade. Com o fim da escala 6x1, que pode elevar em até 22\% o custo do trabalho de quem opera todos os dias~\cite{fecomercio2026, abrasel2026}, esses negócios precisam cobrir o pico de movimento sem abrir novos turnos, mas não têm capital para comprar totens industriais. O TOPA é entregue como serviço mensal (\textit{Hardware-as-a-Service}), sem investimento inicial, e roda em \textit{tablet} na vertical ou \textit{smartphone} com \textit{Tap on Phone}: Pix e cartão por aproximação no próprio aparelho, sem maquininha externa. Sobre essa base, o produto aposta em três diferenciais:
 
 \begin{itemize}
     \item \textbf{Recomendação por visão computacional:} o terminal lê o contexto do cliente (por exemplo, uma família no almoço ou uma pessoa sozinha à tarde) e reordena a oferta em tempo real para aumentar o ticket médio.
@@ -165,21 +172,20 @@ O objetivo é verificar, antes de construir o produto, se quem vai de fato usar 
 
 \section{Hipóteses Testadas}
 
-Cada tela do protótipo isola um diferencial e testa uma hipótese sobre o comportamento do usuário final (Tabela \ref{tab:hipoteses}).
+Cada tela do protótipo isola um diferencial e testa uma hipótese sobre o comportamento do usuário final (Tabela~\ref{tab:hipoteses}).
 
 \begin{table}[h]
     \centering
     \caption{Hipótese testada em cada tela}
     \label{tab:hipoteses}
-    \renewcommand{\arraystretch}{1.25}
-    \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}p{4.6cm}>{\raggedright\arraybackslash}X@{}}
+    \begin{tabularx}{\textwidth}{@{}L{2.4cm}L{4.6cm}Y@{}}
         \toprule
         \textbf{Tela} & \textbf{Diferencial} & \textbf{Hipótese} \\
         \midrule
         1. Cardápio & Recomendação por visão computacional & O cliente monta o pedido sozinho e aceita a sugestão contextual sem se incomodar com a câmera. \\
-        \addlinespace[3pt]
+        \addlinespace
         2. Pagamento & Pix e \textit{Tap on Phone} no aparelho & O cliente confia em pagar no terminal em vez do caixa, mesmo sem um atendente por perto. \\
-        \addlinespace[3pt]
+        \addlinespace
         3. Fila cheia & Transbordo de fila por QR Code ou NFC & Diante de fila, o cliente troca o terminal pelo próprio celular, desde que não precise baixar aplicativo. \\
         \bottomrule
     \end{tabularx}
@@ -189,7 +195,7 @@ A operação offline fica fora das entrevistas: quando funciona, ela é invisív
 
 \section{Protótipo e Roteiro}
 
-O protótipo tem proporção de celular de propósito (Figura \ref{fig:telas}). O terminal é um \textit{tablet} na vertical e, na tela 3, o pedido pode passar do terminal para o celular do cliente; por isso a mesma interface precisa funcionar nos dois aparelhos.
+O protótipo tem proporção de celular de propósito (Figura~\ref{fig:telas}). O terminal é um \textit{tablet} na vertical e, na tela 3, o pedido pode passar do terminal para o celular do cliente; por isso a mesma interface precisa funcionar nos dois aparelhos.
 
 \begin{figure}[h]
     \centering
@@ -248,7 +254,6 @@ As respostas são consolidadas por hipótese, somando as 75 entrevistas:
     \item \textbf{Perguntas abertas}: reações agrupadas por tema, como privacidade da câmera (3), confiança no pagamento (5) e barreiras para usar o QR Code ou o NFC (8).
 \end{itemize}
 
-{\raggedright
 \begin{thebibliography}{99}
 
 \bibitem{fecomercio2026}
@@ -257,7 +262,7 @@ FECOMERCIO-SP. \textbf{Custo do trabalho aumentaria 22\% com fim da escala 6x1}.
 \bibitem{abrasel2026}
 ABRASEL - ASSOCIAÇÃO BRASILEIRA DE BARES E RESTAURANTES. \textbf{Fim da escala 6x1: impactos econômicos e operacionais da mudança na jornada no setor de alimentação}. Análise Institucional Abrasel / CNN Brasil, 18 abr. 2026. Disponível em: \url{https://www.cnnbrasil.com.br/economia/macroeconomia/abrasel-fim-da-escala-6x1-avanca-por-interesse-eleitoral-e-de-modo-acodado/}. Acesso em: 16 ago. 2026.
 
-\end{thebibliography}}
+\end{thebibliography}
 
 
 \end{document}
