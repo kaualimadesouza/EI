@@ -53,16 +53,21 @@ make test
 
 ## Endpoints
 
-- `GET /products`: the whole menu in display order, sold-out products included with
-  `available: false`.
-- `PATCH /products/{id}`: `{"available": bool}` marks a product sold out or back on sale and
-  answers 200 with it; from the next `POST /orders` on, a sold-out product is refused.
-- `POST /orders`: `{"items": [{"product_id", "quantity"}], "dine_in", "payment_method"}`
-  (`card` or `pix`). Prices come from the `products` table, never from the body; repeated
-  products are merged. Answers 201 with the order and its number, which restarts at 1 every
-  business day (America/Sao_Paulo).
-- `GET /orders?date=YYYY-MM-DD`: one business day's orders by number, each shaped like the
-  `POST /orders` answer with its items in menu order. Without `date`, today in São Paulo.
+- `GET /menu?loja=<slug>`: one store (`{"slug", "name"}`) and its products in display order,
+  sold-out products included with `available: false`. 404 when no store has that slug.
+- `GET /products?loja=<slug>`: the store's products in display order (`loja` defaults to
+  `lanchonete-bem-te-vi`).
+- `PATCH /products/{id}?loja=<slug>`: `{"available": bool}` marks a product sold out or back on
+  sale in that store (`loja` defaults to `lanchonete-bem-te-vi`) and answers 200 with it; from
+  the next `POST /orders` on, a sold-out product is refused.
+- `POST /orders`: `{"store_slug"?, "items": [{"product_id", "quantity"}], "dine_in",
+  "payment_method"}` (`card` or `pix`; `store_slug` defaults to `lanchonete-bem-te-vi`). Prices
+  come from the `products` table of that store, never from the body; repeated products are
+  merged. Answers 201 with the order (including `store_slug`) and its number, which restarts at
+  1 every business day per store (America/Sao_Paulo).
+- `GET /orders?date=YYYY-MM-DD&loja=<slug>`: one store's orders for a business day by number,
+  each shaped like the `POST /orders` answer with its items in menu order (`loja` defaults to
+  `lanchonete-bem-te-vi`; without `date`, today in São Paulo).
 - `GET /orders/{id}`: one order as it stands now, shaped the same way; the customer's phone
   follows its order with it. 404 when no order has that id.
 - `PATCH /orders/{id}`: `{"status": ...}` moves the order along `received`, `preparing`,
@@ -72,7 +77,7 @@ make test
 Every error body is `{"detail": "<one pt-BR sentence>"}`: 422 for an empty order, a
 quantity outside 1 to 20 per product, an unknown product or a malformed body, path or query;
 409 for a sold-out product or a status change that is not
-one step; 404 for an unknown order or product. Metrics are not an endpoint: the
+one step; 404 for an unknown store, order or product. Metrics are not an endpoint: the
 dashboard computes them from `GET /orders`.
 
 ## Layout
@@ -80,12 +85,12 @@ dashboard computes them from `GET /orders`.
 ```
 src/topa_api/
   domain/                 catalog, order rules and their pt-BR errors, no frameworks, no IO
-  application/            use cases (place, list, read and move orders, product availability)
+  application/            use cases (store menu, place, list, read and move orders, availability)
                           and the ports they need (repositories, clock, readiness probe)
   adapters/               SQLAlchemy models and repositories, engine, system clock
   presentation/fastapi/   routers, request/response schemas, the ports routes ask for, error handlers
   entrypoints/            create_app(): binds each port to its adapter; the ASGI app and the Lambda handler
-migrations/               Alembic, wired to Base.metadata; the first one seeds the demo menu
+migrations/               Alembic, wired to Base.metadata; seed the demo store and menu
 ```
 
 Each layer imports only the ones below it (entrypoints, presentation, application, domain).

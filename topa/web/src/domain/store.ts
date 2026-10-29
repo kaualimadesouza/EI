@@ -1,3 +1,9 @@
+/** A store loaded from the catalog, with the display name shown on its screens. */
+export interface Store {
+  slug: string
+  name: string
+}
+
 /** A store the phone app can open, read from its totem's NFC tag (the totem itself or its sticker). */
 export interface StoreRef {
   slug: string
@@ -6,7 +12,8 @@ export interface StoreRef {
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const PUBLIC_ORIGIN = 'https://topa-totem.vercel.app'
-const DEMO_STORE_SLUG = 'lanchonete-bem-te-vi'
+export const DEMO_STORE_SLUG = 'lanchonete-bem-te-vi'
+export const DEMO_STORE_NAME = 'Lanchonete Bem-te-vi'
 
 /** The tag holds the store's web URL; anything without a valid `loja` slug is not ours. */
 export function storeFromUrl(text: string): StoreRef | null {
@@ -36,7 +43,7 @@ function isReachableFromPhone(url: URL): boolean {
 }
 
 /** A phone scanning the queue QR cannot reach the totem's own loopback, so local runs point to the hosted site. */
-export function phoneMenuUrl(origin: string, basePath = '/'): string {
+export function phoneMenuUrl(origin: string, basePath = '/', storeSlug = DEMO_STORE_SLUG): string {
   let url: URL
   try {
     const candidate = new URL(basePath, origin)
@@ -44,6 +51,6 @@ export function phoneMenuUrl(origin: string, basePath = '/'): string {
   } catch {
     url = new URL(PUBLIC_ORIGIN)
   }
-  url.searchParams.set('loja', DEMO_STORE_SLUG)
+  url.searchParams.set('loja', storeSlug)
   return url.href
 }

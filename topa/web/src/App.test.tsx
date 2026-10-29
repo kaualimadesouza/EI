@@ -62,12 +62,22 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: /Comer aqui/ })).not.toBeInTheDocument()
   })
 
-  it('treats a store link opened from the totem as the customer phone: no queue to send away', () => {
+  it('treats a store link opened from the totem as the customer phone: shows sold-out items from the dashboard and no server pill', async () => {
+    const user = userEvent.setup()
+    const adapters = createAdapters(undefined)
+    const dashboard = render(<App adapters={adapters} path="/painel" />)
+    await user.click(await screen.findByRole('switch', { name: 'Coxinha à venda' }))
+    dashboard.unmount()
+
     window.history.replaceState(null, '', '/?loja=lanchonete-bem-te-vi')
-    render(<App adapters={createAdapters(undefined)} />)
+    render(<App adapters={adapters} />)
 
     expect(screen.getByRole('heading', { name: 'Peça aqui. Pague aqui.' })).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'A fila está grande? Peça pelo celular' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Comer aqui/ }))
+    await user.click(await screen.findByRole('button', { name: 'Salgados' }))
+    expect(screen.getByRole('button', { name: 'Coxinha, esgotado' })).toBeDisabled()
   })
 
   it('hands the staff gesture on the kiosk mark to the role switch', () => {

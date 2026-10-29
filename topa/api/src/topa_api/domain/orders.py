@@ -72,6 +72,7 @@ class OrderItem:
 @dataclass(frozen=True)
 class Order:
     id: uuid.UUID
+    store_slug: str
     number: int
     business_date: date
     status: OrderStatus

@@ -8,6 +8,7 @@ from sqlalchemy import (
     Date,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Integer,
     Text,
     UniqueConstraint,
@@ -16,7 +17,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from topa_api.adapters.db.base import Base
-from topa_api.domain.catalog import Category
+from topa_api.domain.catalog import DEFAULT_STORE_SLUG, Category
 from topa_api.domain.orders import OrderStatus, PaymentMethod
 
 
@@ -25,15 +26,29 @@ def _one_of(column: str, values: type[StrEnum]) -> CheckConstraint:
     return CheckConstraint(f"{column} IN ({allowed})", name=column)
 
 
+class StoreRow(Base):
+    __tablename__ = "stores"
+
+    slug: Mapped[str] = mapped_column(Text, primary_key=True)
+    name: Mapped[str] = mapped_column(Text)
+
+
 class ProductRow(Base):
     __tablename__ = "products"
     __table_args__ = (
+        UniqueConstraint("store_slug", "position"),
         _one_of("category", Category),
         CheckConstraint("price_cents >= 0", name="price_cents"),
     )
 
+    store_slug: Mapped[str] = mapped_column(
+        Text,
+        ForeignKey("stores.slug"),
+        primary_key=True,
+        server_default=DEFAULT_STORE_SLUG,
+    )
     id: Mapped[str] = mapped_column(Text, primary_key=True)
-    position: Mapped[int] = mapped_column(Integer, unique=True)
+    position: Mapped[int] = mapped_column(Integer)
     name: Mapped[str] = mapped_column(Text)
     description: Mapped[str] = mapped_column(Text)
     category: Mapped[str] = mapped_column(Text)
@@ -44,12 +59,16 @@ class ProductRow(Base):
 class OrderRow(Base):
     __tablename__ = "orders"
     __table_args__ = (
-        UniqueConstraint("business_date", "number"),
+        UniqueConstraint("store_slug", "business_date", "number"),
+        UniqueConstraint("id", "store_slug"),
         _one_of("status", OrderStatus),
         _one_of("payment_method", PaymentMethod),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
+    store_slug: Mapped[str] = mapped_column(
+        Text, ForeignKey("stores.slug"), server_default=DEFAULT_STORE_SLUG
+    )
     business_date: Mapped[date] = mapped_column(Date)
     number: Mapped[int] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(Text)
@@ -59,22 +78,42 @@ class OrderRow(Base):
     total_cents: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
-    items: Mapped[list["OrderItemRow"]] = relationship(cascade="all, delete-orphan")
+    items: Mapped[list["OrderItemRow"]] = relationship(
+        cascade="all, delete-orphan",
+        primaryjoin=(
+            "and_(OrderRow.id == OrderItemRow.order_id, "
+            "OrderRow.store_slug == OrderItemRow.store_slug)"
+        ),
+    )
 
 
 class OrderItemRow(Base):
     __tablename__ = "order_items"
     __table_args__ = (
+        ForeignKeyConstraint(
+            ["order_id", "store_slug"],
+            ["orders.id", "orders.store_slug"],
+            ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["store_slug", "product_id"],
+            ["products.store_slug", "products.id"],
+        ),
         CheckConstraint("quantity >= 1", name="quantity"),
         CheckConstraint("unit_price_cents >= 0", name="unit_price_cents"),
     )
 
-    order_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("orders.id", ondelete="CASCADE"), primary_key=True
-    )
-    product_id: Mapped[str] = mapped_column(Text, ForeignKey("products.id"), primary_key=True)
+    order_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
+    store_slug: Mapped[str] = mapped_column(Text, server_default=DEFAULT_STORE_SLUG)
+    product_id: Mapped[str] = mapped_column(Text, primary_key=True)
     quantity: Mapped[int] = mapped_column(Integer)
     # a snapshot: the product's price may change, what this customer paid does not
     unit_price_cents: Mapped[int] = mapped_column(Integer)
 
-    product: Mapped[ProductRow] = relationship()
+    product: Mapped[ProductRow] = relationship(
+        primaryjoin=(
+            "and_(OrderItemRow.store_slug == ProductRow.store_slug, "
+            "OrderItemRow.product_id == ProductRow.id)"
+        ),
+        viewonly=True,
+    )

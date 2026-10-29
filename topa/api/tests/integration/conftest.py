@@ -10,8 +10,9 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, NullPool, create_engine, delete, make_url, text, update
 
 from tests.fakes import FixedClock
-from topa_api.adapters.db.models import OrderRow, ProductRow
+from topa_api.adapters.db.models import OrderRow, ProductRow, StoreRow
 from topa_api.adapters.db.session import get_engine
+from topa_api.domain.catalog import DEFAULT_STORE_SLUG
 from topa_api.entrypoints.rest_application import create_app
 from topa_api.presentation.fastapi.dependencies import get_clock
 from topa_api.settings import Settings
@@ -57,10 +58,12 @@ def db_engine(alembic_config: Config) -> Iterator[Engine]:
 
 @pytest.fixture(autouse=True)
 def reset_database(db_engine: Engine) -> Iterator[None]:
-    """The seeded menu stays, all of it back on sale; every order a test placed goes."""
+    """The seeded store and menu stay, all back on sale; extra stores and orders go."""
     yield
     with db_engine.begin() as connection:
         connection.execute(delete(OrderRow))
+        connection.execute(delete(ProductRow).where(ProductRow.store_slug != DEFAULT_STORE_SLUG))
+        connection.execute(delete(StoreRow).where(StoreRow.slug != DEFAULT_STORE_SLUG))
         connection.execute(update(ProductRow).values(available=True))
 
 

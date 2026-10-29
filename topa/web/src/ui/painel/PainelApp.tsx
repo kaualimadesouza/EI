@@ -4,6 +4,7 @@ import { metricsOf } from '../../domain/metrics'
 import type { Product } from '../../domain/menu'
 import { ageMinutes, displayNumber, type OrderSummary } from '../../domain/order'
 import { nextStatus } from '../../domain/status'
+import { DEMO_STORE_NAME, DEMO_STORE_SLUG } from '../../domain/store'
 import type { Adapters } from '../../ports/adapters'
 import { OrderRejectedError } from '../../ports/orders'
 import { AlertIcon, BoardIcon, ChartIcon, ExternalIcon, ListIcon, StoreMark, UndoIcon } from '../icons'
@@ -14,6 +15,7 @@ import { OrdersBoard } from './OrdersBoard'
 
 interface PainelAppProps {
   adapters: Adapters
+  storeSlug?: string
   now?: () => Date
 }
 
@@ -48,7 +50,8 @@ function dayBefore(date: Date): Date {
   return previous
 }
 
-export function PainelApp({ adapters, now = () => new Date() }: PainelAppProps) {
+export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => new Date() }: PainelAppProps) {
+  const [storeName, setStoreName] = useState(DEMO_STORE_NAME)
   const [orders, setOrders] = useState<OrderSummary[]>([])
   const [yesterday, setYesterday] = useState<OrderSummary[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -61,14 +64,14 @@ export function PainelApp({ adapters, now = () => new Date() }: PainelAppProps) 
   const todayKey = businessDate(today)
 
   const refresh = useCallback(() => {
-    adapters.orders.list(todayKey).then(
+    adapters.orders.list(todayKey, storeSlug).then(
       (list) => {
         setOrders(list)
         setOffline(false)
       },
       () => setOffline(true),
     )
-  }, [adapters.orders, todayKey])
+  }, [adapters.orders, storeSlug, todayKey])
 
   // polling keeps a kiosk tab and this one in step, through the API or the shared browser storage
   useEffect(() => {
@@ -78,12 +81,19 @@ export function PainelApp({ adapters, now = () => new Date() }: PainelAppProps) 
   }, [refresh])
 
   useEffect(() => {
-    adapters.orders.list(businessDate(dayBefore(new Date(`${todayKey}T12:00:00`)))).then(setYesterday, () => setYesterday([]))
-  }, [adapters.orders, todayKey])
+    const yesterdayKey = businessDate(dayBefore(new Date(`${todayKey}T12:00:00`)))
+    adapters.orders.list(yesterdayKey, storeSlug).then(setYesterday, () => setYesterday([]))
+  }, [adapters.orders, storeSlug, todayKey])
 
   useEffect(() => {
-    adapters.menu.list().then(setProducts, () => setOffline(true))
-  }, [adapters.menu])
+    adapters.menu.load(storeSlug).then(
+      (menu) => {
+        setStoreName(menu.store.name)
+        setProducts(menu.products)
+      },
+      () => setOffline(true),
+    )
+  }, [adapters.menu, storeSlug])
 
   useEffect(() => {
     if (!undo) return
@@ -118,7 +128,7 @@ export function PainelApp({ adapters, now = () => new Date() }: PainelAppProps) 
 
   const setAvailability = async (product: Product, available: boolean) => {
     try {
-      const updated = await adapters.menu.setAvailability(product.id, available)
+      const updated = await adapters.menu.setAvailability(product.id, available, storeSlug)
       setProducts((list) => list.map((p) => (p.id === updated.id ? updated : p)))
       setProblem(null)
     } catch {
@@ -141,7 +151,7 @@ export function PainelApp({ adapters, now = () => new Date() }: PainelAppProps) 
         <div className="flex items-center gap-3 px-2 max-xl:justify-center max-xl:px-0">
           <StoreMark size={40} />
           <span className="flex flex-col max-xl:hidden">
-            <span className="text-[16px] font-semibold">Lanchonete Bem-te-vi</span>
+            <span className="text-[16px] font-semibold">{storeName}</span>
             <span className="text-[13px] text-muted">Painel do lojista</span>
           </span>
         </div>

@@ -12,6 +12,7 @@ interface PaymentScreenProps {
   method: KioskState['paymentMethod']
   payment: KioskState['payment']
   error: string | null
+  allowCard?: boolean
   onMethod: (method: KioskState['paymentMethod']) => void
   onApprove: () => void
   onDecline: () => void
@@ -21,7 +22,7 @@ interface PaymentScreenProps {
 export const PIX_SECONDS = 300
 
 export function PaymentScreen(props: PaymentScreenProps) {
-  const { totalCents, method, payment, error, onMethod, onApprove, onDecline, onBackToBag } = props
+  const { totalCents, method, payment, error, allowCard = true, onMethod, onApprove, onDecline, onBackToBag } = props
   const busy = payment === 'processing'
 
   return (
@@ -29,32 +30,48 @@ export function PaymentScreen(props: PaymentScreenProps) {
       {/* side by side on a wide landscape screen: choices on the left, what to do now on the right */}
       <div className="mx-auto flex w-full max-w-[880px] flex-1 flex-col gap-6 max-sm:gap-4 lg:landscape:grid lg:landscape:max-w-[1200px] lg:landscape:grid-cols-2 lg:landscape:content-start lg:landscape:gap-x-10">
         <div className="flex items-baseline justify-between gap-4 max-sm:flex-col max-sm:gap-1 lg:landscape:col-start-1 lg:landscape:flex-col lg:landscape:gap-1">
-          <h1 className="text-title leading-tight font-bold">Como você quer pagar?</h1>
+          <h1 className="text-title leading-tight font-bold">
+            {allowCard ? 'Como você quer pagar?' : 'Pague com Pix'}
+          </h1>
           <span className="text-title font-bold whitespace-nowrap tabular-nums">{formatBRL(totalCents)}</span>
         </div>
-        <div className="grid grid-cols-2 gap-6 max-sm:gap-3 lg:landscape:col-start-1">
-          <MethodTile selected={method === 'card'} disabled={busy} label="Cartão ou celular" onClick={() => onMethod('card')}>
-            <CardIcon size={40} className="phone:size-8" />
-          </MethodTile>
-          <MethodTile selected={method === 'pix'} disabled={busy} label="Pix" onClick={() => onMethod('pix')}>
-            <PixIcon size={40} className="phone:size-8" />
-          </MethodTile>
-        </div>
+        {allowCard && (
+          <div className="grid grid-cols-2 gap-6 max-sm:gap-3 lg:landscape:col-start-1">
+            <MethodTile selected={method === 'card'} disabled={busy} label="Cartão ou celular" onClick={() => onMethod('card')}>
+              <CardIcon size={40} className="phone:size-8" />
+            </MethodTile>
+            <MethodTile selected={method === 'pix'} disabled={busy} label="Pix" onClick={() => onMethod('pix')}>
+              <PixIcon size={40} className="phone:size-8" />
+            </MethodTile>
+          </div>
+        )}
         <section className="flex min-h-[420px] flex-1 flex-col items-center justify-between gap-6 rounded-panel border border-line bg-white p-8 text-center short:min-h-0 max-sm:min-h-0 max-sm:gap-4 max-sm:p-5 lg:landscape:col-start-2 lg:landscape:row-span-3 lg:landscape:row-start-1">
           {payment === 'processing' && <p role="status" className="my-auto text-heading font-semibold">Processando o pagamento...</p>}
-          {payment === 'declined' && (
-            <Problem
-              message="Pagamento não aprovado. Tente de novo ou pague com Pix."
-              primary="Tentar de novo"
-              onPrimary={() => onMethod(method)}
-              secondary="Pagar com Pix"
-              onSecondary={() => onMethod('pix')}
-            />
-          )}
+          {payment === 'declined' &&
+            (allowCard ? (
+              <Problem
+                message="Pagamento não aprovado. Tente de novo ou pague com Pix."
+                primary="Tentar de novo"
+                onPrimary={() => onMethod(method)}
+                secondary="Pagar com Pix"
+                onSecondary={() => onMethod('pix')}
+              />
+            ) : (
+              <Problem
+                message="Pagamento não confirmado. Tente de novo."
+                primary="Tentar de novo"
+                onPrimary={() => onMethod('pix')}
+              />
+            ))}
           {payment === 'failed' && (
             <Problem message={error} primary="Voltar ao pedido" onPrimary={onBackToBag} />
           )}
-          {payment === 'choosing' && (method === 'card' ? <CardInstructions /> : <PixInstructions totalCents={totalCents} />)}
+          {payment === 'choosing' &&
+            (allowCard && method === 'card' ? (
+              <CardInstructions />
+            ) : (
+              <PixInstructions totalCents={totalCents} onPhone={!allowCard} />
+            ))}
         </section>
         {payment === 'choosing' && (
           <div className="flex flex-wrap justify-center gap-x-8 phone:gap-y-2 lg:landscape:col-start-1">
@@ -114,10 +131,13 @@ function CardInstructions() {
   )
 }
 
-function PixInstructions({ totalCents }: { totalCents: number }) {
+function PixInstructions({ totalCents, onPhone }: { totalCents: number; onPhone: boolean }) {
   const [round, setRound] = useState(0)
+  const [copiedRound, setCopiedRound] = useState<number | null>(null)
+  const [copyFailedRound, setCopyFailedRound] = useState<number | null>(null)
   const left = useCountdown(PIX_SECONDS, () => {}, round)
   const clock = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`
+  const code = `TOPA-PIX-DEMO-${totalCents}-${round}`
 
   if (left === 0) {
     return (
@@ -131,8 +151,27 @@ function PixInstructions({ totalCents }: { totalCents: number }) {
   }
   return (
     <>
-      <p className="text-lead font-semibold phone:leading-snug">Abra o app do seu banco e leia o código.</p>
-      <Qr value={`TOPA-PIX-DEMO-${totalCents}-${round}`} size={260} label="Código Pix de demonstração" />
+      <p className="text-lead font-semibold phone:leading-snug">
+        {onPhone ? 'Copie o código Pix e pague no app do seu banco.' : 'Abra o app do seu banco e leia o código.'}
+      </p>
+      <Qr value={code} size={onPhone ? 220 : 260} label="Código Pix de demonstração" />
+      {onPhone && (
+        <button
+          type="button"
+          onClick={() => {
+            navigator.clipboard.writeText(code).then(
+              () => setCopiedRound(round),
+              () => setCopyFailedRound(round),
+            )
+          }}
+          className={`${SECONDARY_ACTION} h-16 px-8 text-label text-ink`}
+        >
+          {copiedRound === round ? 'Código copiado' : 'Copiar código Pix'}
+        </button>
+      )}
+      {copyFailedRound === round && (
+        <p className="rounded-control bg-ground-2 px-4 py-2 font-mono text-caption select-all">{code}</p>
+      )}
       <p className="text-body text-muted tabular-nums">O código vale por {clock}</p>
     </>
   )

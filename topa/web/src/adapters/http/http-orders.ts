@@ -50,11 +50,12 @@ export class HttpOrders implements OrdersPort {
 
   async place(draft: OrderDraft): Promise<PlacedOrder> {
     const response = await this.client.post('/orders', {
+      store_slug: draft.storeSlug,
       items: draft.lines.map((line) => ({ product_id: line.productId, quantity: line.quantity })),
       dine_in: draft.dineIn,
       payment_method: draft.paymentMethod,
     })
-    if (response.status === 409 || response.status === 422) {
+    if (response.status === 404 || response.status === 409 || response.status === 422) {
       throw await refusal(response, 'Não foi possível registrar o pedido.')
     }
     if (!response.ok) throw new Error(`POST /orders answered ${response.status}`)
@@ -62,8 +63,9 @@ export class HttpOrders implements OrdersPort {
     return { id: order.id, number: order.number, totalCents: order.total_cents }
   }
 
-  async list(businessDate: string): Promise<OrderSummary[]> {
-    const response = await this.client.get(`/orders?date=${businessDate}`)
+  async list(businessDate: string, storeSlug: string): Promise<OrderSummary[]> {
+    const path = `/orders?date=${encodeURIComponent(businessDate)}&loja=${encodeURIComponent(storeSlug)}`
+    const response = await this.client.get(path)
     if (!response.ok) throw new Error(`GET /orders answered ${response.status}`)
     return ((await response.json()) as OrderJson[]).map(toSummary)
   }

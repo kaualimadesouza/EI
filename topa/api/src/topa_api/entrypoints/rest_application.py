@@ -10,9 +10,10 @@ from topa_api.adapters.clock import SystemClock
 from topa_api.adapters.db.repositories import (
     SqlAlchemyOrderRepository,
     SqlAlchemyProductRepository,
+    SqlAlchemyStoreRepository,
 )
 from topa_api.adapters.db.session import DatabaseReadinessProbe, get_engine
-from topa_api.application.ports import OrderRepository, ProductRepository
+from topa_api.application.ports import OrderRepository, ProductRepository, StoreRepository
 from topa_api.presentation.fastapi import dependencies as ports
 from topa_api.presentation.fastapi.errors import install_error_handlers
 from topa_api.presentation.fastapi.health import router as health_router
@@ -26,6 +27,12 @@ def get_session(engine: Annotated[Engine, Depends(get_engine)]) -> Iterator[Sess
     scope commits after the response is sent, so a failed commit would still say 2xx."""
     with Session(engine) as session, session.begin():
         yield session
+
+
+def store_repository(
+    session: Annotated[Session, Depends(get_session, scope="function")],
+) -> StoreRepository:
+    return SqlAlchemyStoreRepository(session)
 
 
 def product_repository(
@@ -58,6 +65,7 @@ def create_app() -> FastAPI:
     app.dependency_overrides.update(
         {
             ports.get_readiness_probe: lambda: probe,
+            ports.get_store_repository: store_repository,
             ports.get_product_repository: product_repository,
             ports.get_order_repository: order_repository,
             ports.get_clock: SystemClock,

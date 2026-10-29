@@ -76,5 +76,8 @@ describe('phoneMenuUrl', () => {
       slug: 'lanchonete-bem-te-vi',
       url: 'https://topa-totem.vercel.app/?loja=lanchonete-bem-te-vi',
     })
+    expect(phoneMenuUrl('https://topa-totem.vercel.app', '/', 'cantina-central')).toBe(
+      'https://topa-totem.vercel.app/?loja=cantina-central',
+    )
   })
 })

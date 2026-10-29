@@ -14,20 +14,47 @@ function portAnswering(reachable: boolean): ConnectionPort {
 
 const pending: ConnectionPort = { isReachable: () => new Promise<boolean>(() => {}) }
 
-function renderStart(mode: 'api' | 'demo', connection: ConnectionPort) {
+function renderStart(
+  mode: 'api' | 'demo',
+  connection: ConnectionPort,
+  storeName: string | null = 'Lanchonete Bem-te-vi',
+) {
   const onBegin = vi.fn()
   const onQueue = vi.fn()
-  const view = render(<StartScreen mode={mode} connection={connection} onBegin={onBegin} onQueue={onQueue} />)
+  const view = render(
+    <StartScreen
+      storeName={storeName}
+      serverStatus={{ mode, connection }}
+      onBegin={onBegin}
+      onQueue={onQueue}
+    />,
+  )
   return { onBegin, onQueue, view }
 }
 
 describe('StartScreen', () => {
   it('greets the customer with the store and the headline', () => {
-    renderStart('api', pending)
+    renderStart('api', pending, 'Cantina Central')
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Peça aqui. Pague aqui.')
-    expect(screen.getByText('Lanchonete Bem-te-vi')).toBeInTheDocument()
+    expect(screen.getByText('Cantina Central')).toBeInTheDocument()
+    expect(screen.getByText('Monte o pedido, pague por aproximação ou Pix e retire no balcão.')).toBeInTheDocument()
     expect(screen.getByText('por TOPA')).toBeInTheDocument()
+  })
+
+  it('hides the store pill while the store name has not arrived yet', () => {
+    renderStart('api', pending, null)
+
+    expect(screen.queryByText('Lanchonete Bem-te-vi')).not.toBeInTheDocument()
+  })
+
+  it('on the customer phone omits the server status pill, never pings the server and explains Pix payment', () => {
+    const isReachable = vi.fn(() => Promise.resolve(true))
+    render(<StartScreen storeName="Cantina Central" allowCard={false} onBegin={vi.fn()} />)
+
+    expect(isReachable).not.toHaveBeenCalled()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.getByText('Monte o pedido, pague com Pix e retire no balcão.')).toBeInTheDocument()
   })
 
   it('starts a dine-in or take-away order, or opens the phone queue', async () => {
@@ -76,7 +103,14 @@ describe('StartScreen', () => {
     }
     const { view } = renderStart('api', first)
 
-    view.rerender(<StartScreen mode="api" connection={portAnswering(false)} onBegin={vi.fn()} onQueue={vi.fn()} />)
+    view.rerender(
+      <StartScreen
+        storeName="Lanchonete Bem-te-vi"
+        serverStatus={{ mode: 'api', connection: portAnswering(false) }}
+        onBegin={vi.fn()}
+        onQueue={vi.fn()}
+      />,
+    )
     expect(await screen.findByText(OFFLINE)).toBeInTheDocument()
     await act(async () => answerFirst(true))
 

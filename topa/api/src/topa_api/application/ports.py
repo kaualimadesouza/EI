@@ -3,7 +3,7 @@ from collections.abc import Collection
 from datetime import date, datetime
 from typing import Protocol
 
-from topa_api.domain.catalog import Product
+from topa_api.domain.catalog import Product, Store
 from topa_api.domain.orders import Order, OrderStatus
 
 
@@ -19,30 +19,34 @@ class Clock(Protocol):
         ...
 
 
+class StoreRepository(Protocol):
+    def get(self, slug: str) -> Store | None: ...
+
+
 class ProductRepository(Protocol):
-    def list_all(self) -> list[Product]:
-        """In menu order, sold-out products included."""
+    def list_for_store(self, store_slug: str) -> list[Product]:
+        """In menu order for that store, sold-out products included."""
         ...
 
-    def find(self, product_ids: Collection[str]) -> list[Product]:
-        """The ones that exist, in no particular order; an unknown id is simply absent."""
+    def find(self, store_slug: str, product_ids: Collection[str]) -> list[Product]:
+        """That store's products matching those ids; an unknown id is absent."""
         ...
 
-    def set_availability(self, product_id: str, available: bool) -> Product | None:
-        """The product as it now stands, or None when no product has that id."""
+    def set_availability(self, store_slug: str, product_id: str, available: bool) -> Product | None:
+        """The product as it now stands, or None when that store has no such product."""
         ...
 
 
 class OrderRepository(Protocol):
-    def next_number(self, business_date: date) -> int:
-        """One past the highest number of that day. Holds a per-day lock until the
-        caller's transaction ends, so concurrent orders never share a number."""
+    def next_number(self, store_slug: str, business_date: date) -> int:
+        """One past the highest number of that store and day. Holds a per-store-day lock
+        until the caller's transaction ends, so concurrent orders never share a number."""
         ...
 
     def add(self, order: Order) -> None: ...
 
-    def list_for_day(self, business_date: date) -> list[Order]:
-        """That business day's orders, by number."""
+    def list_for_day(self, store_slug: str, business_date: date) -> list[Order]:
+        """That store's orders for the business day, by number."""
         ...
 
     def get(self, order_id: uuid.UUID) -> Order | None:

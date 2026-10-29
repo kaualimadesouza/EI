@@ -21,12 +21,13 @@ export function App({ adapters, path = window.location.pathname, phone = false, 
       </main>
     )
   }
-  if (path.startsWith(`${import.meta.env.BASE_URL}painel`)) return <PainelApp adapters={adapters} />
-  // a store link comes from the totem's QR or tag, so this browser is already the customer's phone
-  const onCustomerPhone = storeFromUrl(window.location.href) !== null
+  const store = storeFromUrl(window.location.href)
+  if (path.startsWith(`${import.meta.env.BASE_URL}painel`)) {
+    return <PainelApp adapters={adapters} storeSlug={store?.slug} />
+  }
   return (
     <main className="flex h-dvh flex-col overflow-hidden">
-      <KioskApp adapters={adapters} onSwitchRole={onSwitchRole} onCustomerPhone={onCustomerPhone} />
+      <KioskApp adapters={adapters} onSwitchRole={onSwitchRole} customerStore={store?.slug} />
     </main>
   )
 }

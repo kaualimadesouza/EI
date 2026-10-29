@@ -5,7 +5,7 @@ from collections.abc import Collection
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime
 
-from topa_api.domain.catalog import Product
+from topa_api.domain.catalog import Product, Store
 from topa_api.domain.orders import Order, OrderStatus
 
 
@@ -18,20 +18,33 @@ class FixedClock:
 
 
 @dataclass
+class InMemoryStoreRepository:
+    stores: list[Store]
+
+    def get(self, slug: str) -> Store | None:
+        return next((store for store in self.stores if store.slug == slug), None)
+
+
+@dataclass
 class InMemoryProductRepository:
-    products: list[Product]
+    products_by_store: dict[str, list[Product]]
 
-    def list_all(self) -> list[Product]:
-        return list(self.products)
+    def list_for_store(self, store_slug: str) -> list[Product]:
+        return list(self.products_by_store.get(store_slug, ()))
 
-    def find(self, product_ids: Collection[str]) -> list[Product]:
-        return [product for product in self.products if product.id in product_ids]
+    def find(self, store_slug: str, product_ids: Collection[str]) -> list[Product]:
+        return [
+            product
+            for product in self.products_by_store.get(store_slug, ())
+            if product.id in product_ids
+        ]
 
-    def set_availability(self, product_id: str, available: bool) -> Product | None:
-        for position, product in enumerate(self.products):
+    def set_availability(self, store_slug: str, product_id: str, available: bool) -> Product | None:
+        catalog = self.products_by_store.get(store_slug, [])
+        for position, product in enumerate(catalog):
             if product.id == product_id:
-                self.products[position] = replace(product, available=available)
-                return self.products[position]
+                catalog[position] = replace(product, available=available)
+                return catalog[position]
         return None
 
 
@@ -39,16 +52,24 @@ class InMemoryProductRepository:
 class InMemoryOrderRepository:
     orders: list[Order] = field(default_factory=list)
 
-    def next_number(self, business_date: date) -> int:
-        taken = [order.number for order in self.orders if order.business_date == business_date]
+    def next_number(self, store_slug: str, business_date: date) -> int:
+        taken = [
+            order.number
+            for order in self.orders
+            if order.store_slug == store_slug and order.business_date == business_date
+        ]
         return max(taken, default=0) + 1
 
     def add(self, order: Order) -> None:
         self.orders.append(order)
 
-    def list_for_day(self, business_date: date) -> list[Order]:
+    def list_for_day(self, store_slug: str, business_date: date) -> list[Order]:
         return sorted(
-            (order for order in self.orders if order.business_date == business_date),
+            (
+                order
+                for order in self.orders
+                if order.store_slug == store_slug and order.business_date == business_date
+            ),
             key=lambda order: order.number,
         )
 

@@ -2,17 +2,25 @@ from datetime import UTC, date, datetime, timedelta
 
 import pytest
 
-from tests.fakes import FixedClock, InMemoryOrderRepository, InMemoryProductRepository
+from tests.fakes import (
+    FixedClock,
+    InMemoryOrderRepository,
+    InMemoryProductRepository,
+    InMemoryStoreRepository,
+)
 from topa_api.application.place_order import PlaceOrder, PlaceOrderUseCase
-from topa_api.domain.catalog import Category, Product
+from topa_api.domain.catalog import Category, Product, Store
 from topa_api.domain.errors import (
     EmptyOrderError,
     ProductUnavailableError,
+    StoreNotFoundError,
     UnknownProductError,
 )
 from topa_api.domain.orders import OrderItem, OrderLine, OrderStatus, PaymentMethod
 
 NOON_IN_SAO_PAULO = datetime(2026, 10, 26, 15, 0, tzinfo=UTC)
+BEM_TE_VI = Store(slug="lanchonete-bem-te-vi", name="Lanchonete Bem-te-vi")
+CANTINA = Store(slug="cantina-central", name="Cantina Central")
 
 CATALOG = [
     Product(
@@ -40,6 +48,16 @@ CATALOG = [
         available=False,
     ),
 ]
+CANTINA_CATALOG = [
+    Product(
+        id="refri",
+        name="Refrigerante lata",
+        description="350 ml.",
+        category=Category.BEBIDAS,
+        price_cents=800,
+        available=True,
+    )
+]
 
 
 @pytest.fixture
@@ -54,18 +72,25 @@ def orders() -> InMemoryOrderRepository:
 
 @pytest.fixture
 def place_order(clock: FixedClock, orders: InMemoryOrderRepository) -> PlaceOrderUseCase:
-    return PlaceOrderUseCase(InMemoryProductRepository(CATALOG), orders, clock)
+    stores = InMemoryStoreRepository([BEM_TE_VI, CANTINA])
+    products = InMemoryProductRepository(
+        {BEM_TE_VI.slug: list(CATALOG), CANTINA.slug: list(CANTINA_CATALOG)}
+    )
+    return PlaceOrderUseCase(stores, products, orders, clock)
 
 
-def _order_of(*lines: OrderLine) -> PlaceOrder:
-    return PlaceOrder(lines=lines, dine_in=True, payment_method=PaymentMethod.PIX)
+def _order_of(*lines: OrderLine, store_slug: str = BEM_TE_VI.slug) -> PlaceOrder:
+    return PlaceOrder(
+        store_slug=store_slug, lines=lines, dine_in=True, payment_method=PaymentMethod.PIX
+    )
 
 
-def test_prices_the_order_from_the_catalog_and_stores_it(
+def test_prices_the_order_from_the_stores_catalog_and_stores_it(
     place_order: PlaceOrderUseCase, orders: InMemoryOrderRepository
 ) -> None:
     order = place_order.execute(
         PlaceOrder(
+            store_slug=BEM_TE_VI.slug,
             lines=(
                 OrderLine(product_id="xsalada", quantity=2),
                 OrderLine(product_id="refri", quantity=1),
@@ -75,6 +100,7 @@ def test_prices_the_order_from_the_catalog_and_stores_it(
         )
     )
 
+    assert order.store_slug == BEM_TE_VI.slug
     assert order.number == 1
     assert order.status == OrderStatus.RECEIVED
     assert order.dine_in is False
@@ -87,6 +113,16 @@ def test_prices_the_order_from_the_catalog_and_stores_it(
     assert order.created_at == NOON_IN_SAO_PAULO
     assert order.business_date == date(2026, 10, 26)
     assert orders.orders == [order]
+
+
+def test_each_store_numbers_and_prices_its_own_orders(place_order: PlaceOrderUseCase) -> None:
+    first_bem_te_vi = place_order.execute(_order_of(OrderLine(product_id="refri", quantity=1)))
+    first_cantina = place_order.execute(
+        _order_of(OrderLine(product_id="refri", quantity=1), store_slug=CANTINA.slug)
+    )
+
+    assert (first_bem_te_vi.number, first_bem_te_vi.total_cents) == (1, 690)
+    assert (first_cantina.number, first_cantina.total_cents) == (1, 800)
 
 
 def test_each_order_gets_its_own_id(place_order: PlaceOrderUseCase) -> None:
@@ -133,20 +169,23 @@ def test_repeated_products_become_one_item(place_order: PlaceOrderUseCase) -> No
 
 
 @pytest.mark.parametrize(
-    ("lines", "error"),
+    ("store_slug", "lines", "error"),
     [
-        ((), EmptyOrderError),
-        ((OrderLine(product_id="pastel", quantity=1),), UnknownProductError),
-        ((OrderLine(product_id="coxinha", quantity=1),), ProductUnavailableError),
+        ("outra-loja", (OrderLine(product_id="refri", quantity=1),), StoreNotFoundError),
+        (BEM_TE_VI.slug, (), EmptyOrderError),
+        (BEM_TE_VI.slug, (OrderLine(product_id="pastel", quantity=1),), UnknownProductError),
+        (CANTINA.slug, (OrderLine(product_id="xsalada", quantity=1),), UnknownProductError),
+        (BEM_TE_VI.slug, (OrderLine(product_id="coxinha", quantity=1),), ProductUnavailableError),
     ],
 )
 def test_an_order_that_breaks_a_rule_is_not_stored(
     place_order: PlaceOrderUseCase,
     orders: InMemoryOrderRepository,
+    store_slug: str,
     lines: tuple[OrderLine, ...],
     error: type[Exception],
 ) -> None:
     with pytest.raises(error):
-        place_order.execute(_order_of(*lines))
+        place_order.execute(_order_of(*lines, store_slug=store_slug))
 
     assert orders.orders == []

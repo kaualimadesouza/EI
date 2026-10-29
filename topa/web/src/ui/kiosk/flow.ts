@@ -34,8 +34,8 @@ export const START: KioskState = {
   sheet: 'none',
 }
 
-export function begin(dineIn: boolean): KioskState {
-  return { ...START, screen: 'menu', dineIn }
+export function begin(dineIn: boolean, paymentMethod: 'card' | 'pix' = 'card'): KioskState {
+  return { ...START, screen: 'menu', dineIn, paymentMethod }
 }
 
 export function openQueue(): KioskState {

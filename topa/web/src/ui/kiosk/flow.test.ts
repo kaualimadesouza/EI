@@ -26,8 +26,9 @@ import {
 const product = (id: string): Product => findProduct(DEMO_CATALOG, id)!
 
 describe('kiosk flow', () => {
-  it('starts an order on the menu with the dine-in choice', () => {
+  it('starts an order on the menu with the dine-in and payment choice', () => {
     expect(begin(false)).toEqual({ ...START, screen: 'menu', dineIn: false })
+    expect(begin(true, 'pix')).toEqual({ ...START, screen: 'menu', dineIn: true, paymentMethod: 'pix' })
     expect(openQueue().screen).toBe('queue')
   })
 

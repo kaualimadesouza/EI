@@ -1,11 +1,12 @@
 import { findProduct } from '../../domain/menu'
 import { displayNumber, type OrderDraft, type OrderSummary, type PlacedOrder } from '../../domain/order'
 import { canMove, STATUS_LABEL } from '../../domain/status'
-import type { MenuPort } from '../../ports/menu'
+import { StoreNotFoundError, type MenuPort } from '../../ports/menu'
 import { OrderRejectedError, type OrdersPort } from '../../ports/orders'
 import { browserStorage, StoredValue, type KeyValueStore } from './browser-storage'
 
 interface StoredOrder extends OrderSummary {
+  storeSlug: string
   businessDate: string
 }
 
@@ -20,12 +21,18 @@ export class LocalOrders implements OrdersPort {
 
   constructor(menu: MenuPort, storage: KeyValueStore | null = browserStorage(), now: () => Date = () => new Date()) {
     this.menu = menu
-    this.orders = new StoredValue<StoredOrder[]>(storage, 'topa.orders.v2', [])
+    this.orders = new StoredValue<StoredOrder[]>(storage, 'topa.orders.v3', [])
     this.now = now
   }
 
   async place(draft: OrderDraft): Promise<PlacedOrder> {
-    const products = await this.menu.list()
+    const products = await this.menu.load(draft.storeSlug).then(
+      (menu) => menu.products,
+      (error: unknown) => {
+        if (error instanceof StoreNotFoundError) throw new OrderRejectedError(error.message)
+        throw error
+      },
+    )
     const items = draft.lines.map((line) => {
       const product = findProduct(products, line.productId)
       if (!product) throw new OrderRejectedError('Um dos produtos não está mais no cardápio.')
@@ -37,7 +44,8 @@ export class LocalOrders implements OrdersPort {
     const orders = this.orders.read()
     const order: StoredOrder = {
       id: crypto.randomUUID(),
-      number: orders.filter((o) => o.businessDate === businessDate).length + 1,
+      storeSlug: draft.storeSlug,
+      number: orders.filter((o) => o.storeSlug === draft.storeSlug && o.businessDate === businessDate).length + 1,
       businessDate,
       status: 'received',
       dineIn: draft.dineIn,
@@ -50,8 +58,10 @@ export class LocalOrders implements OrdersPort {
     return { id: order.id, number: order.number, totalCents: order.totalCents }
   }
 
-  list(businessDate: string): Promise<OrderSummary[]> {
-    return Promise.resolve(this.orders.read().filter((order) => order.businessDate === businessDate))
+  list(businessDate: string, storeSlug: string): Promise<OrderSummary[]> {
+    return Promise.resolve(
+      this.orders.read().filter((order) => order.storeSlug === storeSlug && order.businessDate === businessDate),
+    )
   }
 
   // only the customer's phone follows an order, so only a phone order is cooked; the totem's waits
