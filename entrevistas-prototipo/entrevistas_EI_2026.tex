@@ -6,10 +6,10 @@
 \geometry{left=1.5cm, right=1.5cm, top=2.54cm, bottom=2.54cm}
 \usepackage{graphicx, setspace, amsmath, amssymb, titlesec, fancyhdr, parskip, indentfirst, etoolbox, caption, cite, xcolor}
 \usepackage{listings}
-\usepackage{url}
-\usepackage{hyperref}
 \usepackage{multicol}
-\usepackage{array}
+\usepackage{array, booktabs, tabularx}
+\usepackage[hyphens]{url}
+\usepackage[hidelinks]{hyperref}
 
 \graphicspath{{figuras/}}
 
@@ -32,9 +32,12 @@
 \date{}
 
 \captionsetup{labelfont={small,sc}, textfont={small,sc}}
+\captionsetup[table]{skip=6pt}
 \renewcommand{\figurename}{Figura}
 \renewcommand{\tablename}{Tabela}
 \renewcommand{\refname}{Referências}
+
+\newcommand{\nota}[1]{\\[1pt]{\footnotesize\itshape #1}}
 
 % Section Numbering
 \renewcommand{\thesection}{\Roman{section}.}
@@ -168,18 +171,18 @@ Cada tela do protótipo isola um diferencial e testa uma hipótese sobre o compo
     \centering
     \caption{Hipótese testada em cada tela}
     \label{tab:hipoteses}
-    \renewcommand{\arraystretch}{1.3}
-    \begin{tabular}{|>{\raggedright\arraybackslash}p{2.4cm}|>{\raggedright\arraybackslash}p{4.4cm}|>{\raggedright\arraybackslash}p{9.8cm}|}
-        \hline
+    \renewcommand{\arraystretch}{1.25}
+    \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}p{4.6cm}>{\raggedright\arraybackslash}X@{}}
+        \toprule
         \textbf{Tela} & \textbf{Diferencial} & \textbf{Hipótese} \\
-        \hline
+        \midrule
         1. Cardápio & Recomendação por visão computacional & O cliente monta o pedido sozinho e aceita a sugestão contextual sem se incomodar com a câmera. \\
-        \hline
+        \addlinespace[3pt]
         2. Pagamento & Pix e \textit{Tap on Phone} no aparelho & O cliente confia em pagar no terminal em vez do caixa, mesmo sem um atendente por perto. \\
-        \hline
+        \addlinespace[3pt]
         3. Fila cheia & Transbordo de fila por QR Code ou NFC & Diante de fila, o cliente troca o terminal pelo próprio celular, desde que não precise baixar aplicativo. \\
-        \hline
-    \end{tabular}
+        \bottomrule
+    \end{tabularx}
 \end{table}
 
 A operação offline fica fora das entrevistas: quando funciona, ela é invisível para o usuário final, e será medida em campo pela taxa de perda na reconciliação (valor recusado quando a rede volta, com meta abaixo de 1\%). As entrevistas também antecipam, de forma qualitativa, duas métricas que só podem ser medidas com o terminal em operação: a taxa de aceite de recomendação (tela 1) e o \textit{throughput} do terminal, o tempo do primeiro toque até o comprovante (telas 1 e 2).
@@ -213,8 +216,8 @@ O protótipo tem proporção de celular de propósito (Figura \ref{fig:telas}). 
 
 \begin{enumerate}
     \item Olhando essa tela, você saberia fazer um pedido sozinho, sem ajuda?
-    \item Esse totem \textbf{resolveria} a espera ou o atendimento que você costuma enfrentar nesses lugares? \textit{Escala de 1 (nada) a 5 (totalmente).}
-    \item A ``sugestão para você'' ajuda ou incomoda? Como você se sentiria sabendo que ela é feita por uma câmera no aparelho? \textit{Aberta: anotar a reação espontânea sobre privacidade.}
+    \item Esse totem \textbf{resolveria} a espera ou o atendimento que você costuma enfrentar nesses lugares?\nota{Escala de 1 (nada) a 5 (totalmente).}
+    \item A ``sugestão para você'' ajuda ou incomoda? Como você se sentiria sabendo que ela é feita por uma câmera no aparelho?\nota{Aberta: anotar a reação espontânea sobre privacidade.}
 \end{enumerate}
 
 \subsection{Tela 2: Pagamento}
@@ -222,8 +225,8 @@ O protótipo tem proporção de celular de propósito (Figura \ref{fig:telas}). 
 \begin{enumerate}
     \setcounter{enumi}{3}
     \item Você pagaria por aqui em vez de ir ao caixa? Por quê (ou por que não)?
-    \item O que te deixaria inseguro ao pagar nesse totem? \textit{Aberta: anotar confiança, medo de erro ou falta de recibo.}
-    \item Você \textbf{pagaria} mais caro (ex.: R\$ 1 a mais) por essa comodidade, ou só usaria se fosse igual ao caixa? \textit{Sim, só se igual ou não.}
+    \item O que te deixaria inseguro ao pagar nesse totem?\nota{Aberta: anotar confiança, medo de erro ou falta de recibo.}
+    \item Você \textbf{pagaria} mais caro (ex.: R\$ 1 a mais) por essa comodidade, ou só usaria se fosse igual ao caixa?\nota{Sim, só se igual ou não.}
 \end{enumerate}
 
 \subsection{Tela 3: Fila cheia}
@@ -232,7 +235,7 @@ O protótipo tem proporção de celular de propósito (Figura \ref{fig:telas}). 
     \setcounter{enumi}{6}
     \item Se a fila estivesse grande, você pediria pelo próprio celular ou esperaria o totem? Por quê?
     \item Escanear ou aproximar o celular sem baixar app é tranquilo para você? O que travaria?
-    \item No geral: você \textbf{usaria} esse totem no lugar do caixa? \textit{Escala de 1 a 5; perguntar o motivo da nota.}
+    \item No geral: você \textbf{usaria} esse totem no lugar do caixa?\nota{Escala de 1 a 5; perguntar o motivo da nota.}
 \end{enumerate}
 
 \section{Análise}
@@ -245,6 +248,7 @@ As respostas são consolidadas por hipótese, somando as 75 entrevistas:
     \item \textbf{Perguntas abertas}: reações agrupadas por tema, como privacidade da câmera (3), confiança no pagamento (5) e barreiras para usar o QR Code ou o NFC (8).
 \end{itemize}
 
+{\raggedright
 \begin{thebibliography}{99}
 
 \bibitem{fecomercio2026}
@@ -253,7 +257,7 @@ FECOMERCIO-SP. \textbf{Custo do trabalho aumentaria 22\% com fim da escala 6x1}.
 \bibitem{abrasel2026}
 ABRASEL - ASSOCIAÇÃO BRASILEIRA DE BARES E RESTAURANTES. \textbf{Fim da escala 6x1: impactos econômicos e operacionais da mudança na jornada no setor de alimentação}. Análise Institucional Abrasel / CNN Brasil, 18 abr. 2026. Disponível em: \url{https://www.cnnbrasil.com.br/economia/macroeconomia/abrasel-fim-da-escala-6x1-avanca-por-interesse-eleitoral-e-de-modo-acodado/}. Acesso em: 16 ago. 2026.
 
-\end{thebibliography}
+\end{thebibliography}}
 
 
 \end{document}
