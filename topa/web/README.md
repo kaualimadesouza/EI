@@ -57,49 +57,45 @@ npx -y vercel@59.10.0 alias set "$url" topa-totem-dev.vercel.app
 
 ## Apps (desktop e Android)
 
-`src-tauri/` wraps the web build. The desktop app shows the kiosk. The Android app has two roles,
-picked in `src/composition.ts`:
+`src-tauri/` wraps the web build. The desktop app shows the kiosk. Android builds produce two
+distinct apps from the same codebase:
 
-- **Phone** (the default): it opens on plain TOPA and "Aproximar do totem". Holding the phone to a
-  totem (or its sticker) reads the store's link, and the app opens that store's ordering screens,
-  with "Ler outro totem" to go back.
-- **Totem**: it runs the kiosk and answers phones as an NFC Forum Type 4 tag holding the store's
-  link (`TagEmulationService.kt` over host card emulation), on the start and queue screens only,
-  so a card held to the totem at payment never meets the tag. A phone without the app opens the
-  link in its browser. Devices without HCE fall back to the sticker.
+- **Customer App (`topa`)**: `io.github.kaualimadesouza.topa`, labeled "TOPA", cream launcher
+  background (`#FBF7EC`). Opens directly into `PhoneApp` ("Aproximar do totem"). Holding the phone
+  to a totem (or its sticker) reads the store link and opens ordering, with "Ler outro totem" to
+  return. It has no role-switch gesture, and its manifest excludes `TagEmulationService` and HCE.
+- **Store App (`topa-loja`)**: `io.github.kaualimadesouza.topa.loja`, labeled "TOPA Loja", teal
+  launcher background (`#1A4D49`). Built for merchant devices, opening in kiosk mode (totem) by
+  default. Staff can switch between totem and painel by tapping the TOPA mark 5 times within 2 s, or
+  via the sidebar button in the painel. Its manifest includes HCE and `TagEmulationService.kt` to
+  answer phones as an NFC Forum Type 4 tag on start and queue screens.
 
-Staff switch a device between the two roles by tapping the TOPA mark (top of the phone screen,
-"por TOPA" on the kiosk start) five times within 2 s; the app reloads in the other role. Both
-screens show the app version next to the mark.
-
-An order placed on a phone (the app, or a phone browser that opened a store link) turns the phone
-into the counter's pager: after payment it shows the order being prepared and, once it is ready,
-vibrates (Vibration API, so not on iPhones) and blinks a bell, which stands still under reduced
-motion. While it waits it keeps the screen on (Screen Wake Lock API) and asks `GET /orders/{id}`
-every 2 s, and at once when the page comes back; it stays until the customer leaves it. In demo
-mode a followed order still `received` is ready 5 s after payment, and `/painel` sees it too; with
-the API, the merchant marks it ready. An order placed at the totem keeps the plain confirmation and
-waits for the merchant.
+An order placed on a phone (the customer app, or a mobile browser) turns the phone into the counter's
+pager: after payment it shows the order being prepared and, once ready, vibrates (Vibration API, so
+not on iPhones) and blinks a bell. While waiting it keeps the screen on (Screen Wake Lock API) and
+polls `GET /orders/{id}` every 2 s. In demo mode a followed order is ready 5 s after payment; with the
+API, the merchant marks it ready on the painel.
 
 You need Rust (rustup). For Android also JDK 17+, the Android SDK with an NDK (`ANDROID_HOME`,
 `NDK_HOME`) and `rustup target add aarch64-linux-android`. The Linux desktop build needs
 `libwebkit2gtk-4.1-dev librsvg2-dev patchelf`.
 
 ```bash
-npm run tauri dev                                         # desktop window over the Vite dev server
-npm run tauri android dev                                 # phone over adb, or an emulator
-npx tauri android build --debug --apk --target aarch64   # debug APK, arm64 phones
+npm run tauri dev                                                      # desktop window over Vite dev server
+npm run tauri android dev                                              # phone over adb or emulator
+npx tauri android build --debug --apk --target aarch64                # customer APK (io.github.kaualimadesouza.topa)
+npx tauri android build --debug --apk --target aarch64 -c src-tauri/tauri.loja.conf.json # store APK (io.github.kaualimadesouza.topa.loja)
 ```
 
 The APK lands in `src-tauri/gen/android/app/build/outputs/apk/universal/debug/` (about 115 MB:
 a debug build keeps its symbols). `src-tauri/gen/android` is committed, as Tauri recommends. After
 a build, `./gradlew :app:testUniversalDebugUnitTest` in `src-tauri/gen/android` runs the Kotlin
-tests of the tag's APDU exchange (`Type4TagTest.kt`).
+unit tests (`Type4TagTest.kt` and `VersionCodeTest.kt`).
 
-CI (`.github/workflows/native.yml`) builds the APK and a Linux bundle (`.deb` and AppImage) on
-every PR that touches `topa/web`: download them from the run page as `topa-android-debug-apk`
-and `topa-linux-desktop`. On a release it attaches the Linux, Windows and macOS installers and
-the APK to that release.
+CI (`.github/workflows/native.yml`) builds both APKs and a Linux bundle (`.deb` and AppImage) on
+every PR that touches `topa/web`: download them from the run page as `topa-android-debug-apk`,
+`topa-loja-android-debug-apk` and `topa-linux-desktop`. On a release it attaches the Linux, Windows
+and macOS installers and both APKs to that release.
 
 ### Writing the NFC sticker
 
@@ -114,8 +110,10 @@ sticker: it serves the same URL itself.
 
 `src-tauri/app-icon.png` is the totem mark redrawn at 1024 px on cream. Regenerate every icon,
 Android included, with `npx tauri icon src-tauri/app-icon.json` (the manifest sets the cream
-launcher background) and delete the `icons/ios` folder it adds: there is no iOS build.
+launcher background for the customer app and teal for the store app) and delete the `icons/ios`
+folder it adds: there is no iOS build.
 
 release-please keeps the version in `tauri.conf.json` and `Cargo.toml` equal to `package.json`.
-Android rejects `0.0.0`, so `bundle.android.versionCode` is pinned to 1; drop it after the first
-release so every release gets a higher version code.
+`build.gradle.kts` computes `versionCode` dynamically from the semver string:
+`major * 100000 + minor * 1000 + patch` (e.g. `0.1.3` produces `1003`), guaranteeing an integer
+strictly greater than 1 that increases on each semver release.

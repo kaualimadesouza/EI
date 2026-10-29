@@ -1,4 +1,4 @@
-package io.github.kaualimadesouza.topa
+package io.github.kaualimadesouza.topa.loja
 
 private val OK = byteArrayOf(0x90.toByte(), 0x00)
 private val NOT_FOUND = byteArrayOf(0x6A, 0x82.toByte())

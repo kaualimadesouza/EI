@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -841,7 +841,7 @@ describe('KioskApp', () => {
 
     expect(await screen.findByRole('heading', { name: 'Loja não encontrada' })).toBeInTheDocument()
     expect(screen.getByText('Este totem não está ligado a uma loja cadastrada. Chame o suporte do TOPA.')).toBeInTheDocument()
-    expect(tag.withdraw).toHaveBeenCalledTimes(tag.publish.mock.calls.length)
+    await waitFor(() => expect(tag.withdraw).toHaveBeenCalledTimes(tag.publish.mock.calls.length))
     for (let i = 0; i < 5; i += 1) fireEvent.click(screen.getByText('por TOPA'))
     expect(onSwitchRole).toHaveBeenCalledOnce()
     await user.click(button('Tentar de novo'))

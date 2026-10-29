@@ -14,6 +14,8 @@ function demoOnAndroid(vibrate: () => boolean) {
   const runtime: Runtime = {
     tauri: false,
     mobile: true,
+    flavor: 'cliente',
+    storeRole: 'totem',
     totem: false,
     ndefReader: undefined,
     tagBridge: undefined,
@@ -178,5 +180,25 @@ describe('App', () => {
     render(<App adapters={adapters} path="/painel" />)
     expect(await kitchenColumnOfOrder001()).toBe('Recebidos')
     expect(within(screen.getByRole('region', { name: 'Prontos' })).getByText('Nenhum pedido aqui.')).toBeInTheDocument()
+  })
+
+  it('opens the merchant dashboard in store app when storeRole is painel regardless of path', async () => {
+    const onSwitchRole = vi.fn()
+    render(<App adapters={createAdapters(undefined)} storeRole="painel" onSwitchRole={onSwitchRole} />)
+
+    expect(await screen.findByRole('heading', { name: 'Painel do lojista' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Comer aqui/ })).not.toBeInTheDocument()
+
+    const switchBtns = screen.getAllByRole('button', { name: 'Abrir o totem' })
+    fireEvent.click(switchBtns[0])
+    expect(onSwitchRole).toHaveBeenCalledOnce()
+  })
+
+  it('opens the customer phone app directly without switch gesture', () => {
+    render(<App adapters={createAdapters(undefined)} phone={true} />)
+
+    expect(screen.getByRole('heading', { name: 'Peça pelo celular.' })).toBeInTheDocument()
+    tapFiveTimes('TOPA')
+    expect(screen.getByRole('heading', { name: 'Peça pelo celular.' })).toBeInTheDocument()
   })
 })

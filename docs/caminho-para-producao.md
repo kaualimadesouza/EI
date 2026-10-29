@@ -84,15 +84,16 @@ taxas, contrato e o SDK para Android. Hoje o pagamento é simulado: o QR do Pix 
 ## Fase 4: operação
 
 - **APK:**
-  - dois apps do mesmo código (issue #36): o da loja, com o totem e o painel atrás do login do
-    lojista, e o do cliente, que só lê o totem e pede. Hoje um APK só abre como cliente, e 5
-    toques rápidos na marca TOPA transformam o celular em totem;
+  - dois apps do mesmo código (feito na issue #36): `io.github.kaualimadesouza.topa` (app do
+    cliente, que abre direto em pedidos pelo celular, sem gesto de troca e sem HCE) e
+    `io.github.kaualimadesouza.topa.loja` (app da loja, com o totem e o painel alternáveis por
+    gesto de 5 toques ou botão no painel, e emulação de tag NFC via HCE);
+  - `versionCode` dinâmico (feito na issue #36): calculado no Gradle a partir do semver
+    (`major * 100000 + minor * 1000 + patch`), garantindo valor estritamente crescente > 1;
   - uma keystore fixa guardada como secret. Hoje cada build do CI assina com uma chave de debug
     nova, e o Android recusa instalar um APK por cima de outro assinado com chave diferente;
   - build de release em vez de debug. O debug usa o id `...topa.debug`, então o de release se
     instala ao lado dele, não por cima;
-  - `versionCode` subindo a cada versão: hoje está fixo em 1 no `tauri.conf.json`, e o
-    `topa/web/README.md` já diz para tirar essa trava depois da primeira release;
   - distribuição pela Play Store ou por instalação gerenciada;
   - modo quiosque, para o cliente não sair do app no totem. Até lá, a fixação de app do
     próprio Android resolve na demonstração.

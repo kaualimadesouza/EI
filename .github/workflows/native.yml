@@ -1,8 +1,8 @@
 name: Native apps
 
-# Packages topa/web with Tauri: the Android phone app (debug APK, a fresh debug key per run) and the desktop app.
-# A PR gets the APK and a Linux bundle as workflow artifacts; a release gets the desktop installers
-# for Linux, Windows and macOS plus the APK attached. release-please chains the release build:
+# Packages topa/web with Tauri: the Android apps (customer and store debug APKs, a fresh debug key per run) and the desktop app.
+# A PR gets both APKs and a Linux bundle as workflow artifacts; a release gets the desktop installers
+# for Linux, Windows and macOS plus both APKs attached. release-please chains the release build:
 # a release created with GITHUB_TOKEN triggers nothing on its own.
 on:
   pull_request:
@@ -39,7 +39,7 @@ defaults:
 
 jobs:
   android:
-    name: Android debug APK
+    name: Android debug APKs
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -74,8 +74,18 @@ jobs:
       - run: npm ci
 
       # the runner image ships the SDK and NDKs; its variables are not in the env context
-      - name: Build the APK
-        run: NDK_HOME="$ANDROID_NDK_LATEST_HOME" npx tauri android build --debug --apk --target aarch64
+      - name: Build the customer APK
+        run: |
+          rm -rf src-tauri/gen/android/app/src/main/java/io/github/kaualimadesouza/topa/loja/generated
+          NDK_HOME="$ANDROID_NDK_LATEST_HOME" npx tauri android build --debug --apk --target aarch64
+          cp src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk topa-cliente-debug.apk
+
+      - name: Build the store APK
+        run: |
+          rm -rf src-tauri/gen/android/app/src/main/java/io/github/kaualimadesouza/topa/generated
+          cargo clean -p tauri -p wry --manifest-path src-tauri/Cargo.toml
+          NDK_HOME="$ANDROID_NDK_LATEST_HOME" npx tauri android build --debug --apk --target aarch64 -c src-tauri/tauri.loja.conf.json
+          cp src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk topa-loja-debug.apk
 
       # the totem's NFC tag answers on the JVM; the build above generated the Gradle files they need
       - name: Kotlin unit tests
@@ -85,7 +95,13 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: topa-android-debug-apk
-          path: topa/web/src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk
+          path: topa/web/topa-cliente-debug.apk
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: topa-loja-android-debug-apk
+          path: topa/web/topa-loja-debug.apk
           if-no-files-found: error
 
   linux:
@@ -180,7 +196,7 @@ jobs:
           releaseName: ${{ env.RELEASE_TAG }}
 
   android-release:
-    name: Attach the APK to the release
+    name: Attach the APKs to the release
     needs: android
     if: ${{ inputs.tag || github.event_name == 'release' }}
     runs-on: ubuntu-latest
@@ -190,12 +206,18 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: topa-android-debug-apk
-          path: apk
+          path: apk-cliente
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: topa-loja-android-debug-apk
+          path: apk-loja
 
       - name: Upload
         working-directory: .
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          mv apk/app-universal-debug.apk "topa_${RELEASE_TAG}_android-debug.apk"
-          gh release upload "$RELEASE_TAG" "topa_${RELEASE_TAG}_android-debug.apk" --clobber --repo "$GITHUB_REPOSITORY"
+          cp apk-cliente/topa-cliente-debug.apk "topa_${RELEASE_TAG}_android-debug.apk"
+          cp apk-loja/topa-loja-debug.apk "topa-loja_${RELEASE_TAG}_android-debug.apk"
+          gh release upload "$RELEASE_TAG" "topa_${RELEASE_TAG}_android-debug.apk" "topa-loja_${RELEASE_TAG}_android-debug.apk" --clobber --repo "$GITHUB_REPOSITORY"

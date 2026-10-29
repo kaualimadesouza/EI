@@ -20,11 +20,27 @@ import { WebWakeLock } from './adapters/web/web-wake-lock'
 import type { Adapters } from './ports/adapters'
 import type { NfcPort } from './ports/nfc'
 
+export type AppFlavor = 'cliente' | 'loja'
+export type StoreRole = 'totem' | 'painel'
+
+export interface TopaNativeBridge {
+  getFlavor(): string
+}
+
+declare global {
+  interface Window {
+    TopaTag?: TagBridge
+    TopaNative?: TopaNativeBridge
+  }
+}
+
 /** What the app runs in, read once at startup. */
 export interface Runtime {
   tauri: boolean
   mobile: boolean
-  /** Staff turned this Android device into a totem (see `roleSwitch`). */
+  flavor: AppFlavor
+  storeRole: StoreRole
+  /** Backward compatible flag: true when showing totem, false on phone or painel. */
   totem: boolean
   ndefReader: (new () => NdefReader) | undefined
   tagBridge: TagBridge | undefined
@@ -34,12 +50,24 @@ export interface Runtime {
   wakeLock: { request(type: 'screen'): Promise<Pick<WakeLockSentinel, 'release'>> } | undefined
 }
 
+const storeRoleStorage = () => new StoredValue<StoreRole>(browserStorage(), 'topa.store_role', 'totem')
 const totemFlag = () => new StoredValue(browserStorage(), 'topa.totem', false)
 
+export function detectFlavor(): AppFlavor {
+  const native = window.TopaNative?.getFlavor()
+  if (native === 'loja' || native === 'cliente') return native
+  if (import.meta.env.VITE_APP_FLAVOR === 'loja') return 'loja'
+  return 'cliente'
+}
+
 export function detectRuntime(): Runtime {
+  const flavor = detectFlavor()
+  const storeRole = storeRoleStorage().read()
   return {
     tauri: isTauri(),
     mobile: /Android|iPhone|iPad/.test(navigator.userAgent),
+    flavor,
+    storeRole,
     totem: totemFlag().read(),
     ndefReader: window.NDEFReader,
     tagBridge: window.TopaTag,
@@ -48,20 +76,20 @@ export function detectRuntime(): Runtime {
   }
 }
 
-/** The staff gesture on the Android app: flip phone and totem across a reload. Nothing to flip elsewhere. */
+/** The gesture on the store app: flip between totem and painel. Customer app has no switch. */
 export function roleSwitch(runtime: Runtime, reload: () => void): (() => void) | undefined {
-  if (!(runtime.tauri && runtime.mobile)) return undefined
+  if (!(runtime.tauri && runtime.flavor === 'loja')) return undefined
   return () => {
-    totemFlag().write(!runtime.totem)
+    storeRoleStorage().write(runtime.storeRole === 'totem' ? 'painel' : 'totem')
     // a reload skips React cleanups, while the published URL lives on in the Android process
     runtime.tagBridge?.withdraw()
     reload()
   }
 }
 
-/** The phone app is the Tauri build on a phone not marked as totem; every other runtime shows the kiosk. */
+/** The customer phone app is the Tauri customer build on a phone; store app shows totem or painel. */
 export function isPhoneApp(runtime: Runtime): boolean {
-  return runtime.tauri && runtime.mobile && !runtime.totem
+  return runtime.tauri && runtime.mobile && runtime.flavor === 'cliente'
 }
 
 // the NFC plugin is registered on mobile only, so the desktop app reads nothing

@@ -1,5 +1,6 @@
 package io.github.kaualimadesouza.topa
 
+import io.github.kaualimadesouza.topa.loja.Type4Tag
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Test

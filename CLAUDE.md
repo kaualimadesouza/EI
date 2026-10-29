@@ -23,10 +23,11 @@ and UI copy is in Portuguese; code is in English.
   `npm run check` runs lint, typecheck, tests (100% coverage) and build, as CI does.
 - `topa/api/`: FastAPI + SQLAlchemy 2 + Alembic + Postgres, managed with uv. Hexagonal; import-linter
   keeps `domain` and `application` free of frameworks. See `topa/api/README.md`.
-- `topa/web/src-tauri/`: Tauri 2 wraps the web build as a desktop app and an Android app. On a phone
-  it reads a totem's NFC tag and opens that store (`src/ports/nfc.ts`); switched to totem, it runs
-  the kiosk and answers as that tag itself (`src/ports/tag.ts`, `TagEmulationService.kt`). See
-  `topa/web/README.md`; `.github/workflows/native.yml` builds the APK and the installers.
+- `topa/web/src-tauri/`: Tauri 2 wraps the web build as a desktop app and two Android apps (customer
+  app `topa` which opens directly into phone ordering, and store app `topa.loja` which runs the totem
+  or painel with NFC HCE tag emulation via `TagEmulationService.kt`). Dynamic `versionCode` is computed
+  from semver in Gradle. See `topa/web/README.md`; `.github/workflows/native.yml` builds both APKs and
+  the desktop installers.
 - `make run` (run from `topa/`) brings up postgres (host 5435), api (host 8010) and web
   (http://localhost:5180, proxying `/api` to the api container). `make test` and `make lint` cover both
   sides and run on the host (only the api tests' Postgres comes from compose): Node 24 (or

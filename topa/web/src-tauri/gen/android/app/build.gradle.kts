@@ -1,4 +1,3 @@
-import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -7,23 +6,58 @@ plugins {
     id("rust")
 }
 
-val tauriProperties = Properties().apply {
-    val propFile = file("tauri.properties")
-    if (propFile.exists()) {
-        propFile.inputStream().use { load(it) }
-    }
+val rawVersionName = providers.fileContents(layout.projectDirectory.file("tauri.properties")).asText
+    .map { props ->
+        val match = Regex("""tauri\.android\.versionName=(.+)""").find(props)
+        match?.groupValues?.get(1)?.trim() ?: "0.1.3"
+    }.orElse("0.1.3").get()
+
+val cleanVersion = rawVersionName.substringBefore('-')
+val parts = cleanVersion.split('.').mapNotNull { it.toIntOrNull() }
+val computedVersionCode = if (parts.size >= 3) {
+    parts[0] * 100000 + parts[1] * 1000 + parts[2]
+} else {
+    1
 }
+
+val tauriPackageEnv = providers.environmentVariable("TAURI_ANDROID_PACKAGE_UNESCAPED").orNull
+    ?: providers.environmentVariable("WRY_ANDROID_PACKAGE").orNull
+val flavorProp = providers.gradleProperty("appFlavor").orNull
+val tauriConfAsset = file("src/main/assets/tauri.conf.json")
+val isLoja = (tauriPackageEnv?.contains("loja") == true)
+    || (flavorProp == "loja")
+    || (tauriConfAsset.exists() && tauriConfAsset.readText().contains("topa.loja"))
+
+val resolvedAppId = if (isLoja) "io.github.kaualimadesouza.topa.loja" else "io.github.kaualimadesouza.topa"
+val resolvedAppName = if (isLoja) "TOPA Loja" else "TOPA"
 
 android {
     compileSdk = 37
-    namespace = "io.github.kaualimadesouza.topa"
+    namespace = resolvedAppId
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
-        applicationId = "io.github.kaualimadesouza.topa"
+        manifestPlaceholders["appName"] = resolvedAppName
+        applicationId = resolvedAppId
         minSdk = 24
         targetSdk = 37
-        versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
-        versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
+        versionCode = computedVersionCode
+        versionName = rawVersionName
+    }
+    sourceSets {
+        getByName("main") {
+            if (isLoja) {
+                manifest.srcFile("src/loja/AndroidManifest.xml")
+                res.srcDirs("src/loja/res", "src/main/res")
+                java.srcDirs("src/loja/java", "src/main/java")
+            } else {
+                manifest.srcFile("src/cliente/AndroidManifest.xml")
+                res.srcDirs("src/cliente/res", "src/main/res")
+                java.srcDirs("src/cliente/java", "src/main/java")
+            }
+        }
+        getByName("test") {
+            java.srcDirs("src/test/java", "src/loja/java")
+        }
     }
     buildTypes {
         getByName("debug") {

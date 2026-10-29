@@ -1,0 +1,8 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "TOPA Loja",
+  "identifier": "io.github.kaualimadesouza.topa.loja",
+  "build": {
+    "beforeBuildCommand": "npm run build -- --mode loja"
+  }
+}
