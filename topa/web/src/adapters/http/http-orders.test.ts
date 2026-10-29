@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { StoreNotFoundError } from '../../ports/menu'
 import { OrderRejectedError } from '../../ports/orders'
 import { HttpClient } from './http-client'
 import { HttpOrders } from './http-orders'
@@ -111,6 +112,20 @@ describe('HttpOrders', () => {
 
     await expect(new HttpOrders(new HttpClient('/api')).list('2026-10-26', 'cantina-central')).rejects.toThrow(
       'GET /orders answered 500',
+    )
+  })
+
+  it('tells an unknown store apart from a server failure when listing', async () => {
+    json({ detail: 'Loja não encontrada.' }, 404)
+
+    await expect(new HttpOrders(new HttpClient('/api')).list('2026-10-26', 'padaria')).rejects.toEqual(
+      new StoreNotFoundError('Loja não encontrada.'),
+    )
+
+    vi.restoreAllMocks()
+    json({}, 404)
+    await expect(new HttpOrders(new HttpClient('/api')).list('2026-10-26', 'padaria')).rejects.toEqual(
+      new StoreNotFoundError('Loja não encontrada.'),
     )
   })
 

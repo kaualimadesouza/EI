@@ -8,7 +8,7 @@ from threading import Barrier
 
 import pytest
 from psycopg.errors import LockNotAvailable
-from sqlalchemy import Engine, insert, select
+from sqlalchemy import Engine, insert, select, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
@@ -111,6 +111,56 @@ def test_simultaneous_orders_of_one_day_all_get_their_own_number(db_engine: Engi
 
     assert sorted(got) == list(range(1, kiosks + 1))
     assert _numbers(db_engine, MONDAY) == list(range(1, kiosks + 1))
+
+
+def test_simultaneous_orders_across_two_stores_keep_independent_sequences(
+    db_engine: Engine,
+) -> None:
+    with db_engine.begin() as connection:
+        connection.execute(insert(StoreRow).values(slug="cantina-central", name="Cantina Central"))
+        connection.execute(
+            insert(ProductRow).values(
+                store_slug="cantina-central",
+                id="cafe",
+                position=1,
+                name="Café coado",
+                description="150 ml.",
+                category="bebidas",
+                price_cents=550,
+                available=True,
+            )
+        )
+
+    kiosks = 8
+    barrier = Barrier(kiosks)
+
+    def place_one(index: int) -> tuple[str, int]:
+        slug = DEFAULT_STORE_SLUG if index % 2 == 0 else "cantina-central"
+        with Session(db_engine) as session, session.begin():
+            orders = SqlAlchemyOrderRepository(session)
+            session.connection()
+            barrier.wait(timeout=10)
+            number = orders.next_number(slug, MONDAY)
+            orders.add(_order(number, store_slug=slug))
+            return slug, number
+
+    with ThreadPoolExecutor(max_workers=kiosks) as pool:
+        list(pool.map(place_one, range(kiosks)))
+
+    assert _numbers(db_engine, MONDAY, DEFAULT_STORE_SLUG) == [1, 2, 3, 4]
+    assert _numbers(db_engine, MONDAY, "cantina-central") == [1, 2, 3, 4]
+
+
+def test_default_store_number_lock_waits_for_the_legacy_deploy_lock(db_engine: Engine) -> None:
+    """During rolling deploy, v0.1.3 holds (1, toordinal); new instances must wait on it too."""
+    with Session(db_engine) as legacy, legacy.begin():
+        legacy.execute(text("SELECT pg_advisory_xact_lock(1, :day)"), {"day": MONDAY.toordinal()})
+        with Session(db_engine) as current, pytest.raises(OperationalError) as raised:
+            current.begin()
+            current.execute(text("SET LOCAL lock_timeout = '50ms'"))
+            SqlAlchemyOrderRepository(current).next_number(DEFAULT_STORE_SLUG, MONDAY)
+
+    assert isinstance(raised.value.orig, LockNotAvailable)
 
 
 def test_a_days_orders_come_by_number_and_only_from_that_store_and_day(

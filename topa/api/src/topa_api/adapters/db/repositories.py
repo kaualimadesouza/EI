@@ -6,7 +6,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session, selectinload
 
 from topa_api.adapters.db.models import OrderItemRow, OrderRow, ProductRow, StoreRow
-from topa_api.domain.catalog import Category, Product, Store
+from topa_api.domain.catalog import DEFAULT_STORE_SLUG, Category, Product, Store
 from topa_api.domain.orders import Order, OrderItem, OrderStatus, PaymentMethod
 
 # namespace of the per-store-day number lock, so it never meets another advisory lock
@@ -60,9 +60,14 @@ class SqlAlchemyOrderRepository:
 
     def next_number(self, store_slug: str, business_date: date) -> int:
         # held to the commit; the max() below then sees the last commit, which needs READ COMMITTED
+        if store_slug == DEFAULT_STORE_SLUG:
+            # the pre-stores key, so instances still on the old image wait too during a deploy
+            self._session.execute(
+                select(func.pg_advisory_xact_lock(ORDER_NUMBER_LOCK, business_date.toordinal()))
+            )
         lock_key = f"{store_slug}:{business_date.isoformat()}"
         self._session.execute(
-            select(func.pg_advisory_xact_lock(ORDER_NUMBER_LOCK, func.hashtext(lock_key)))
+            select(func.pg_advisory_xact_lock(func.hashtextextended(lock_key, ORDER_NUMBER_LOCK)))
         )
         highest = self._session.scalar(
             select(func.max(OrderRow.number)).where(

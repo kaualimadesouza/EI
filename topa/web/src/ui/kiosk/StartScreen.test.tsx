@@ -24,6 +24,7 @@ function renderStart(
   const view = render(
     <StartScreen
       storeName={storeName}
+      surface="totem"
       serverStatus={{ mode, connection }}
       onBegin={onBegin}
       onQueue={onQueue}
@@ -50,7 +51,7 @@ describe('StartScreen', () => {
 
   it('on the customer phone omits the server status pill, never pings the server and explains Pix payment', () => {
     const isReachable = vi.fn(() => Promise.resolve(true))
-    render(<StartScreen storeName="Cantina Central" allowCard={false} onBegin={vi.fn()} />)
+    render(<StartScreen storeName="Cantina Central" surface="phone" onBegin={vi.fn()} />)
 
     expect(isReachable).not.toHaveBeenCalled()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
@@ -106,6 +107,7 @@ describe('StartScreen', () => {
     view.rerender(
       <StartScreen
         storeName="Lanchonete Bem-te-vi"
+        surface="totem"
         serverStatus={{ mode: 'api', connection: portAnswering(false) }}
         onBegin={vi.fn()}
         onQueue={vi.fn()}

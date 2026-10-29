@@ -1,7 +1,7 @@
 import { DEMO_CATALOG } from '../../domain/demo-catalog'
 import { findProduct, type Product } from '../../domain/menu'
-import { DEMO_STORE_NAME, DEMO_STORE_SLUG } from '../../domain/store'
-import { StoreNotFoundError, type MenuPort, type StoreMenu } from '../../ports/menu'
+import { DEMO_STORE_NAME, DEMO_STORE_SLUG, type StoreMenu } from '../../domain/store'
+import { StoreNotFoundError, type MenuPort } from '../../ports/menu'
 import { browserStorage, StoredValue, type KeyValueStore } from './browser-storage'
 
 /** The demo store plus what the dashboard marked sold out, shared by every tab of this browser. */

@@ -1,10 +1,5 @@
 import type { Product } from '../domain/menu'
-import type { Store } from '../domain/store'
-
-export interface StoreMenu {
-  store: Store
-  products: Product[]
-}
+import type { StoreMenu } from '../domain/store'
 
 export interface MenuPort {
   load(storeSlug: string): Promise<StoreMenu>

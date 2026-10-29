@@ -11,7 +11,7 @@ interface ServerStatusProps {
 
 interface StartScreenProps {
   storeName: string | null
-  allowCard?: boolean
+  surface?: 'totem' | 'phone'
   /** Present on the store's totem; omitted on the customer's own phone. */
   serverStatus?: ServerStatusProps
   onBegin: (dineIn: boolean) => void
@@ -68,7 +68,7 @@ function ServerStatus({ mode, connection }: ServerStatusProps) {
 
 export function StartScreen({
   storeName,
-  allowCard = true,
+  surface = 'totem',
   serverStatus,
   onBegin,
   onQueue,
@@ -92,7 +92,7 @@ export function StartScreen({
           Peça aqui. Pague aqui.
         </h1>
         <p className="max-w-[600px] text-[clamp(1.125rem,3.25vw,1.625rem)] leading-[1.35] text-on-teal short:text-[20px] phone:text-body phone:leading-snug">
-          {allowCard
+          {surface === 'totem'
             ? 'Monte o pedido, pague por aproximação ou Pix e retire no balcão.'
             : 'Monte o pedido, pague com Pix e retire no balcão.'}
         </p>

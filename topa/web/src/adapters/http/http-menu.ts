@@ -1,5 +1,6 @@
 import type { Product } from '../../domain/menu'
-import { StoreNotFoundError, type MenuPort, type StoreMenu } from '../../ports/menu'
+import type { StoreMenu } from '../../domain/store'
+import { StoreNotFoundError, type MenuPort } from '../../ports/menu'
 import type { HttpClient } from './http-client'
 
 interface ProductJson {

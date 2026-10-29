@@ -9,7 +9,7 @@ guardados só no aparelho, fica para o `npm run dev`. Os detalhes estão em `top
 ## Fase 1: uma loja de verdade
 
 Objetivo: a Lanchonete Bem-te-vi com dados num servidor, e totem, celular, site e painel vendo
-os mesmos pedidos e esgotados. A issue #32 já cobre parte desta fase (itens 1 e 2) junto com
+os mesmos pedidos e esgotados. A issue #32 entregou parte desta fase (itens 1 e 2) junto com
 a fase 2.
 
 1. **Publicar a API e o banco.** Feito: a API roda na AWS Lambda (imagem
@@ -44,9 +44,9 @@ a fase 2.
      cardápio de demonstração pelo id, e um texto depende dos preços dele ("Sai R$ 1,90 mais
      barato que separado").
 
-Pronto quando: um pedido feito no celular aparece no painel de outro aparelho; um esgotado
-marcado no painel aparece esgotado no celular; o lojista cadastra um produto e ele aparece no
-totem; e, sem login, ninguém altera o cardápio nem lê os pedidos.
+Pronto quando: o pedido feito no celular aparece no painel da loja; um esgotado marcado no
+painel aparece esgotado no celular (ambos entregues na issue #32); o lojista cadastra um produto
+e ele aparece no totem; e, sem login, ninguém altera o cardápio nem lê os pedidos.
 
 ## Fase 2: várias lojas
 

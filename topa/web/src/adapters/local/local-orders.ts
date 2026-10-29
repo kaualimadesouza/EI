@@ -58,10 +58,9 @@ export class LocalOrders implements OrdersPort {
     return { id: order.id, number: order.number, totalCents: order.totalCents }
   }
 
-  list(businessDate: string, storeSlug: string): Promise<OrderSummary[]> {
-    return Promise.resolve(
-      this.orders.read().filter((order) => order.storeSlug === storeSlug && order.businessDate === businessDate),
-    )
+  async list(businessDate: string, storeSlug: string): Promise<OrderSummary[]> {
+    await this.menu.load(storeSlug)
+    return this.orders.read().filter((order) => order.storeSlug === storeSlug && order.businessDate === businessDate)
   }
 
   // only the customer's phone follows an order, so only a phone order is cooked; the totem's waits

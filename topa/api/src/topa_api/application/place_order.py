@@ -36,9 +36,9 @@ class PlaceOrderUseCase:
         self._clock = clock
 
     def execute(self, request: PlaceOrder) -> Order:
+        lines = merge_lines(request.lines)
         if self._stores.get(request.store_slug) is None:
             raise StoreNotFoundError
-        lines = merge_lines(request.lines)
         catalog = self._products.find(request.store_slug, [line.product_id for line in lines])
         items = price_lines(lines, catalog)
         created_at = self._clock.now()

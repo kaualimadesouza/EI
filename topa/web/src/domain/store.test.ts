@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest'
 
-import { phoneMenuUrl, storeFromUrl } from './store'
+import { locationStore, phoneMenuUrl, storeFromUrl } from './store'
+
+describe('locationStore', () => {
+  it('tells a page opened without a store from one opened with a valid or a broken store', () => {
+    expect(locationStore('https://topa-totem.vercel.app/painel')).toEqual({ kind: 'absent' })
+    expect(locationStore('https://topa-totem.vercel.app/?loja=cantina-central')).toEqual({
+      kind: 'valid',
+      slug: 'cantina-central',
+    })
+    for (const broken of ['?loja=', '?loja=Cantina', '?loja=cantina_central', `?loja=${'a'.repeat(65)}`]) {
+      expect(locationStore(`https://topa-totem.vercel.app/painel${broken}`)).toEqual({ kind: 'invalid' })
+    }
+  })
+})
 
 describe('storeFromUrl', () => {
   it('reads the store slug from the loja parameter of an https URL', () => {
@@ -35,6 +48,11 @@ describe('storeFromUrl', () => {
   it('rejects a slug that is not lowercase letters, digits and hyphens', () => {
     expect(storeFromUrl('https://topa-totem.vercel.app/?loja=Padaria%20Sol')).toBeNull()
     expect(storeFromUrl('https://topa-totem.vercel.app/?loja=-sol')).toBeNull()
+  })
+
+  it('accepts up to 64 characters, the longest slug the API takes', () => {
+    expect(storeFromUrl(`https://topa-totem.vercel.app/?loja=${'a'.repeat(64)}`)?.slug).toBe('a'.repeat(64))
+    expect(storeFromUrl(`https://topa-totem.vercel.app/?loja=${'a'.repeat(65)}`)).toBeNull()
   })
 
   it('rejects schemes other than http and https', () => {

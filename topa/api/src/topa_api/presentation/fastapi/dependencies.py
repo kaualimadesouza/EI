@@ -16,9 +16,11 @@ from topa_api.application.ports import (
 )
 from topa_api.application.read_order import ReadOrderUseCase
 from topa_api.application.set_product_availability import SetProductAvailabilityUseCase
-from topa_api.domain.catalog import STORE_SLUG_PATTERN
+from topa_api.domain.catalog import STORE_SLUG_MAX_LENGTH, STORE_SLUG_PATTERN
 
-StoreSlug = Annotated[str, StringConstraints(pattern=STORE_SLUG_PATTERN, max_length=64)]
+StoreSlug = Annotated[
+    str, StringConstraints(pattern=STORE_SLUG_PATTERN, max_length=STORE_SLUG_MAX_LENGTH)
+]
 
 # The ports a route asks for. Presentation never sees an adapter: create_app() binds
 # each of these to its adapter through dependency_overrides, and tests rebind them.

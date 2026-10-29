@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { DEMO_STORE_SLUG } from '../../domain/store'
+import { StoreNotFoundError } from '../../ports/menu'
 import { OrderRejectedError } from '../../ports/orders'
 import { LocalMenu } from './local-menu'
 import { LocalOrders } from './local-orders'
@@ -65,8 +66,13 @@ describe('LocalOrders', () => {
       ],
     })
     expect(order.id).toEqual(expect.any(String))
-    expect(await orders.list('2026-10-26', 'outra-loja')).toEqual([])
     expect(await orders.list('2026-10-27', DEMO_STORE_SLUG)).toEqual([])
+  })
+
+  it('refuses to list an unknown store, as the API answers 404', async () => {
+    const { orders } = store()
+
+    await expect(orders.list('2026-10-26', 'outra-loja')).rejects.toBeInstanceOf(StoreNotFoundError)
   })
 
   it('refuses an unknown store, a missing product or a sold-out product, like the API', async () => {

@@ -58,7 +58,8 @@ erDiagram
   `payment_method` fora das listas acima, `price_cents` e `unit_price_cents` negativos e
   `quantity` menor que 1. `total_cents` não tem `CHECK`.
 - `store_slug` tem valor padrão `'lanchonete-bem-te-vi'` em `products`, `orders` e `order_items`
-  para manter compatibilidade com uma versão anterior da API enquanto uma migration roda.
+  para manter compatibilidade com a versão anterior (v0.1.3) da Lambda durante o rolling deploy;
+  quando o cadastro de novas lojas for implementado, o `server_default` será retirado por migration.
 - `orders` declara `(id, store_slug)` como par único para que `order_items` referencie tanto
   `(order_id, store_slug)` quanto `(store_slug, product_id)` por chave estrangeira composta,
   impedindo no banco que um pedido aponte para produto de outra loja.
@@ -71,8 +72,8 @@ erDiagram
   pedidos antigos.
 - Como a chave de `order_items` é o par (`order_id`, `product_id`), a API junta as repetições
   de um produto num item só, somando a `quantity`.
-- Apagar um pedido apaga os itens (`ON DELETE CASCADE`); apagar um produto que já foi pedido é
-  recusado.
+- Apagar um pedido apaga os itens (`ON DELETE CASCADE`); apagar um produto que já foi pedido ou
+  uma loja que já possui produtos ou pedidos vinculados é recusado pelo banco.
 - Não há estado de pagamento: o pagamento ainda é simulado, e o app grava o pedido ao pagar.
 - O Alembic mantém também a tabela `alembic_version`, com a revisão aplicada.
 

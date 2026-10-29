@@ -86,16 +86,32 @@ def test_each_store_serves_its_own_menu_and_availability(
 
 
 def test_an_unknown_store_answers_not_found(client: TestClient) -> None:
-    response = client.get("/menu", params={"loja": "padaria-inexistente"})
-
-    assert response.status_code == 404
-    assert response.json() == {"detail": "Loja não encontrada."}
+    for slug in ("padaria-inexistente", "a" * 64):
+        response = client.get("/menu", params={"loja": slug})
+        assert response.status_code == 404
+        assert response.json() == {"detail": "Loja não encontrada."}
 
 
 @pytest.mark.parametrize(
     "params",
-    [{}, {"loja": ""}, {"loja": "Cantina"}, {"loja": "com espaco"}, {"loja": "-traco"}],
-    ids=["missing", "empty", "uppercase", "space", "leading-hyphen"],
+    [
+        {},
+        {"loja": ""},
+        {"loja": "Cantina"},
+        {"loja": "com espaco"},
+        {"loja": "-traco"},
+        {"loja": "traco-"},
+        {"loja": "a" * 65},
+    ],
+    ids=[
+        "missing",
+        "empty",
+        "uppercase",
+        "space",
+        "leading-hyphen",
+        "trailing-hyphen",
+        "over-64-chars",
+    ],
 )
 def test_a_missing_or_malformed_store_slug_gets_the_generic_message(
     client: TestClient, params: dict[str, str]

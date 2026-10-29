@@ -12,7 +12,7 @@ interface PaymentScreenProps {
   method: KioskState['paymentMethod']
   payment: KioskState['payment']
   error: string | null
-  allowCard?: boolean
+  surface?: 'totem' | 'phone'
   onMethod: (method: KioskState['paymentMethod']) => void
   onApprove: () => void
   onDecline: () => void
@@ -22,8 +22,9 @@ interface PaymentScreenProps {
 export const PIX_SECONDS = 300
 
 export function PaymentScreen(props: PaymentScreenProps) {
-  const { totalCents, method, payment, error, allowCard = true, onMethod, onApprove, onDecline, onBackToBag } = props
+  const { totalCents, method, payment, error, surface = 'totem', onMethod, onApprove, onDecline, onBackToBag } = props
   const busy = payment === 'processing'
+  const allowCard = surface === 'totem'
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-12 py-8 [scrollbar-width:none] short:py-6 max-sm:p-4">
@@ -133,11 +134,21 @@ function CardInstructions() {
 
 function PixInstructions({ totalCents, onPhone }: { totalCents: number; onPhone: boolean }) {
   const [round, setRound] = useState(0)
-  const [copiedRound, setCopiedRound] = useState<number | null>(null)
-  const [copyFailedRound, setCopyFailedRound] = useState<number | null>(null)
+  const [copyState, setCopyState] = useState<{ round: number; status: 'copied' | 'failed' } | null>(null)
   const left = useCountdown(PIX_SECONDS, () => {}, round)
   const clock = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`
   const code = `TOPA-PIX-DEMO-${totalCents}-${round}`
+
+  const copyCode = () => {
+    if (!navigator.clipboard) {
+      setCopyState({ round, status: 'failed' })
+      return
+    }
+    navigator.clipboard.writeText(code).then(
+      () => setCopyState({ round, status: 'copied' }),
+      () => setCopyState({ round, status: 'failed' }),
+    )
+  }
 
   if (left === 0) {
     return (
@@ -158,18 +169,13 @@ function PixInstructions({ totalCents, onPhone }: { totalCents: number; onPhone:
       {onPhone && (
         <button
           type="button"
-          onClick={() => {
-            navigator.clipboard.writeText(code).then(
-              () => setCopiedRound(round),
-              () => setCopyFailedRound(round),
-            )
-          }}
+          onClick={copyCode}
           className={`${SECONDARY_ACTION} h-16 px-8 text-label text-ink`}
         >
-          {copiedRound === round ? 'Código copiado' : 'Copiar código Pix'}
+          {copyState?.round === round && copyState.status === 'copied' ? 'Código copiado' : 'Copiar código Pix'}
         </button>
       )}
-      {copyFailedRound === round && (
+      {copyState?.round === round && copyState.status === 'failed' && (
         <p className="rounded-control bg-ground-2 px-4 py-2 font-mono text-caption select-all">{code}</p>
       )}
       <p className="text-body text-muted tabular-nums">O código vale por {clock}</p>

@@ -13,6 +13,7 @@ from topa_api.domain.catalog import Category, Product, Store
 from topa_api.domain.errors import (
     EmptyOrderError,
     ProductUnavailableError,
+    QuantityOutOfRangeError,
     StoreNotFoundError,
     UnknownProductError,
 )
@@ -172,6 +173,15 @@ def test_repeated_products_become_one_item(place_order: PlaceOrderUseCase) -> No
     ("store_slug", "lines", "error"),
     [
         ("outra-loja", (OrderLine(product_id="refri", quantity=1),), StoreNotFoundError),
+        ("outra-loja", (), EmptyOrderError),
+        (
+            "outra-loja",
+            (
+                OrderLine(product_id="refri", quantity=12),
+                OrderLine(product_id="refri", quantity=12),
+            ),
+            QuantityOutOfRangeError,
+        ),
         (BEM_TE_VI.slug, (), EmptyOrderError),
         (BEM_TE_VI.slug, (OrderLine(product_id="pastel", quantity=1),), UnknownProductError),
         (CANTINA.slug, (OrderLine(product_id="xsalada", quantity=1),), UnknownProductError),

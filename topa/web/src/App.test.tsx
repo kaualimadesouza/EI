@@ -80,6 +80,45 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Coxinha, esgotado' })).toBeDisabled()
   })
 
+  it('opens the dashboard of the store named in the address', async () => {
+    const base = createAdapters(undefined)
+    const load = vi.fn((slug: string) => Promise.resolve({ store: { slug, name: 'Cantina Central' }, products: [] }))
+    const list = vi.fn(() => Promise.resolve([]))
+    window.history.replaceState(null, '', '/painel?loja=cantina-central')
+
+    render(
+      <App
+        adapters={{
+          ...base,
+          menu: { load, setAvailability: vi.fn() },
+          orders: { place: vi.fn(), list, setStatus: vi.fn(), statusOf: vi.fn() },
+        }}
+        path="/painel"
+      />,
+    )
+
+    expect(await screen.findByText('Cantina Central')).toBeInTheDocument()
+    expect(load).toHaveBeenCalledWith('cantina-central')
+    expect(list).toHaveBeenCalledWith(expect.any(String), 'cantina-central')
+  })
+
+  it('refuses a broken store in the address instead of opening the demo store', () => {
+    const adapters = createAdapters(undefined)
+    window.history.replaceState(null, '', '/?loja=Cantina')
+    const kiosk = render(<App adapters={adapters} />)
+
+    expect(screen.getByRole('heading', { name: 'Loja não encontrada' })).toBeInTheDocument()
+    expect(screen.getByText('Confira o endereço ou aproxime o celular novamente do totem.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Comer aqui/ })).not.toBeInTheDocument()
+    kiosk.unmount()
+
+    window.history.replaceState(null, '', '/painel?loja=Cantina')
+    render(<App adapters={adapters} path="/painel" />)
+
+    expect(screen.getByText('Confira o identificador da loja no endereço do painel.')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Painel do lojista' })).not.toBeInTheDocument()
+  })
+
   it('hands the staff gesture on the kiosk mark to the role switch', () => {
     const onSwitchRole = vi.fn()
     render(<App adapters={createAdapters(undefined)} onSwitchRole={onSwitchRole} />)

@@ -41,8 +41,9 @@ local development image.
 - `make test`: pytest, failing under 100% coverage of `src/`.
 
 The suite never touches the database in `TOPA_DATABASE_URL`: it creates `topa_test` on the
-same server, migrates it to head, deletes the orders and puts every product back on sale
-after each test (the seeded menu stays) and drops it at the end. The user in that URL needs the `CREATEDB` privilege. The migration roundtrip
+same server, migrates it to head, deletes the orders, restores product availability, and deletes
+any extra stores or products created during tests (the seeded demo store and menu stay) and drops
+it at the end. The user in that URL needs the `CREATEDB` privilege. The migration roundtrip
 (`downgrade base`, `upgrade head` again, and the `alembic check` diff against the models)
 runs there too, in `tests/integration/test_migrations.py`.
 

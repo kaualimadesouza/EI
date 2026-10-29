@@ -26,7 +26,7 @@ export function PhoneApp({ adapters, onSwitchRole }: PhoneAppProps) {
         <ArrowLeftIcon size={20} />
         Ler outro totem
       </button>
-      <KioskApp key={store.slug} adapters={adapters} customerStore={store.slug} />
+      <KioskApp key={store.slug} adapters={adapters} storeSlug={store.slug} surface="phone" />
     </div>
   )
 }

@@ -3,6 +3,7 @@ from enum import StrEnum
 
 DEFAULT_STORE_SLUG = "lanchonete-bem-te-vi"
 STORE_SLUG_PATTERN = r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
+STORE_SLUG_MAX_LENGTH = 64
 
 
 class Category(StrEnum):

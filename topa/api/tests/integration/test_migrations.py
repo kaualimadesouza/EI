@@ -1,9 +1,11 @@
 import uuid
 from datetime import UTC, date, datetime
 
+import pytest
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import Engine, insert, inspect, text
+from sqlalchemy import Engine, insert, inspect, select, text
+from sqlalchemy.exc import IntegrityError
 
 from topa_api.adapters.db.base import Base
 from topa_api.adapters.db.models import OrderItemRow, OrderRow, ProductRow, StoreRow
@@ -101,6 +103,86 @@ def test_downgrade_from_populated_multi_store_database_succeeds(
 
     command.upgrade(alembic_config, "head")
     assert application_tables(db_engine) == set(Base.metadata.tables)
+    with db_engine.connect() as connection:
+        restored_order = connection.execute(
+            select(OrderRow.id, OrderRow.store_slug).where(OrderRow.id == default_order)
+        ).one()
+        restored_item = connection.execute(
+            select(OrderItemRow.product_id, OrderItemRow.store_slug).where(
+                OrderItemRow.order_id == default_order
+            )
+        ).one()
+    assert restored_order == (default_order, "lanchonete-bem-te-vi")
+    assert restored_item == ("coxinha", "lanchonete-bem-te-vi")
+
+
+def test_head_schema_supports_rolling_deploy_defaults_and_rejects_cross_store_items(
+    db_engine: Engine,
+) -> None:
+    """Old Lambdas omit store_slug during cutover; composite FKs block cross-store items."""
+    legacy_order = uuid.uuid4()
+    now = datetime(2026, 10, 26, 15, 0, tzinfo=UTC)
+    with db_engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO orders "
+                "(id, business_date, number, status, dine_in, payment_method, total_cents, "
+                "created_at) VALUES "
+                "(:id, :business_date, 1, 'received', true, 'pix', 890, :created_at)"
+            ),
+            {"id": legacy_order, "business_date": date(2026, 10, 26), "created_at": now},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO order_items (order_id, product_id, quantity, unit_price_cents) "
+                "VALUES (:order_id, 'coxinha', 1, 890)"
+            ),
+            {"order_id": legacy_order},
+        )
+        order_store = connection.scalar(
+            select(OrderRow.store_slug).where(OrderRow.id == legacy_order)
+        )
+        item_store = connection.scalar(
+            select(OrderItemRow.store_slug).where(OrderItemRow.order_id == legacy_order)
+        )
+        assert order_store == "lanchonete-bem-te-vi"
+        assert item_store == "lanchonete-bem-te-vi"
+
+        connection.execute(insert(StoreRow).values(slug="cantina-central", name="Cantina Central"))
+        connection.execute(
+            insert(ProductRow).values(
+                store_slug="cantina-central",
+                id="empada",
+                position=1,
+                name="Empada",
+                description="Palmito.",
+                category="salgados",
+                price_cents=900,
+                available=True,
+            )
+        )
+
+    with pytest.raises(IntegrityError), db_engine.begin() as connection:
+        connection.execute(
+            insert(OrderItemRow).values(
+                order_id=legacy_order,
+                store_slug="lanchonete-bem-te-vi",
+                product_id="empada",
+                quantity=1,
+                unit_price_cents=900,
+            )
+        )
+
+    with pytest.raises(IntegrityError), db_engine.begin() as connection:
+        connection.execute(
+            insert(OrderItemRow).values(
+                order_id=legacy_order,
+                store_slug="cantina-central",
+                product_id="empada",
+                quantity=1,
+                unit_price_cents=900,
+            )
+        )
 
 
 def test_migrations_at_head_match_the_models(db_engine: Engine, alembic_config: Config) -> None:

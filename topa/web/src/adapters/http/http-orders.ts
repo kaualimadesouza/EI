@@ -1,4 +1,5 @@
 import type { OrderDraft, OrderSummary, PlacedOrder } from '../../domain/order'
+import { StoreNotFoundError } from '../../ports/menu'
 import { OrderRejectedError, type OrdersPort } from '../../ports/orders'
 import type { HttpClient } from './http-client'
 
@@ -66,6 +67,10 @@ export class HttpOrders implements OrdersPort {
   async list(businessDate: string, storeSlug: string): Promise<OrderSummary[]> {
     const path = `/orders?date=${encodeURIComponent(businessDate)}&loja=${encodeURIComponent(storeSlug)}`
     const response = await this.client.get(path)
+    if (response.status === 404) {
+      const body = (await response.json()) as ErrorJson
+      throw new StoreNotFoundError(typeof body.detail === 'string' ? body.detail : 'Loja não encontrada.')
+    }
     if (!response.ok) throw new Error(`GET /orders answered ${response.status}`)
     return ((await response.json()) as OrderJson[]).map(toSummary)
   }
