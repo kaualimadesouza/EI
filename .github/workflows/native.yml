@@ -76,11 +76,13 @@ jobs:
       # the runner image ships the SDK and NDKs; its variables are not in the env context
       - name: Build the customer APK
         run: |
+          rm -rf src-tauri/gen/android/app/src/main/java/io/github/kaualimadesouza/topa/loja/generated
           NDK_HOME="$ANDROID_NDK_LATEST_HOME" npx tauri android build --debug --apk --target aarch64
           cp src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk topa-cliente-debug.apk
 
       - name: Build the store APK
         run: |
+          rm -rf src-tauri/gen/android/app/src/main/java/io/github/kaualimadesouza/topa/generated
           cargo clean -p tauri -p wry --manifest-path src-tauri/Cargo.toml
           NDK_HOME="$ANDROID_NDK_LATEST_HOME" npx tauri android build --debug --apk --target aarch64 -c src-tauri/tauri.loja.conf.json
           cp src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk topa-loja-debug.apk
