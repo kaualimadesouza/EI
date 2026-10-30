@@ -34,7 +34,7 @@ describe('PhoneApp', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Aproximar do totem' }))
 
-    expect(screen.getByRole('heading', { name: 'Peça aqui. Pague aqui.' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Peça aqui. Pague aqui.' })).toBeInTheDocument()
     expect(await screen.findByText('Cantina Central')).toBeInTheDocument()
     expect(adapters.menu.load).toHaveBeenCalledWith('cantina-central')
     expect(adapters.tag.publish).not.toHaveBeenCalled()

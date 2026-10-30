@@ -49,7 +49,7 @@ describe('App', () => {
 
   it('runs the kiosk on the configured adapters with the real clock', async () => {
     const user = userEvent.setup()
-    render(<App adapters={createAdapters(undefined)} />)
+    render(<App adapters={createAdapters(undefined)} totem />)
 
     expect(screen.getByRole('main')).toContainElement(screen.getByRole('heading', { level: 1 }))
     expect(screen.getByRole('status')).toHaveTextContent('Modo demonstração')
@@ -130,7 +130,7 @@ describe('App', () => {
 
   it('hands the staff gesture on the kiosk mark to the role switch', () => {
     const onSwitchRole = vi.fn()
-    render(<App adapters={createAdapters(undefined)} onSwitchRole={onSwitchRole} />)
+    render(<App adapters={createAdapters(undefined)} totem onSwitchRole={onSwitchRole} />)
 
     tapFiveTimes('por TOPA')
 
@@ -176,7 +176,7 @@ describe('App', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     const vibrate = vi.fn(() => true)
     const adapters = demoOnAndroid(vibrate)
-    const totem = render(<App adapters={adapters} />)
+    const totem = render(<App adapters={adapters} totem />)
 
     await payForAPudim(user)
     expect(await screen.findByText('Pedido confirmado')).toBeInTheDocument()
@@ -211,5 +211,47 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Peça pelo celular.' })).toBeInTheDocument()
     tapFiveTimes('TOPA')
     expect(screen.getByRole('heading', { name: 'Peça pelo celular.' })).toBeInTheDocument()
+  })
+
+  it('requires customer login on direct web access without QR code, then allows selecting store', async () => {
+    const user = userEvent.setup()
+    const adapters = createAdapters(undefined)
+
+    render(<App adapters={adapters} />)
+
+    expect(screen.getByRole('heading', { name: 'Acesse sua conta TOPA' })).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText('E-mail'), 'cliente@topa.com')
+    await user.type(screen.getByLabelText('Senha'), 'topa123')
+    await user.click(screen.getByRole('button', { name: 'Entrar no TOPA' }))
+
+    expect(await screen.findByRole('heading', { name: 'Onde você quer pedir hoje?' })).toBeInTheDocument()
+    expect(screen.getByText('Olá, Cliente Universitário')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Pedir em Brasa Burgers' }))
+    expect(await screen.findByRole('button', { name: /Comer aqui/ })).toBeInTheDocument()
+  })
+
+  it('allows logging out from store selector screen', async () => {
+    const user = userEvent.setup()
+    const adapters = createAdapters(undefined)
+    await adapters.customerAuth.login({ email: 'cliente@topa.com', password: 'topa123' })
+
+    render(<App adapters={adapters} />)
+
+    expect(await screen.findByRole('heading', { name: 'Onde você quer pedir hoje?' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Sair da conta' }))
+    expect(await screen.findByRole('heading', { name: 'Acesse sua conta TOPA' })).toBeInTheDocument()
+  })
+
+  it('bypasses mandatory login when accessing through QR code deep link', async () => {
+    const adapters = createAdapters(undefined)
+    window.history.replaceState(null, '', '/?loja=brasa-burgers')
+
+    render(<App adapters={adapters} />)
+
+    expect(screen.queryByRole('heading', { name: 'Acesse sua conta TOPA' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Peça aqui. Pague aqui.' })).toBeInTheDocument()
   })
 })

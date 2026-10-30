@@ -50,6 +50,17 @@ function fakes(
       getToken: () => null,
       getMerchant: () => null,
     },
+    customerAuth: {
+      login: vi.fn(),
+      register: vi.fn(),
+      logout: vi.fn(),
+      getToken: () => null,
+      getCustomer: () => null,
+      init: () => Promise.resolve(null),
+    },
+    stores: {
+      listAll: () => Promise.resolve([]),
+    },
     nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
     tag: { available: false, publish: vi.fn(), withdraw: vi.fn() },
     buzzer: { buzz },

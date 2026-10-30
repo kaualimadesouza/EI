@@ -2,12 +2,16 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { HttpAuth } from './adapters/http/http-auth'
 import { HttpConnection } from './adapters/http/http-connection'
+import { HttpCustomerAuth } from './adapters/http/http-customer-auth'
 import { HttpMenu } from './adapters/http/http-menu'
 import { HttpOrders } from './adapters/http/http-orders'
+import { HttpStores } from './adapters/http/http-stores'
 import { LocalAuth } from './adapters/local/local-auth'
 import { LocalConnection } from './adapters/local/local-connection'
+import { LocalCustomerAuth } from './adapters/local/local-customer-auth'
 import { LocalMenu } from './adapters/local/local-menu'
 import { LocalOrders } from './adapters/local/local-orders'
+import { LocalStores } from './adapters/local/local-stores'
 import { TauriNfc } from './adapters/tauri/tauri-nfc'
 import { UnavailableBuzzer } from './adapters/unavailable/unavailable-buzzer'
 import { UnavailableNfc } from './adapters/unavailable/unavailable-nfc'
@@ -62,11 +66,15 @@ describe('createAdapters', () => {
     expect(adapters.menu).toBeInstanceOf(HttpMenu)
     expect(adapters.orders).toBeInstanceOf(HttpOrders)
     expect(adapters.auth).toBeInstanceOf(HttpAuth)
+    expect(adapters.customerAuth).toBeInstanceOf(HttpCustomerAuth)
+    expect(adapters.stores).toBeInstanceOf(HttpStores)
 
     const menuProvider = (adapters.menu as unknown as { tokenProvider: () => string | null }).tokenProvider
     const ordersProvider = (adapters.orders as unknown as { tokenProvider: () => string | null }).tokenProvider
+    const customerProvider = (adapters.orders as unknown as { customerTokenProvider: () => string | null }).customerTokenProvider
     expect(menuProvider()).toBeNull()
     expect(ordersProvider()).toBeNull()
+    expect(customerProvider()).toBeNull()
   })
 
   it('falls back to demo mode when there is no API URL', () => {
@@ -77,6 +85,8 @@ describe('createAdapters', () => {
     expect(adapters.menu).toBeInstanceOf(LocalMenu)
     expect(adapters.orders).toBeInstanceOf(LocalOrders)
     expect(adapters.auth).toBeInstanceOf(LocalAuth)
+    expect(adapters.customerAuth).toBeInstanceOf(LocalCustomerAuth)
+    expect(adapters.stores).toBeInstanceOf(LocalStores)
   })
 
   it('treats an empty API URL as no API', () => {

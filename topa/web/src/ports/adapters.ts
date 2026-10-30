@@ -1,9 +1,11 @@
 import type { AuthPort } from './auth'
 import type { BuzzerPort } from './buzzer'
 import type { ConnectionPort } from './connection'
+import type { CustomerAuthPort } from './customer-auth'
 import type { MenuPort } from './menu'
 import type { NfcPort } from './nfc'
 import type { OrdersPort } from './orders'
+import type { StoresPort } from './stores'
 import type { TagPort } from './tag'
 import type { WakeLockPort } from './wake-lock'
 
@@ -18,4 +20,6 @@ export interface Adapters {
   buzzer: BuzzerPort
   wakeLock: WakeLockPort
   auth: AuthPort
+  customerAuth: CustomerAuthPort
+  stores: StoresPort
 }

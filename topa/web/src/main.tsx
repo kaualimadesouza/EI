@@ -15,6 +15,7 @@ createRoot(document.getElementById('root')!).render(
       adapters={adapters}
       phone={isPhoneApp(runtime)}
       storeRole={runtime.storeRole}
+      totem={runtime.totem}
       onSwitchRole={roleSwitch(runtime, () => window.location.reload())}
     />
   </StrictMode>,
