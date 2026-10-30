@@ -15,6 +15,29 @@ describe('suggestionAt', () => {
     expect(suggestionAt(at(12)).productId).toBe('combo-misto')
     expect(suggestionAt(at(16))).toEqual({ productId: 'bolo', reason: 'Para acompanhar o café da tarde.' })
   })
+
+  it('dynamically offers custom combos at morning, lunch, and desserts in the afternoon', () => {
+    const customMenu: Product[] = [
+      { id: 'combo-matinal', name: 'Combo Matinal', description: 'Cafe e torrada.', category: 'combos', priceCents: 1500, available: true },
+      { id: 'combo-almoco', name: 'Combo Almoco', description: 'Hamburguer e refri.', category: 'combos', priceCents: 2500, available: true },
+      { id: 'torta-limao', name: 'Torta de Limao', description: 'Fatia artesanal.', category: 'doces', priceCents: 1200, available: true },
+    ]
+    expect(suggestionAt(at(8), customMenu).productId).toBe('combo-matinal')
+    expect(suggestionAt(at(12), customMenu).productId).toBe('combo-almoco')
+    expect(suggestionAt(at(16), customMenu).productId).toBe('torta-limao')
+
+    const genericComboMenu: Product[] = [
+      { id: 'combo-generico', name: 'Combo Gen', description: 'Geral', category: 'combos', priceCents: 2000, available: true },
+    ]
+    expect(suggestionAt(at(12), genericComboMenu).productId).toBe('combo-generico')
+
+    const menuWithoutDesc: Product[] = [
+      { id: 'pao', name: 'Pao', description: '', category: 'salgados', priceCents: 300, available: true },
+    ]
+    expect(suggestionAt(at(8), menuWithoutDesc)).toEqual({ productId: 'pao', reason: 'Para o café da manhã.' })
+    expect(suggestionAt(at(12), menuWithoutDesc)).toEqual({ productId: 'pao', reason: 'Combo especial para o almoço.' })
+    expect(suggestionAt(at(16), menuWithoutDesc)).toEqual({ productId: 'pao', reason: 'Para acompanhar o café da tarde.' })
+  })
 })
 
 describe('bannerFor', () => {
@@ -91,6 +114,38 @@ describe('upsellAfterAdding', () => {
     ]
 
     expect(upsellAfterAdding(product('misto'), lines, DEMO_CATALOG)?.productId).toBe('suco')
+  })
+
+  it('dynamically offers drinks for custom sandwiches and snacks for custom drinks', () => {
+    const customMenu: Product[] = [
+      { id: 'sanduba', name: 'Sanduba Natural', description: '', category: 'lanches', priceCents: 1800, available: true },
+      { id: 'cha-gelado', name: 'Cha Gelado', description: 'Natural 500ml.', category: 'bebidas', priceCents: 800, available: true },
+      { id: 'cafe-expresso', name: 'Cafe Expresso', description: '', category: 'bebidas', priceCents: 600, available: true },
+      { id: 'cookie', name: 'Cookie de Chocolate', description: 'Quentinho.', category: 'doces', priceCents: 700, available: true },
+    ]
+    const sanduba = customMenu[0]
+    const upsellDrink = upsellAfterAdding(sanduba, [], customMenu)
+    expect(upsellDrink?.productId).toBe('cha-gelado')
+    expect(upsellDrink?.question).toBe('Que tal Cha Gelado para acompanhar?')
+
+    const cafe = { ...customMenu[2], id: 'cafe' }
+    const upsellSnack = upsellAfterAdding(cafe, [], [cafe, customMenu[3]])
+    expect(upsellSnack?.productId).toBe('cookie')
+    expect(upsellSnack?.question).toBe('Vai Cookie de Chocolate para acompanhar?')
+
+    const drinkWithoutDesc: Product = { id: 'agua', name: 'Agua', description: '', category: 'bebidas', priceCents: 400, available: true }
+    const upsellAgua = upsellAfterAdding(sanduba, [], [sanduba, drinkWithoutDesc])
+    expect(upsellAgua?.reason).toBe('Combina com o seu lanche.')
+
+    const noDrinks = upsellAfterAdding(sanduba, [], [sanduba])
+    expect(noDrinks).toBeNull()
+
+    const snackWithoutDesc: Product = { id: 'torrada', name: 'Torrada', description: '', category: 'salgados', priceCents: 500, available: true }
+    const upsellTorrada = upsellAfterAdding(cafe, [], [cafe, snackWithoutDesc])
+    expect(upsellTorrada?.reason).toBe('Para acompanhar sua bebida.')
+
+    const noSnacks = upsellAfterAdding(cafe, [], [cafe])
+    expect(noSnacks).toBeNull()
   })
 })
 

@@ -248,7 +248,7 @@ export function KioskApp({ adapters, storeSlug, surface = 'totem', now = () => n
             <CheckIcon size={24} className="phone:size-5" />
             {findProduct(products, state.justAdded!)!.name} adicionado
           </p>
-          <img src={photoOf(state.upsell.productId)} alt="" className="h-[300px] w-full rounded-[24px] object-cover short:h-48 max-sm:h-44 phone:h-36" />
+          <img src={photoOf(findProduct(products, state.upsell.productId)!)} alt="" className="h-[300px] w-full rounded-[24px] object-cover short:h-48 max-sm:h-44 phone:h-36" />
           <h2 className="text-heading leading-tight font-bold">{state.upsell.question}</h2>
           <p className="text-body text-muted phone:leading-snug">{state.upsell.reason}</p>
           <ChoiceButtons

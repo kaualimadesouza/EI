@@ -93,6 +93,8 @@ describe('LocalOrders', () => {
     const brokenMenu = {
       load: () => Promise.reject(new Error('storage offline')),
       setAvailability: () => Promise.reject(new Error('storage offline')),
+      create: () => Promise.reject(new Error('storage offline')),
+      update: () => Promise.reject(new Error('storage offline')),
     }
     const orders = new LocalOrders(brokenMenu, new MemoryStorage(), monday)
 

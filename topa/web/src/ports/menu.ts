@@ -1,10 +1,25 @@
 import type { Product } from '../domain/menu'
 import type { StoreMenu } from '../domain/store'
 
+export interface ProductDraft {
+  id?: string
+  name: string
+  description: string
+  category: string
+  priceCents: number
+  photoUrl?: string
+  available?: boolean
+}
+
+export type CreateProductDraft = ProductDraft
+export type UpdateProductDraft = ProductDraft
+
 export interface MenuPort {
   load(storeSlug: string): Promise<StoreMenu>
   /** Sold out or back on sale; the totems pick it up at their next customer. */
   setAvailability(productId: string, available: boolean, storeSlug: string): Promise<Product>
+  create(draft: CreateProductDraft, storeSlug: string): Promise<Product>
+  update(productId: string, draft: UpdateProductDraft, storeSlug: string): Promise<Product>
 }
 
 /** No store has that slug; the message is for people. */

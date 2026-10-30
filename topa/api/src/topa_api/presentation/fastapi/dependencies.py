@@ -6,6 +6,7 @@ from pydantic import StringConstraints
 from topa_api.application.authenticate_merchant import AuthenticateMerchantUseCase
 from topa_api.application.change_order_status import ChangeOrderStatusUseCase
 from topa_api.application.check_order_rate_limit import CheckOrderRateLimitUseCase
+from topa_api.application.create_product import CreateProductUseCase
 from topa_api.application.get_store_menu import GetStoreMenuUseCase
 from topa_api.application.list_orders import ListOrdersUseCase
 from topa_api.application.place_order import PlaceOrderUseCase
@@ -22,6 +23,7 @@ from topa_api.application.ports import (
 )
 from topa_api.application.read_order import ReadOrderUseCase
 from topa_api.application.set_product_availability import SetProductAvailabilityUseCase
+from topa_api.application.update_product import UpdateProductUseCase
 from topa_api.application.verify_merchant_token import VerifyMerchantTokenUseCase
 from topa_api.domain.auth import AuthenticatedMerchant
 from topa_api.domain.catalog import STORE_SLUG_MAX_LENGTH, STORE_SLUG_PATTERN
@@ -96,6 +98,20 @@ def get_set_product_availability_use_case(
     products: Annotated[ProductRepository, Depends(get_product_repository)],
 ) -> SetProductAvailabilityUseCase:
     return SetProductAvailabilityUseCase(stores, products)
+
+
+def get_create_product_use_case(
+    stores: Annotated[StoreRepository, Depends(get_store_repository)],
+    products: Annotated[ProductRepository, Depends(get_product_repository)],
+) -> CreateProductUseCase:
+    return CreateProductUseCase(stores, products)
+
+
+def get_update_product_use_case(
+    stores: Annotated[StoreRepository, Depends(get_store_repository)],
+    products: Annotated[ProductRepository, Depends(get_product_repository)],
+) -> UpdateProductUseCase:
+    return UpdateProductUseCase(stores, products)
 
 
 def get_merchant_repository() -> MerchantRepositoryPort:

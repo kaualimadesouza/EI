@@ -30,17 +30,11 @@ a fase 2.
    `GET /orders`) exigem login e validam o `store_slug`. Rota `POST /orders` com rate limit em memória
    (10 requisições por minuto por IP) e cabeçalho `Retry-After`. Frontend com tela de login, aviso LGPD
    e ação de logout. Política de privacidade documentada em `docs/privacidade.md`.
-5. **Cardápio real.** O cardápio de hoje é o de demonstração, gravado pela primeira migration
-   (`topa/api/migrations/versions/20261026_36d9f509b9ec_products_and_orders.py`). Para o
-   lojista cadastrar o dele, falta:
-   - rotas para criar e editar produtos (hoje a API só muda a disponibilidade);
-   - onde guardar as fotos: hoje são arquivos fixos do app (`topa/web/public/photos/<id>.jpg`,
-     via `topa/web/src/ui/kiosk/photo.ts`), e o banco não tem coluna de foto;
-   - categorias editáveis: hoje são uma lista fixa (`Category` em
-     `topa/api/src/topa_api/domain/catalog.py`, com uma restrição no banco);
-   - sugestões configuráveis: as regras de `topa/web/src/domain/suggest.ts` citam produtos do
-     cardápio de demonstração pelo id, e um texto depende dos preços dele ("Sai R$ 1,90 mais
-     barato que separado").
+5. **Cardápio real.** Feito: rotas para criar (`POST /products`) e editar (`PUT /products/{id}`)
+   produtos com validação de loja e autenticação de lojista; coluna `photo_url` no banco com fallback
+   para `/photos/<id>.jpg`; categorias dinâmicas sem restrição fixa no banco; sugestões dinâmicas no
+   totem baseadas no cardápio carregado da loja; interface no painel administrativo com formulário
+   modal para cadastro e edição de produtos por lojistas autenticados.
 
 Pronto quando: o pedido feito no celular aparece no painel da loja; um esgotado marcado no
 painel aparece esgotado no celular (ambos entregues na issue #32); o lojista cadastra um produto

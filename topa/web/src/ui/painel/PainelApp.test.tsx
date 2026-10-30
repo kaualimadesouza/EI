@@ -282,7 +282,7 @@ describe('PainelApp', () => {
     const failing: Adapters = {
       mode: 'api',
       connection: { isReachable: () => Promise.resolve(false) },
-      menu: { load: () => Promise.reject(new Error('down')), setAvailability: vi.fn() },
+      menu: { load: () => Promise.reject(new Error('down')), setAvailability: vi.fn(), create: vi.fn(), update: vi.fn() },
       orders: { place: vi.fn(), list: () => Promise.reject(new Error('down')), setStatus: vi.fn(), statusOf: vi.fn() },
       auth: {
         login: vi.fn(),
@@ -327,6 +327,8 @@ describe('PainelApp', () => {
       menu: {
         load: () => Promise.resolve({ store: { slug: 'cantina-central', name: 'Cantina Central' }, products: [suco] }),
         setAvailability: () => Promise.reject(new Error('network')),
+        create: vi.fn(),
+        update: vi.fn(),
       },
       orders: { place: vi.fn(), list: () => Promise.resolve([order]), setStatus, statusOf: vi.fn() },
       auth: {
@@ -372,7 +374,7 @@ describe('PainelApp', () => {
     const adapters: Adapters = {
       mode: 'api',
       connection: { isReachable: () => Promise.resolve(true) },
-      menu: { load, setAvailability },
+      menu: { load, setAvailability, create: vi.fn(), update: vi.fn() },
       orders: { place: vi.fn(), list, setStatus: vi.fn(), statusOf: vi.fn() },
       auth: {
         login: vi.fn(),
@@ -400,7 +402,7 @@ describe('PainelApp', () => {
   it('never shows another store name while the store is still loading', () => {
     const adapters: Adapters = {
       ...demoStore('cantina-central').adapters,
-      menu: { load: () => new Promise(() => {}), setAvailability: vi.fn() },
+      menu: { load: () => new Promise(() => {}), setAvailability: vi.fn(), create: vi.fn(), update: vi.fn() },
       orders: { place: vi.fn(), list: () => new Promise(() => {}), setStatus: vi.fn(), statusOf: vi.fn() },
     }
 
@@ -504,5 +506,79 @@ describe('PainelApp', () => {
     const headerLogout = screen.getAllByRole('button', { name: 'Sair' })[1]
     await user.click(headerLogout)
     expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument()
+  })
+
+  it('opens modal, creates a new product, and shows it in the menu table', async () => {
+    const user = userEvent.setup()
+    const { adapters } = demoStore()
+
+    render(<PainelApp adapters={adapters} storeSlug={DEMO_STORE_SLUG} now={() => NOW} />)
+    expect(await screen.findByRole('heading', { name: 'Cardápio' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Novo produto' }))
+    expect(screen.getByRole('heading', { name: 'Novo produto' })).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText('Nome'), 'Pastel de Frango')
+    await user.clear(screen.getByLabelText('Categoria'))
+    await user.type(screen.getByLabelText('Categoria'), 'salgados')
+    await user.type(screen.getByLabelText('Preço (R$)'), '8,50')
+    await user.type(screen.getByLabelText('Descrição'), 'Pastel frito na hora.')
+    await user.type(screen.getByLabelText('URL da foto (opcional)'), 'https://example.com/pastel.jpg')
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+    expect(await screen.findByText('Pastel de Frango')).toBeInTheDocument()
+  })
+
+  it('opens modal, edits an existing product, and reflects changes', async () => {
+    const user = userEvent.setup()
+    const { adapters } = demoStore()
+
+    render(<PainelApp adapters={adapters} storeSlug={DEMO_STORE_SLUG} now={() => NOW} />)
+    expect(await screen.findByRole('heading', { name: 'Cardápio' })).toBeInTheDocument()
+
+    const editBtn = screen.getByRole('button', { name: 'Editar Coxinha' })
+    await user.click(editBtn)
+    expect(screen.getByRole('heading', { name: 'Editar produto' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Nome')).toHaveValue('Coxinha')
+
+    await user.clear(screen.getByLabelText('Nome'))
+    await user.type(screen.getByLabelText('Nome'), 'Coxinha Dourada')
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+    expect(await screen.findByText('Coxinha Dourada')).toBeInTheDocument()
+  })
+
+  it('shows problem alert when saving a product fails', async () => {
+    const user = userEvent.setup()
+    const { adapters } = demoStore()
+    vi.spyOn(adapters.menu, 'create').mockRejectedValue(new Error('Falha no banco.'))
+
+    render(<PainelApp adapters={adapters} storeSlug={DEMO_STORE_SLUG} now={() => NOW} />)
+    expect(await screen.findByRole('heading', { name: 'Cardápio' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Novo produto' }))
+    await user.type(screen.getByLabelText('Nome'), 'Pastel')
+    await user.type(screen.getByLabelText('Preço (R$)'), '8,50')
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+    const alerts = await screen.findAllByText('Falha no banco.')
+    expect(alerts.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('shows fallback problem alert when saving a product fails with non-Error', async () => {
+    const user = userEvent.setup()
+    const { adapters } = demoStore()
+    vi.spyOn(adapters.menu, 'create').mockRejectedValue('falha de rede')
+
+    render(<PainelApp adapters={adapters} storeSlug={DEMO_STORE_SLUG} now={() => NOW} />)
+    expect(await screen.findByRole('heading', { name: 'Cardápio' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Novo produto' }))
+    await user.type(screen.getByLabelText('Nome'), 'Pastel')
+    await user.type(screen.getByLabelText('Preço (R$)'), '8,50')
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+
+    const alerts = await screen.findAllByText('Não foi possível salvar o produto. Tente de novo.')
+    expect(alerts.length).toBeGreaterThanOrEqual(1)
   })
 })

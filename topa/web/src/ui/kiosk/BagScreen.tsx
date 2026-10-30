@@ -26,7 +26,7 @@ export function BagScreen({ products, lines, onIncrement, onDecrement, onBack, o
               return (
                 <li key={line.productId} className="flex flex-col gap-3 py-6 short:py-4 max-sm:py-4">
                   <div className="flex items-center gap-4 max-sm:gap-3">
-                    <img src={photoOf(product.id)} alt="" className="h-[72px] w-24 flex-none rounded-[16px] object-cover max-sm:h-14 max-sm:w-[72px] max-sm:rounded-[12px]" />
+                    <img src={photoOf(product)} alt="" className="h-[72px] w-24 flex-none rounded-[16px] object-cover max-sm:h-14 max-sm:w-[72px] max-sm:rounded-[12px]" />
                     <span className="line-clamp-2 flex-1 text-[26px] leading-snug font-semibold max-sm:text-[18px]">{product.name}</span>
                     <span className="text-[26px] font-bold tabular-nums max-sm:text-[18px]">{formatBRL(product.priceCents * line.quantity)}</span>
                   </div>

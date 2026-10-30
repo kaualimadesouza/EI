@@ -84,6 +84,7 @@ def test_each_store_serves_its_own_menu_and_availability(
                 "category": "salgados",
                 "price_cents": 950,
                 "available": False,
+                "photo_url": None,
             },
             {
                 "id": "suco",
@@ -92,6 +93,7 @@ def test_each_store_serves_its_own_menu_and_availability(
                 "category": "bebidas",
                 "price_cents": 1100,
                 "available": False,
+                "photo_url": None,
             },
         ],
     }

@@ -7,14 +7,15 @@ import { nextStatus } from '../../domain/status'
 import { DEMO_STORE_SLUG } from '../../domain/store'
 import type { Adapters } from '../../ports/adapters'
 import type { AuthenticatedMerchant } from '../../ports/auth'
-import { StoreNotFoundError } from '../../ports/menu'
+import { type ProductDraft, StoreNotFoundError } from '../../ports/menu'
 import { OrderRejectedError } from '../../ports/orders'
-import { AlertIcon, BoardIcon, ChartIcon, ExternalIcon, ListIcon, LogoutIcon, StoreMark, UndoIcon } from '../icons'
+import { AlertIcon, BoardIcon, ChartIcon, ExternalIcon, ListIcon, LogoutIcon, PlusIcon, StoreMark, UndoIcon } from '../icons'
 import { HourlyChart } from './HourlyChart'
 import { KpiRow } from './KpiRow'
 import { LoginScreen } from './LoginScreen'
 import { MenuTable } from './MenuTable'
 import { OrdersBoard } from './OrdersBoard'
+import { ProductModal } from './ProductModal'
 
 interface PainelAppProps {
   adapters: Adapters
@@ -65,6 +66,7 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
   const [problem, setProblem] = useState<string | null>(null)
   const [undo, setUndo] = useState<Undo | null>(null)
   const [locked, setLocked] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<Product | 'new' | null>(null)
 
   const today = now()
   const todayKey = businessDate(today)
@@ -159,6 +161,24 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
       setProblem(null)
     } catch {
       setProblem(`Não foi possível mudar ${product.name}. Tente de novo.`)
+    }
+  }
+
+  const handleSaveProduct = async (draft: ProductDraft) => {
+    try {
+      if (editingProduct === 'new') {
+        const created = await adapters.menu.create(draft, storeSlug)
+        setProducts((list) => [...list, created])
+      } else {
+        const target = editingProduct!
+        const updated = await adapters.menu.update(target.id, draft, storeSlug)
+        setProducts((list) => list.map((p) => (p.id === updated.id ? updated : p)))
+      }
+      setProblem(null)
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Não foi possível salvar o produto. Tente de novo.'
+      setProblem(msg)
+      throw error
     }
   }
 
@@ -320,13 +340,35 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
         </section>
         <HourlyChart byHour={metrics.byHour} currentHour={today.getHours()} />
         <section id="cardapio" aria-labelledby="cardapio-title" className="flex scroll-mt-6 flex-col gap-4">
-          <div>
-            <h2 id="cardapio-title" className="text-[22px] font-bold">Cardápio</h2>
-            <p className="text-[15px] text-muted">Um item esgotado aparece como esgotado no totem a partir do próximo cliente.</p>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 id="cardapio-title" className="text-[22px] font-bold">Cardápio</h2>
+              <p className="text-[15px] text-muted">Um item esgotado aparece como esgotado no totem a partir do próximo cliente.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setEditingProduct('new')}
+              aria-label="Novo produto"
+              className="flex h-11 cursor-pointer items-center gap-2 rounded-[12px] bg-teal px-4 text-[15px] font-semibold text-white hover:bg-slate"
+            >
+              <PlusIcon size={18} />
+              <span>Novo produto</span>
+            </button>
           </div>
-          <MenuTable products={products} orders={orders} onAvailability={(product, available) => void setAvailability(product, available)} />
+          <MenuTable
+            products={products}
+            orders={orders}
+            onAvailability={(product, available) => void setAvailability(product, available)}
+            onEdit={(product) => setEditingProduct(product)}
+          />
         </section>
       </main>
+      <ProductModal
+        product={editingProduct === 'new' ? null : editingProduct}
+        isOpen={editingProduct !== null}
+        onClose={() => setEditingProduct(null)}
+        onSave={handleSaveProduct}
+      />
       {undo && (
         <div role="status" className="fixed bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 rounded-[16px] bg-ink py-3 pr-3 pl-5 text-[15px] text-white shadow-lg">
           Pedido {displayNumber(undo.number)} {MOVED_TO[undo.status]}.

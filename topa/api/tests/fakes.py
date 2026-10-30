@@ -42,6 +42,28 @@ class InMemoryProductRepository:
             if product.id in product_ids
         ]
 
+    def get(self, store_slug: str, product_id: str) -> Product | None:
+        return next(
+            (p for p in self.products_by_store.get(store_slug, ()) if p.id == product_id), None
+        )
+
+    def next_position(self, store_slug: str) -> int:
+        return len(self.products_by_store.get(store_slug, ())) + 1
+
+    def create(self, store_slug: str, product: Product, position: int) -> Product:
+        if store_slug not in self.products_by_store:
+            self.products_by_store[store_slug] = []
+        self.products_by_store[store_slug].append(product)
+        return product
+
+    def update(self, store_slug: str, product: Product) -> Product | None:
+        catalog = self.products_by_store.get(store_slug, [])
+        for pos, existing in enumerate(catalog):
+            if existing.id == product.id:
+                catalog[pos] = product
+                return product
+        return None
+
     def set_availability(self, store_slug: str, product_id: str, available: bool) -> Product | None:
         catalog = self.products_by_store.get(store_slug, [])
         for position, product in enumerate(catalog):

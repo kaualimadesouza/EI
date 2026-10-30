@@ -23,7 +23,9 @@ and UI copy is in Portuguese; code is in English.
   `npm run check` runs lint, typecheck, tests (100% coverage) and build, as CI does.
 - `topa/api/`: FastAPI + SQLAlchemy 2 + Alembic + Postgres, managed with uv. Hexagonal; import-linter
   keeps `domain` and `application` free of frameworks. Merchant authentication uses scrypt hashing,
-  HMAC-SHA256 bearer tokens and IP rate limiting on orders. See `topa/api/README.md`.
+  HMAC-SHA256 bearer tokens and IP rate limiting on orders. Supports configurable menu with product
+  photos (`photo_url`), dynamic categories and merchant product CRUD (`POST /products`, `PUT /products/{id}`).
+  See `topa/api/README.md`.
 - `topa/web/src-tauri/`: Tauri 2 wraps the web build as a desktop app and two Android apps (customer
   app `topa` which opens directly into phone ordering, and store app `topa.loja` which runs the totem
   or painel with NFC HCE tag emulation via `TagEmulationService.kt`). Dynamic `versionCode` is computed
