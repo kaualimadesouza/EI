@@ -16,6 +16,7 @@ import { LocalMenu } from './adapters/local/local-menu'
 import { LocalOrders } from './adapters/local/local-orders'
 import { LocalRecommendations } from './adapters/local/local-recommendations'
 import { LocalStores } from './adapters/local/local-stores'
+import { SimulatorVoiceAdapter } from './adapters/local/local-voice'
 import { TauriNfc } from './adapters/tauri/tauri-nfc'
 import { type TagBridge, TauriTag } from './adapters/tauri/tauri-tag'
 import { UnavailableBuzzer } from './adapters/unavailable/unavailable-buzzer'
@@ -24,6 +25,7 @@ import { UnavailableTag } from './adapters/unavailable/unavailable-tag'
 import { UnavailableWakeLock } from './adapters/unavailable/unavailable-wake-lock'
 import { WebBuzzer } from './adapters/web/web-buzzer'
 import { type NdefReader, WebNfc } from './adapters/web/web-nfc'
+import { WebSpeechVoiceAdapter } from './adapters/web/web-voice'
 import { WebWakeLock } from './adapters/web/web-wake-lock'
 import type { Adapters } from './ports/adapters'
 import type { NfcPort } from './ports/nfc'
@@ -128,6 +130,7 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
       customerAuth,
       stores,
       recommendations: new HttpRecommendations(client),
+      voice: new WebSpeechVoiceAdapter(),
       nfc,
       tag,
       buzzer,
@@ -147,6 +150,7 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
     customerAuth,
     stores,
     recommendations: new LocalRecommendations(menu),
+    voice: new SimulatorVoiceAdapter(),
     nfc,
     tag,
     buzzer,

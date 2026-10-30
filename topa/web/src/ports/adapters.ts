@@ -8,6 +8,7 @@ import type { OrdersPort } from './orders'
 import type { RecommendationsPort } from './recommendations'
 import type { StoresPort } from './stores'
 import type { TagPort } from './tag'
+import type { VoiceRecognitionPort } from './voice'
 import type { WakeLockPort } from './wake-lock'
 
 /** What the composition root hands the UI: the mode it picked and the ports that serve it. */
@@ -24,4 +25,5 @@ export interface Adapters {
   customerAuth: CustomerAuthPort
   stores: StoresPort
   recommendations: RecommendationsPort
+  voice: VoiceRecognitionPort
 }

@@ -126,4 +126,24 @@ describe('MenuScreen', () => {
     const plusBtn = screen.getByRole('button', { name: 'Mais um Misto Quente' })
     expect(plusBtn).toBeDisabled()
   })
+
+  it('triggers onVoiceOrder when voice order button is clicked', () => {
+    const onVoiceOrder = vi.fn()
+    render(
+      <MenuScreen
+        products={sampleProducts}
+        lines={[]}
+        category="lanches"
+        banner={null}
+        onCategory={vi.fn()}
+        onAdd={vi.fn()}
+        onRemove={vi.fn()}
+        onReview={vi.fn()}
+        onVoiceOrder={onVoiceOrder}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pedir por voz' }))
+    expect(onVoiceOrder).toHaveBeenCalled()
+  })
 })

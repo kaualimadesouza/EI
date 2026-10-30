@@ -20,6 +20,7 @@ import { PaymentScreen, PIX_SECONDS } from './PaymentScreen'
 import { photoOf } from './photo'
 import { StartScreen } from './StartScreen'
 import { useCountdown } from './use-countdown'
+import { VoiceOrderModal } from './VoiceOrderModal'
 
 interface KioskAppProps {
   adapters: Adapters
@@ -43,6 +44,7 @@ export function KioskApp({ adapters, storeSlug, surface = 'totem', now = () => n
   const [products, setProducts] = useState<Product[]>([])
   const [menuState, setMenuState] = useState<'loading' | 'ready' | 'not-found' | 'error'>('loading')
   const [recommendations, setRecommendations] = useState<readonly RecommendationItem[]>([])
+  const [voiceModalOpen, setVoiceModalOpen] = useState(false)
   const [touches, setTouches] = useState(0)
   const requestId = useRef(0)
   const sessionId = useRef(crypto.randomUUID())
@@ -223,16 +225,38 @@ export function KioskApp({ adapters, storeSlug, surface = 'totem', now = () => n
         </div>
       )}
       {state.screen === 'menu' && menuState === 'ready' && (
-        <MenuScreen
-          products={products}
-          lines={state.lines}
-          category={state.category}
-          banner={bannerFor(now(), state.category, state.lines, products)}
-          onCategory={(category) => setState((s) => flow.pickCategory(s, category))}
-          onAdd={(product) => setState((s) => flow.add(s, product, products))}
-          onRemove={(id) => setState((s) => flow.decrement(s, id))}
-          onReview={() => setState((s) => flow.show(s, 'bag'))}
-        />
+        <>
+          <MenuScreen
+            products={products}
+            lines={state.lines}
+            category={state.category}
+            banner={bannerFor(now(), state.category, state.lines, products)}
+            onCategory={(category) => setState((s) => flow.pickCategory(s, category))}
+            onAdd={(product) => setState((s) => flow.add(s, product, products))}
+            onRemove={(id) => setState((s) => flow.decrement(s, id))}
+            onReview={() => setState((s) => flow.show(s, 'bag'))}
+            onVoiceOrder={() => setVoiceModalOpen(true)}
+          />
+          {voiceModalOpen && (
+            <VoiceOrderModal
+              products={products}
+              voiceAdapter={adapters.voice}
+              onAddItems={(items) => {
+                setState((s) => {
+                  let nextState = s
+                  for (const item of items) {
+                    const product = findProduct(products, item.productId)!
+                    for (let i = 0; i < item.quantity; i++) {
+                      nextState = flow.add(nextState, product, products)
+                    }
+                  }
+                  return nextState
+                })
+              }}
+              onClose={() => setVoiceModalOpen(false)}
+            />
+          )}
+        </>
       )}
       {state.screen === 'bag' && (
         <BagScreen

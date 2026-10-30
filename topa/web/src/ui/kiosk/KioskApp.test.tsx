@@ -64,6 +64,10 @@ function fakes(
     recommendations: {
       getRecommendations: vi.fn().mockResolvedValue({ items: [], strategyUsed: 'popular_fallback', abGroup: 'control' }),
     },
+    voice: {
+      isSupported: () => true,
+      startListening: vi.fn().mockReturnValue(() => {}),
+    },
     nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
     tag: { available: false, publish: vi.fn(), withdraw: vi.fn() },
     buzzer: { buzz },
@@ -966,5 +970,36 @@ describe('KioskApp', () => {
     const nav = screen.getByRole('navigation', { name: 'Categorias' })
     expect(within(nav).getAllByRole('button').map((b) => b.textContent)).toEqual(['Salgados', 'Bebidas'])
     expect(button('Adicionar Coxinha')).toBeEnabled()
+  })
+
+  it('allows adding items to order via voice ordering modal', async () => {
+    let transcriptCb: (text: string, isFinal: boolean) => void = () => {}
+    const f = fakes()
+    f.adapters.voice = {
+      isSupported: () => true,
+      startListening: (onTranscript) => {
+        transcriptCb = onTranscript
+        return vi.fn()
+      },
+    }
+    const { user } = setup(f)
+    await startOrder(user)
+
+    await user.click(screen.getByRole('button', { name: 'Pedir por voz' }))
+    const dialog = screen.getByRole('dialog', { name: 'Fazer pedido por voz' })
+    expect(dialog).toBeInTheDocument()
+
+    act(() => {
+      transcriptCb('quero dois mistos quentes', true)
+    })
+
+    expect(within(dialog).getByText('Misto quente')).toBeInTheDocument()
+    await user.click(within(dialog).getByRole('button', { name: /^Adicionar/i }))
+
+    expect(screen.queryByRole('dialog', { name: 'Fazer pedido por voz' })).not.toBeInTheDocument()
+    if (screen.queryByRole('button', { name: 'Não, obrigado' })) {
+      await user.click(screen.getByRole('button', { name: 'Não, obrigado' }))
+    }
+    expect(screen.getByRole('button', { name: 'Ver pedido' })).toBeEnabled()
   })
 })

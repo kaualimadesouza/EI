@@ -5,6 +5,7 @@ import {
   CategoryIcon,
   CloseIcon,
   DineInIcon,
+  MicIcon,
   MinusIcon,
   PlusIcon,
   TakeAwayIcon,
@@ -37,5 +38,8 @@ describe('icons', () => {
 
     const { container: minus } = render(<MinusIcon />)
     expect(minus.querySelector('svg')).toBeInTheDocument()
+
+    const { container: mic } = render(<MicIcon />)
+    expect(mic.querySelector('svg')).toBeInTheDocument()
   })
 })
