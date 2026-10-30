@@ -555,7 +555,7 @@ describe('PainelApp', () => {
     render(<PainelApp adapters={adapters} storeSlug={DEMO_STORE_SLUG} now={() => NOW} />)
     expect(await screen.findByRole('heading', { name: 'Cardápio' })).toBeInTheDocument()
 
-    const editBtn = screen.getByRole('button', { name: 'Editar Coxinha' })
+    const editBtn = await screen.findByRole('button', { name: 'Editar Coxinha' })
     await user.click(editBtn)
     expect(screen.getByRole('heading', { name: 'Editar produto' })).toBeInTheDocument()
     expect(screen.getByLabelText('Nome')).toHaveValue('Coxinha')
