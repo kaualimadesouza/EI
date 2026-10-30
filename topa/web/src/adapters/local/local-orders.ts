@@ -63,6 +63,10 @@ export class LocalOrders implements OrdersPort {
     return this.orders.read().filter((order) => order.storeSlug === storeSlug && order.businessDate === businessDate)
   }
 
+  async listCustomerOrders(): Promise<OrderSummary[]> {
+    return [...this.orders.read()].reverse()
+  }
+
   // only the customer's phone follows an order, so only a phone order is cooked; the totem's waits
   // for the dashboard, and so does any order the merchant has already taken from 'received'
   statusOf(orderId: string): Promise<OrderSummary['status']> {

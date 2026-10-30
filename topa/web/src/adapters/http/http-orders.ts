@@ -5,6 +5,7 @@ import type { HttpClient } from './http-client'
 
 interface OrderJson {
   id: string
+  store_slug?: string
   number: number
   status: OrderSummary['status']
   dine_in: boolean
@@ -21,6 +22,7 @@ interface ErrorJson {
 function toSummary(order: OrderJson): OrderSummary {
   return {
     id: order.id,
+    storeSlug: order.store_slug,
     number: order.number,
     status: order.status,
     dineIn: order.dine_in,
@@ -120,4 +122,15 @@ export class HttpOrders implements OrdersPort {
     return toSummary((await response.json()) as OrderJson)
   }
 
+  async listCustomerOrders(): Promise<OrderSummary[]> {
+    const customerToken = this.customerTokenProvider?.() ?? null
+    if (!customerToken) {
+      return []
+    }
+    const response = await this.client.get('/orders/me', undefined, customerToken)
+    if (!response.ok) {
+      throw new Error(`GET /orders/me answered ${response.status}`)
+    }
+    return ((await response.json()) as OrderJson[]).map(toSummary)
+  }
 }

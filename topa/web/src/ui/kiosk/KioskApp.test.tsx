@@ -43,7 +43,7 @@ function fakes(
     mode: 'demo',
     connection: { isReachable },
     menu: { load, setAvailability: vi.fn(), create: vi.fn(), update: vi.fn() },
-    orders: { place, list: vi.fn(), setStatus: vi.fn(), statusOf },
+    orders: { place, list: vi.fn(), setStatus: vi.fn(), statusOf, listCustomerOrders: vi.fn() },
     auth: {
       login: vi.fn(),
       logout: vi.fn(),

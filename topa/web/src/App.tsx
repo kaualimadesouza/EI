@@ -142,6 +142,7 @@ export function App({
   return (
     <StoreSelectorScreen
       stores={adapters.stores}
+      orders={adapters.orders}
       customer={customer}
       onSelectStore={(slug) => {
         setSelectedStore(slug)

@@ -17,6 +17,7 @@ export interface PlacedOrder {
 /** A placed order as the dashboard follows it through the kitchen. */
 export interface OrderSummary {
   id: string
+  storeSlug?: string
   number: number
   status: 'received' | 'preparing' | 'ready' | 'delivered'
   dineIn: boolean

@@ -287,7 +287,7 @@ describe('PainelApp', () => {
       mode: 'api',
       connection: { isReachable: () => Promise.resolve(false) },
       menu: { load: () => Promise.reject(new Error('down')), setAvailability: vi.fn(), create: vi.fn(), update: vi.fn() },
-      orders: { place: vi.fn(), list: () => Promise.reject(new Error('down')), setStatus: vi.fn(), statusOf: vi.fn() },
+      orders: { place: vi.fn(), list: () => Promise.reject(new Error('down')), setStatus: vi.fn(), statusOf: vi.fn(), listCustomerOrders: vi.fn() },
       auth: {
         login: vi.fn(),
         logout: vi.fn(),
@@ -336,7 +336,7 @@ describe('PainelApp', () => {
         create: vi.fn(),
         update: vi.fn(),
       },
-      orders: { place: vi.fn(), list: () => Promise.resolve([order]), setStatus, statusOf: vi.fn() },
+      orders: { place: vi.fn(), list: () => Promise.resolve([order]), setStatus, statusOf: vi.fn(), listCustomerOrders: vi.fn() },
       auth: {
         login: vi.fn(),
         logout: vi.fn(),
@@ -383,7 +383,7 @@ describe('PainelApp', () => {
       mode: 'api',
       connection: { isReachable: () => Promise.resolve(true) },
       menu: { load, setAvailability, create: vi.fn(), update: vi.fn() },
-      orders: { place: vi.fn(), list, setStatus: vi.fn(), statusOf: vi.fn() },
+      orders: { place: vi.fn(), list, setStatus: vi.fn(), statusOf: vi.fn(), listCustomerOrders: vi.fn() },
       auth: {
         login: vi.fn(),
         logout: vi.fn(),
@@ -413,7 +413,7 @@ describe('PainelApp', () => {
     const adapters: Adapters = {
       ...demoStore('cantina-central').adapters,
       menu: { load: () => new Promise(() => {}), setAvailability: vi.fn(), create: vi.fn(), update: vi.fn() },
-      orders: { place: vi.fn(), list: () => new Promise(() => {}), setStatus: vi.fn(), statusOf: vi.fn() },
+      orders: { place: vi.fn(), list: () => new Promise(() => {}), setStatus: vi.fn(), statusOf: vi.fn(), listCustomerOrders: vi.fn() },
     }
 
     render(<PainelApp adapters={adapters} storeSlug="cantina-central" now={() => NOW} />)
