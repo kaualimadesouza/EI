@@ -8,6 +8,7 @@ from topa_api.application.authenticate_merchant import AuthenticateMerchantUseCa
 from topa_api.application.change_order_status import ChangeOrderStatusUseCase
 from topa_api.application.check_order_rate_limit import CheckOrderRateLimitUseCase
 from topa_api.application.create_product import CreateProductUseCase
+from topa_api.application.get_recommendations import GetRecommendations
 from topa_api.application.get_store_menu import GetStoreMenuUseCase
 from topa_api.application.list_customer_orders import ListCustomerOrdersUseCase
 from topa_api.application.list_orders import ListOrdersUseCase
@@ -229,3 +230,12 @@ def get_optional_customer(
     if len(parts) != 2 or parts[0].lower() != "bearer":
         raise InvalidTokenError("Formato de autorização inválido. Utilize Bearer <token>.")
     return use_case.execute(parts[1].strip())
+
+
+def get_recommendations_use_case(
+    stores: Annotated[StoreRepository, Depends(get_store_repository)],
+    products: Annotated[ProductRepository, Depends(get_product_repository)],
+    orders: Annotated[OrderRepository, Depends(get_order_repository)],
+    clock: Annotated[Clock, Depends(get_clock)],
+) -> GetRecommendations:
+    return GetRecommendations(stores, products, orders, clock)

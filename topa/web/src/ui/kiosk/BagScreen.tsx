@@ -1,5 +1,6 @@
 import { itemCount, MAX_QUANTITY, totalCents, type CartLine } from '../../domain/cart'
 import { findProduct, formatBRL, type Product } from '../../domain/menu'
+import type { RecommendationItem } from '../../domain/recommendation'
 import { MinusIcon, PlusIcon, TrashIcon } from '../icons'
 import { PRIMARY_ACTION, SECONDARY_ACTION } from './parts'
 import { photoOf } from './photo'
@@ -7,14 +8,28 @@ import { photoOf } from './photo'
 interface BagScreenProps {
   products: readonly Product[]
   lines: readonly CartLine[]
+  recommendations?: readonly RecommendationItem[]
   onIncrement: (productId: string) => void
   onDecrement: (productId: string) => void
+  onAddRecommendation?: (productId: string) => void
   onBack: () => void
   onPay: () => void
 }
 
-export function BagScreen({ products, lines, onIncrement, onDecrement, onBack, onPay }: BagScreenProps) {
+export function BagScreen({
+  products,
+  lines,
+  recommendations,
+  onIncrement,
+  onDecrement,
+  onAddRecommendation,
+  onBack,
+  onPay,
+}: BagScreenProps) {
   const count = itemCount(lines)
+  const availableRecs = (recommendations ?? []).filter(
+    (rec) => !lines.some((line) => line.productId === rec.productId),
+  )
   return (
     <>
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-12 py-8 [scrollbar-width:none] short:py-6 max-sm:p-4">
@@ -64,6 +79,36 @@ export function BagScreen({ products, lines, onIncrement, onDecrement, onBack, o
               )
             })}
           </ul>
+          {availableRecs.length > 0 && (
+            <div className="mt-4 flex flex-col gap-3 rounded-[20px] border border-line bg-surface/50 p-5">
+              <div className="flex items-center justify-between">
+                <h2 className="text-[20px] font-bold tracking-tight max-sm:text-[17px]">Complete seu pedido</h2>
+                <span className="text-[13px] font-medium text-muted">Sugestões para você</span>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {availableRecs.map((rec) => (
+                  <div
+                    key={rec.productId}
+                    className="flex items-center justify-between gap-3 rounded-[16px] border border-line bg-white p-4 shadow-xs"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[16px] font-semibold">{rec.name}</p>
+                      <p className="truncate text-[13px] text-muted">{rec.reason}</p>
+                      <p className="mt-1 text-[15px] font-bold text-teal">{formatBRL(rec.priceCents)}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onAddRecommendation?.(rec.productId)}
+                      aria-label={`Adicionar ${rec.name}`}
+                      className="flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-ink px-4 text-[14px] font-semibold text-white transition hover:bg-slate"
+                    >
+                      Adicionar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <footer className="flex-none border-t border-line bg-white px-12 py-8 short:py-5 max-sm:p-4">

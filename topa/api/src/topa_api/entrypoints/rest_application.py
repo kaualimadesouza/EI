@@ -31,6 +31,7 @@ from topa_api.presentation.fastapi.errors import install_error_handlers
 from topa_api.presentation.fastapi.health import router as health_router
 from topa_api.presentation.fastapi.orders import router as orders_router
 from topa_api.presentation.fastapi.products import router as products_router
+from topa_api.presentation.fastapi.recommendations import router as recommendations_router
 from topa_api.presentation.fastapi.stores import router as stores_router
 from topa_api.settings import Settings
 
@@ -109,6 +110,7 @@ def create_app() -> FastAPI:
     app.include_router(stores_router)
     app.include_router(products_router)
     app.include_router(orders_router)
+    app.include_router(recommendations_router)
     return app
 
 

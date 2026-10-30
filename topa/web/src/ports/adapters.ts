@@ -5,6 +5,7 @@ import type { CustomerAuthPort } from './customer-auth'
 import type { MenuPort } from './menu'
 import type { NfcPort } from './nfc'
 import type { OrdersPort } from './orders'
+import type { RecommendationsPort } from './recommendations'
 import type { StoresPort } from './stores'
 import type { TagPort } from './tag'
 import type { WakeLockPort } from './wake-lock'
@@ -22,4 +23,5 @@ export interface Adapters {
   auth: AuthPort
   customerAuth: CustomerAuthPort
   stores: StoresPort
+  recommendations: RecommendationsPort
 }
