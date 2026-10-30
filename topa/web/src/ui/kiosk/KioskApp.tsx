@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { itemCount, totalCents } from '../../domain/cart'
 import { findProduct, formatBRL, type Product } from '../../domain/menu'
+import type { RecommendationItem } from '../../domain/recommendation'
 import { phoneMenuUrl, type StoreMenu } from '../../domain/store'
 import { bannerFor } from '../../domain/suggest'
 import type { Adapters } from '../../ports/adapters'
@@ -41,6 +42,7 @@ export function KioskApp({ adapters, storeSlug, surface = 'totem', now = () => n
   const [storeName, setStoreName] = useState<string | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [menuState, setMenuState] = useState<'loading' | 'ready' | 'not-found' | 'error'>('loading')
+  const [recommendations, setRecommendations] = useState<readonly RecommendationItem[]>([])
   const [touches, setTouches] = useState(0)
   const requestId = useRef(0)
 
@@ -108,6 +110,18 @@ export function KioskApp({ adapters, storeSlug, surface = 'totem', now = () => n
       () => {},
     )
   }, [adapters.menu, applyMenu, storeSlug])
+
+  useEffect(() => {
+    if (state.screen !== 'bag' || state.lines.length === 0) {
+      setRecommendations([])
+      return
+    }
+    const cartIds = state.lines.map((l) => l.productId)
+    adapters.recommendations
+      .getRecommendations(storeSlug, cartIds)
+      .then((res) => setRecommendations(res.items))
+      .catch(() => setRecommendations([]))
+  }, [state.screen, state.lines, adapters.recommendations, storeSlug])
 
   const pay = async () => {
     setState(flow.startPaying)
@@ -223,8 +237,10 @@ export function KioskApp({ adapters, storeSlug, surface = 'totem', now = () => n
         <BagScreen
           products={products}
           lines={state.lines}
+          recommendations={recommendations}
           onIncrement={(id) => setState((s) => flow.increment(s, id))}
           onDecrement={(id) => setState((s) => flow.show(flow.decrement(s, id), 'bag'))}
+          onAddRecommendation={(id) => setState((s) => flow.increment(s, id))}
           onBack={() => setState((s) => flow.show(s, 'menu'))}
           onPay={() => setState((s) => flow.show(s, 'payment'))}
         />

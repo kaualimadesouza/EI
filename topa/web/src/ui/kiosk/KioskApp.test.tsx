@@ -61,6 +61,9 @@ function fakes(
     stores: {
       listAll: () => Promise.resolve([]),
     },
+    recommendations: {
+      getRecommendations: vi.fn().mockResolvedValue({ items: [], strategyUsed: 'popular_fallback', abGroup: 'control' }),
+    },
     nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
     tag: { available: false, publish: vi.fn(), withdraw: vi.fn() },
     buzzer: { buzz },
@@ -391,6 +394,49 @@ describe('KioskApp', () => {
     await user.click(button('Remover Brownie'))
 
     expect(screen.getByRole('heading', { name: 'Doces' })).toBeInTheDocument()
+  })
+
+  it('displays recommendations in the bag and adds them to the order', async () => {
+    const { user, adapters } = setup()
+    adapters.recommendations.getRecommendations = vi.fn().mockResolvedValue({
+      items: [
+        {
+          productId: 'suco',
+          name: 'Suco de Laranja',
+          priceCents: 800,
+          category: 'bebidas',
+          score: 0.95,
+          reason: 'Combina com seu lanche.',
+        },
+      ],
+      strategyUsed: 'association_rules',
+      abGroup: 'treatment',
+    })
+
+    await startOrder(user)
+    await user.click(button('Adicionar Bauru'))
+    await user.click(button('Não, obrigado'))
+    await user.click(button('Ver pedido'))
+
+    expect(await screen.findByText('Complete seu pedido')).toBeInTheDocument()
+    expect(screen.getByText('Suco de Laranja')).toBeInTheDocument()
+    expect(screen.getByText('Combina com seu lanche.')).toBeInTheDocument()
+
+    await user.click(button('Adicionar Suco de Laranja'))
+    expect(screen.getByText('Total, 2 itens')).toBeInTheDocument()
+  })
+
+  it('handles recommendation failure gracefully in the bag', async () => {
+    const { user, adapters } = setup()
+    adapters.recommendations.getRecommendations = vi.fn().mockRejectedValue(new Error('Network error'))
+
+    await startOrder(user)
+    await user.click(button('Adicionar Bauru'))
+    await user.click(button('Não, obrigado'))
+    await user.click(button('Ver pedido'))
+
+    expect(screen.getByText('Seu pedido')).toBeInTheDocument()
+    expect(screen.queryByText('Complete seu pedido')).not.toBeInTheDocument()
   })
 
   it('pays with Pix, and renews the code when it expires', async () => {

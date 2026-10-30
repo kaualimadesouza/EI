@@ -5,12 +5,14 @@ import { HttpConnection } from './adapters/http/http-connection'
 import { HttpCustomerAuth } from './adapters/http/http-customer-auth'
 import { HttpMenu } from './adapters/http/http-menu'
 import { HttpOrders } from './adapters/http/http-orders'
+import { HttpRecommendations } from './adapters/http/http-recommendations'
 import { HttpStores } from './adapters/http/http-stores'
 import { LocalAuth } from './adapters/local/local-auth'
 import { LocalConnection } from './adapters/local/local-connection'
 import { LocalCustomerAuth } from './adapters/local/local-customer-auth'
 import { LocalMenu } from './adapters/local/local-menu'
 import { LocalOrders } from './adapters/local/local-orders'
+import { LocalRecommendations } from './adapters/local/local-recommendations'
 import { LocalStores } from './adapters/local/local-stores'
 import { TauriNfc } from './adapters/tauri/tauri-nfc'
 import { UnavailableBuzzer } from './adapters/unavailable/unavailable-buzzer'
@@ -68,6 +70,7 @@ describe('createAdapters', () => {
     expect(adapters.auth).toBeInstanceOf(HttpAuth)
     expect(adapters.customerAuth).toBeInstanceOf(HttpCustomerAuth)
     expect(adapters.stores).toBeInstanceOf(HttpStores)
+    expect(adapters.recommendations).toBeInstanceOf(HttpRecommendations)
 
     const menuProvider = (adapters.menu as unknown as { tokenProvider: () => string | null }).tokenProvider
     const ordersProvider = (adapters.orders as unknown as { tokenProvider: () => string | null }).tokenProvider
@@ -87,6 +90,7 @@ describe('createAdapters', () => {
     expect(adapters.auth).toBeInstanceOf(LocalAuth)
     expect(adapters.customerAuth).toBeInstanceOf(LocalCustomerAuth)
     expect(adapters.stores).toBeInstanceOf(LocalStores)
+    expect(adapters.recommendations).toBeInstanceOf(LocalRecommendations)
   })
 
   it('treats an empty API URL as no API', () => {

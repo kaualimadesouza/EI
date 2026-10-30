@@ -6,6 +6,7 @@ import { HttpConnection } from './adapters/http/http-connection'
 import { HttpCustomerAuth } from './adapters/http/http-customer-auth'
 import { HttpMenu } from './adapters/http/http-menu'
 import { HttpOrders } from './adapters/http/http-orders'
+import { HttpRecommendations } from './adapters/http/http-recommendations'
 import { HttpStores } from './adapters/http/http-stores'
 import { browserStorage, StoredValue } from './adapters/local/browser-storage'
 import { LocalAuth } from './adapters/local/local-auth'
@@ -13,6 +14,7 @@ import { LocalConnection } from './adapters/local/local-connection'
 import { LocalCustomerAuth } from './adapters/local/local-customer-auth'
 import { LocalMenu } from './adapters/local/local-menu'
 import { LocalOrders } from './adapters/local/local-orders'
+import { LocalRecommendations } from './adapters/local/local-recommendations'
 import { LocalStores } from './adapters/local/local-stores'
 import { TauriNfc } from './adapters/tauri/tauri-nfc'
 import { type TagBridge, TauriTag } from './adapters/tauri/tauri-tag'
@@ -125,6 +127,7 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
       auth,
       customerAuth,
       stores,
+      recommendations: new HttpRecommendations(client),
       nfc,
       tag,
       buzzer,
@@ -143,6 +146,7 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
     auth,
     customerAuth,
     stores,
+    recommendations: new LocalRecommendations(menu),
     nfc,
     tag,
     buzzer,
