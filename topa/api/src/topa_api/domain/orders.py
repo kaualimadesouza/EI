@@ -80,6 +80,7 @@ class Order:
     payment_method: PaymentMethod
     items: tuple[OrderItem, ...]
     created_at: datetime
+    customer_id: uuid.UUID | None = None
 
     @property
     def total_cents(self) -> int:

@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, NullPool, create_engine, delete, make_url, text, update
 
 from tests.fakes import FixedClock
-from topa_api.adapters.db.models import MerchantRow, OrderRow, ProductRow, StoreRow
+from topa_api.adapters.db.models import CustomerRow, MerchantRow, OrderRow, ProductRow, StoreRow
 from topa_api.adapters.db.session import get_engine
 from topa_api.domain.catalog import DEFAULT_STORE_SLUG
 from topa_api.entrypoints.rest_application import create_app
@@ -78,20 +78,54 @@ SEEDED_PRODUCT_IDS = {
 }
 
 
+SEEDED_STORES = {
+    DEFAULT_STORE_SLUG: SEEDED_PRODUCT_IDS,
+    "brasa-burgers": {
+        "xbrasa",
+        "bacon-blast",
+        "batata-rustica",
+        "onion-rings",
+        "coca-cola",
+        "suco-laranja",
+    },
+    "bella-nonna": {
+        "lasanha-bolonhesa",
+        "penne-quatro-queijos",
+        "calzone-frango",
+        "bruschetta",
+        "suco-uva-integral",
+        "tiramisu",
+    },
+    "acai-bowls": {
+        "acai-tradicional-500",
+        "acai-turbinado",
+        "bowl-pitaya",
+        "tapioca-frango",
+        "smoothie-frutas-vermelhas",
+        "salada-frutas",
+    },
+}
+
+
 @pytest.fixture(autouse=True)
 def reset_database(db_engine: Engine) -> Iterator[None]:
     """The seeded store and menu stay, all back on sale; extra stores and orders go."""
     yield
     with db_engine.begin() as connection:
         connection.execute(delete(OrderRow))
-        connection.execute(
-            delete(ProductRow).where(
-                (ProductRow.store_slug != DEFAULT_STORE_SLUG)
-                | (ProductRow.id.not_in(SEEDED_PRODUCT_IDS))
+        connection.execute(delete(CustomerRow))
+        for store_slug, product_ids in SEEDED_STORES.items():
+            connection.execute(
+                delete(ProductRow).where(
+                    ProductRow.store_slug == store_slug,
+                    ProductRow.id.not_in(product_ids),
+                )
             )
+        connection.execute(
+            delete(ProductRow).where(ProductRow.store_slug.not_in(SEEDED_STORES.keys()))
         )
         connection.execute(delete(MerchantRow).where(MerchantRow.email != "admin@bemtevi.topa.com"))
-        connection.execute(delete(StoreRow).where(StoreRow.slug != DEFAULT_STORE_SLUG))
+        connection.execute(delete(StoreRow).where(StoreRow.slug.not_in(SEEDED_STORES.keys())))
         connection.execute(update(ProductRow).values(available=True, photo_url=None))
 
 

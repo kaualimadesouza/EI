@@ -20,6 +20,7 @@ class PlaceOrder:
     lines: tuple[OrderLine, ...]
     dine_in: bool
     payment_method: PaymentMethod
+    customer_id: uuid.UUID | None = None
 
 
 class PlaceOrderUseCase:
@@ -53,6 +54,7 @@ class PlaceOrderUseCase:
             payment_method=request.payment_method,
             items=items,
             created_at=created_at,
+            customer_id=request.customer_id,
         )
         self._orders.add(order)
         return order

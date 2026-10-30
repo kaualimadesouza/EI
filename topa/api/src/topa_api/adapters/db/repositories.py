@@ -3,18 +3,21 @@ from collections.abc import Collection
 from datetime import date
 
 from sqlalchemy import func, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from topa_api.adapters.db.models import (
+    CustomerRow,
     MerchantRow,
     OrderItemRow,
     OrderRow,
     ProductRow,
     StoreRow,
 )
-from topa_api.application.ports import MerchantRecord
-from topa_api.domain.auth import Merchant
+from topa_api.application.ports import CustomerRecord, MerchantRecord
+from topa_api.domain.auth import Customer, Merchant
 from topa_api.domain.catalog import DEFAULT_STORE_SLUG, Product, Store
+from topa_api.domain.errors import EmailAlreadyInUseError
 from topa_api.domain.orders import Order, OrderItem, OrderStatus, PaymentMethod
 
 # namespace of the per-store-day number lock, so it never meets another advisory lock
@@ -31,6 +34,10 @@ class SqlAlchemyStoreRepository:
     def get(self, slug: str) -> Store | None:
         row = self._session.get(StoreRow, slug)
         return None if row is None else Store(slug=row.slug, name=row.name)
+
+    def list_all(self) -> list[Store]:
+        rows = self._session.scalars(select(StoreRow).order_by(StoreRow.name))
+        return [Store(slug=row.slug, name=row.name) for row in rows]
 
 
 class SqlAlchemyProductRepository:
@@ -137,6 +144,7 @@ class SqlAlchemyOrderRepository:
             payment_method=order.payment_method.value,
             total_cents=order.total_cents,
             created_at=order.created_at,
+            customer_id=order.customer_id,
             items=[
                 OrderItemRow(
                     store_slug=order.store_slug,
@@ -174,6 +182,15 @@ class SqlAlchemyOrderRepository:
             update(OrderRow).where(OrderRow.id == order_id).values(status=status.value)
         )
 
+    def list_for_customer(self, customer_id: uuid.UUID) -> list[Order]:
+        rows = self._session.scalars(
+            select(OrderRow)
+            .where(OrderRow.customer_id == customer_id)
+            .order_by(OrderRow.created_at.desc())
+            .options(WITH_ITEMS)
+        )
+        return [_order_of(row) for row in rows]
+
 
 def _product_of(row: ProductRow) -> Product:
     return Product(
@@ -207,6 +224,7 @@ def _order_of(row: OrderRow) -> Order:
             for item in sorted(row.items, key=lambda item: item.product.position)
         ),
         created_at=row.created_at,
+        customer_id=row.customer_id,
     )
 
 
@@ -238,3 +256,49 @@ class SqlAlchemyMerchantRepository:
                 created_at=merchant.created_at,
             )
         )
+
+
+class SqlAlchemyCustomerRepository:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def get_by_email(self, email: str) -> CustomerRecord | None:
+        row = self._session.scalars(
+            select(CustomerRow).where(CustomerRow.email == email.lower().strip())
+        ).first()
+        if row is None:
+            return None
+        customer = Customer(
+            id=row.id,
+            name=row.name,
+            email=row.email,
+            created_at=row.created_at,
+        )
+        return CustomerRecord(customer=customer, password_hash=row.password_hash)
+
+    def get_by_id(self, customer_id: uuid.UUID) -> CustomerRecord | None:
+        row = self._session.get(CustomerRow, customer_id)
+        if row is None:
+            return None
+        customer = Customer(
+            id=row.id,
+            name=row.name,
+            email=row.email,
+            created_at=row.created_at,
+        )
+        return CustomerRecord(customer=customer, password_hash=row.password_hash)
+
+    def add(self, customer: Customer, password_hash: str) -> None:
+        self._session.add(
+            CustomerRow(
+                id=customer.id,
+                name=customer.name.strip(),
+                email=customer.email.lower().strip(),
+                password_hash=password_hash,
+                created_at=customer.created_at,
+            )
+        )
+        try:
+            self._session.flush()
+        except IntegrityError:
+            raise EmailAlreadyInUseError() from None

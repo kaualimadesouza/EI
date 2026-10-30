@@ -7,10 +7,11 @@ from pydantic import BaseModel
 
 from topa_api.application.change_order_status import ChangeOrderStatusUseCase
 from topa_api.application.check_order_rate_limit import CheckOrderRateLimitUseCase
+from topa_api.application.list_customer_orders import ListCustomerOrdersUseCase
 from topa_api.application.list_orders import ListOrdersUseCase
 from topa_api.application.place_order import PlaceOrder, PlaceOrderUseCase
 from topa_api.application.read_order import ReadOrderUseCase
-from topa_api.domain.auth import AuthenticatedMerchant
+from topa_api.domain.auth import AuthenticatedCustomer, AuthenticatedMerchant
 from topa_api.domain.catalog import DEFAULT_STORE_SLUG
 from topa_api.domain.errors import ForbiddenStoreAccessError
 from topa_api.domain.orders import Order, OrderLine, OrderStatus, PaymentMethod
@@ -18,8 +19,11 @@ from topa_api.presentation.fastapi.dependencies import (
     StoreSlug,
     get_change_order_status_use_case,
     get_check_order_rate_limit_use_case,
+    get_current_customer,
     get_current_merchant,
+    get_list_customer_orders_use_case,
     get_list_orders_use_case,
+    get_optional_customer,
     get_place_order_use_case,
     get_read_order_use_case,
 )
@@ -91,6 +95,7 @@ def place_order(
     request: PlaceOrderRequest,
     use_case: Annotated[PlaceOrderUseCase, Depends(get_place_order_use_case)],
     rate_limit: Annotated[CheckOrderRateLimitUseCase, Depends(get_check_order_rate_limit_use_case)],
+    customer: Annotated[AuthenticatedCustomer | None, Depends(get_optional_customer)] = None,
 ) -> OrderResponse:
     rate_limit.execute(_client_ip(request_obj))
     order = use_case.execute(
@@ -102,9 +107,25 @@ def place_order(
             ),
             dine_in=request.dine_in,
             payment_method=request.payment_method,
+            customer_id=customer.id if customer is not None else None,
         )
     )
     return _order_response(order)
+
+
+@router.get(
+    "/orders/me",
+    responses={
+        401: {"model": ErrorResponse, "description": "missing or invalid customer auth token"},
+    },
+)
+def list_customer_orders(
+    use_case: Annotated[ListCustomerOrdersUseCase, Depends(get_list_customer_orders_use_case)],
+    customer: Annotated[AuthenticatedCustomer, Depends(get_current_customer)],
+) -> list[OrderResponse]:
+    """Returns all orders placed by the authenticated customer."""
+    orders = use_case.execute(customer.id)
+    return [_order_response(order) for order in orders]
 
 
 @router.get(

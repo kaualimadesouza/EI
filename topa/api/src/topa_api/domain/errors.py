@@ -76,3 +76,13 @@ class RateLimitExceededError(DomainError):
 class InvalidProductDataError(DomainError):
     def __init__(self, message: str = "Dados do produto inválidos.") -> None:
         super().__init__(message)
+
+
+class EmailAlreadyInUseError(DomainError):
+    def __init__(self, message: str = "E-mail já está em uso.") -> None:
+        super().__init__(message)
+
+
+class InvalidCustomerDataError(DomainError):
+    def __init__(self, message: str = "Dados de cliente inválidos.") -> None:
+        super().__init__(message)
