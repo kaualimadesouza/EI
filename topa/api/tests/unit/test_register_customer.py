@@ -59,9 +59,13 @@ def test_refuses_registration_when_email_is_taken() -> None:
     [
         ("", "ana@exemplo.com", "secretpassword"),
         ("   ", "ana@exemplo.com", "secretpassword"),
+        ("A" * 101, "ana@exemplo.com", "secretpassword"),
         ("Ana", "", "secretpassword"),
         ("Ana", "invalid-email", "secretpassword"),
+        ("Ana", "email com espaco@exemplo.com", "secretpassword"),
+        ("Ana", "ana@" + "x" * 255 + ".com", "secretpassword"),
         ("Ana", "ana@exemplo.com", "short"),
+        ("Ana", "ana@exemplo.com", "p" * 129),
     ],
 )
 def test_validates_customer_registration_fields(name: str, email: str, password: str) -> None:

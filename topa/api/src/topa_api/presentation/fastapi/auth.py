@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from topa_api.application.authenticate_customer import AuthenticateCustomerUseCase
 from topa_api.application.authenticate_merchant import AuthenticateMerchantUseCase
@@ -36,14 +36,14 @@ class AuthResponse(BaseModel):
 
 
 class CustomerRegisterRequest(BaseModel):
-    name: str
-    email: str
-    password: str
+    name: str = Field(min_length=1, max_length=100)
+    email: str = Field(min_length=3, max_length=254)
+    password: str = Field(min_length=6, max_length=128)
 
 
 class CustomerLoginRequest(BaseModel):
-    email: str
-    password: str
+    email: str = Field(min_length=3, max_length=254)
+    password: str = Field(min_length=1, max_length=128)
 
 
 class CustomerAuthResponse(BaseModel):

@@ -35,12 +35,19 @@ class RegisterCustomerUseCase:
         email = registration.email.lower().strip()
         password = registration.password
 
-        if not name:
-            raise InvalidCustomerDataError("Nome não pode ser vazio.")
-        if not email or "@" not in email or email.startswith("@") or email.endswith("@"):
+        if not name or len(name) > 100:
+            raise InvalidCustomerDataError("Nome não pode ser vazio ou exceder 100 caracteres.")
+        if (
+            not email
+            or "@" not in email
+            or email.startswith("@")
+            or email.endswith("@")
+            or " " in email
+            or len(email) > 254
+        ):
             raise InvalidCustomerDataError("E-mail inválido.")
-        if len(password) < 6:
-            raise InvalidCustomerDataError("Senha deve ter no mínimo 6 caracteres.")
+        if len(password) < 6 or len(password) > 128:
+            raise InvalidCustomerDataError("Senha deve ter entre 6 e 128 caracteres.")
 
         if self._customers.get_by_email(email) is not None:
             raise EmailAlreadyInUseError()

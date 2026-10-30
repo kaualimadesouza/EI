@@ -78,7 +78,7 @@ class OrderRow(Base):
     total_cents: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     customer_id: Mapped[uuid.UUID | None] = mapped_column(
-        Uuid, ForeignKey("customers.id", ondelete="SET NULL"), nullable=True
+        Uuid, ForeignKey("customers.id", ondelete="SET NULL"), nullable=True, index=True
     )
 
     items: Mapped[list["OrderItemRow"]] = relationship(

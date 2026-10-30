@@ -3,6 +3,7 @@ from collections.abc import Collection
 from datetime import date
 
 from sqlalchemy import func, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from topa_api.adapters.db.models import (
@@ -16,6 +17,7 @@ from topa_api.adapters.db.models import (
 from topa_api.application.ports import CustomerRecord, MerchantRecord
 from topa_api.domain.auth import Customer, Merchant
 from topa_api.domain.catalog import DEFAULT_STORE_SLUG, Product, Store
+from topa_api.domain.errors import EmailAlreadyInUseError
 from topa_api.domain.orders import Order, OrderItem, OrderStatus, PaymentMethod
 
 # namespace of the per-store-day number lock, so it never meets another advisory lock
@@ -296,3 +298,7 @@ class SqlAlchemyCustomerRepository:
                 created_at=customer.created_at,
             )
         )
+        try:
+            self._session.flush()
+        except IntegrityError:
+            raise EmailAlreadyInUseError() from None

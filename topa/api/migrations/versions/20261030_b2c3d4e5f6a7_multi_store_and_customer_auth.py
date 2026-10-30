@@ -247,6 +247,7 @@ def upgrade() -> None:
             nullable=True,
         ),
     )
+    op.create_index(op.f("ix_orders_customer_id"), "orders", ["customer_id"], unique=False)
 
     stores_table = sa.table(
         "stores",
@@ -273,11 +274,17 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.execute(
         sa.text(
+            "DELETE FROM orders WHERE store_slug IN ('brasa-burgers', 'bella-nonna', 'acai-bowls')"
+        )
+    )
+    op.execute(
+        sa.text(
             "DELETE FROM products WHERE store_slug IN ('brasa-burgers', 'bella-nonna', 'acai-bowls')"
         )
     )
     op.execute(
         sa.text("DELETE FROM stores WHERE slug IN ('brasa-burgers', 'bella-nonna', 'acai-bowls')")
     )
+    op.drop_index(op.f("ix_orders_customer_id"), table_name="orders")
     op.drop_column("orders", "customer_id")
     op.drop_table("customers")

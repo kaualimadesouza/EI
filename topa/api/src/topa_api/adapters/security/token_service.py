@@ -31,7 +31,7 @@ class HmacTokenService:
 
     def verify_token(self, token: str) -> AuthenticatedMerchant:
         data = self._decode_payload(token)
-        if "store_slug" not in data or data.get("role") == "customer":
+        if "store_slug" not in data or data.get("role") != "merchant":
             raise InvalidTokenError()
         try:
             return AuthenticatedMerchant(
