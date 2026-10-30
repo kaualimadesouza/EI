@@ -8,8 +8,10 @@ import { DEMO_STORE_SLUG } from '../../domain/store'
 import type { Adapters } from '../../ports/adapters'
 import { OrderRejectedError } from '../../ports/orders'
 import { LocalAuth } from '../../adapters/local/local-auth'
+import { LocalCustomerAuth } from '../../adapters/local/local-customer-auth'
 import { LocalMenu } from '../../adapters/local/local-menu'
 import { LocalOrders } from '../../adapters/local/local-orders'
+import { LocalStores } from '../../adapters/local/local-stores'
 import { UnavailableBuzzer } from '../../adapters/unavailable/unavailable-buzzer'
 import { UnavailableTag } from '../../adapters/unavailable/unavailable-tag'
 import { UnavailableWakeLock } from '../../adapters/unavailable/unavailable-wake-lock'
@@ -46,6 +48,8 @@ function demoStore(storeSlug: string = DEMO_STORE_SLUG) {
       initialMerchant: { email: 'admin@bemtevi.topa.com', storeSlug },
       initialToken: 'demo-token',
     }),
+    customerAuth: new LocalCustomerAuth({ storage }),
+    stores: new LocalStores(),
     nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
     tag: new UnavailableTag(),
     buzzer: new UnavailableBuzzer(),
@@ -290,6 +294,8 @@ describe('PainelApp', () => {
         getToken: () => 'token',
         getMerchant: () => ({ email: 'admin@bemtevi.topa.com', storeSlug: DEMO_STORE_SLUG }),
       },
+      customerAuth: new LocalCustomerAuth({ storage: null }),
+      stores: new LocalStores(),
       nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
       tag: new UnavailableTag(),
       buzzer: new UnavailableBuzzer(),
@@ -337,6 +343,8 @@ describe('PainelApp', () => {
         getToken: () => 'token',
         getMerchant: () => ({ email: 'admin@bemtevi.topa.com', storeSlug: DEMO_STORE_SLUG }),
       },
+      customerAuth: new LocalCustomerAuth({ storage: null }),
+      stores: new LocalStores(),
       nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
       tag: new UnavailableTag(),
       buzzer: new UnavailableBuzzer(),
@@ -382,6 +390,8 @@ describe('PainelApp', () => {
         getToken: () => 'token',
         getMerchant: () => ({ email: 'admin@bemtevi.topa.com', storeSlug: 'cantina-central' }),
       },
+      customerAuth: new LocalCustomerAuth({ storage: null }),
+      stores: new LocalStores(),
       nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
       tag: new UnavailableTag(),
       buzzer: new UnavailableBuzzer(),

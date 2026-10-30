@@ -9,6 +9,13 @@ import {
 } from '../../ports/menu'
 import { browserStorage, StoredValue, type KeyValueStore } from './browser-storage'
 
+const STORE_NAMES: Record<string, string> = {
+  [DEMO_STORE_SLUG]: DEMO_STORE_NAME,
+  'brasa-burgers': 'Brasa Burgers',
+  'bella-nonna': 'Cantina Bella Nonna',
+  'acai-bowls': 'Açaí & Bowls Universitário',
+}
+
 /** The demo store plus what the dashboard marked sold out or configured, shared by every tab of this browser. */
 export class LocalMenu implements MenuPort {
   private readonly soldOut: StoredValue<string[]>
@@ -28,16 +35,17 @@ export class LocalMenu implements MenuPort {
   }
 
   load(storeSlug: string): Promise<StoreMenu> {
-    if (storeSlug !== DEMO_STORE_SLUG) return Promise.reject(new StoreNotFoundError())
+    const storeName = STORE_NAMES[storeSlug]
+    if (!storeName) return Promise.reject(new StoreNotFoundError())
     const soldOut = this.soldOut.read()
     return Promise.resolve({
-      store: { slug: DEMO_STORE_SLUG, name: DEMO_STORE_NAME },
+      store: { slug: storeSlug, name: storeName },
       products: this.allProducts().map((product) => ({ ...product, available: !soldOut.includes(product.id) })),
     })
   }
 
   setAvailability(productId: string, available: boolean, storeSlug: string): Promise<Product> {
-    if (storeSlug !== DEMO_STORE_SLUG) return Promise.reject(new StoreNotFoundError())
+    if (!(storeSlug in STORE_NAMES)) return Promise.reject(new StoreNotFoundError())
     const product = findProduct(this.allProducts(), productId)
     if (!product) return Promise.reject(new Error(`No product ${productId} in the demo catalog`))
     const others = this.soldOut.read().filter((id) => id !== productId)
@@ -46,7 +54,7 @@ export class LocalMenu implements MenuPort {
   }
 
   create(draft: CreateProductDraft, storeSlug: string): Promise<Product> {
-    if (storeSlug !== DEMO_STORE_SLUG) return Promise.reject(new StoreNotFoundError())
+    if (!(storeSlug in STORE_NAMES)) return Promise.reject(new StoreNotFoundError())
     const id = draft.id?.trim() || draft.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `p-${Date.now()}`
     const existing = findProduct(this.allProducts(), id)
     if (existing) return Promise.reject(new Error('Produto já cadastrado.'))
@@ -67,7 +75,7 @@ export class LocalMenu implements MenuPort {
   }
 
   update(productId: string, draft: UpdateProductDraft, storeSlug: string): Promise<Product> {
-    if (storeSlug !== DEMO_STORE_SLUG) return Promise.reject(new StoreNotFoundError())
+    if (!(storeSlug in STORE_NAMES)) return Promise.reject(new StoreNotFoundError())
     const existing = findProduct(this.allProducts(), productId)
     if (!existing) return Promise.reject(new Error('Produto não encontrado.'))
     const updated: Product = {

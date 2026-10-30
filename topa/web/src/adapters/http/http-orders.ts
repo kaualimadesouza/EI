@@ -45,27 +45,44 @@ async function refusal(response: Response, fallback: string): Promise<OrderRejec
 export class HttpOrders implements OrdersPort {
   private readonly client: HttpClient
   private readonly tokenProvider?: () => string | null
+  private readonly customerTokenProvider?: () => string | null
 
-  constructor(client: HttpClient, tokenProvider?: () => string | null) {
+  constructor(
+    client: HttpClient,
+    tokenProvider?: () => string | null,
+    customerTokenProvider?: () => string | null,
+  ) {
     this.client = client
     this.tokenProvider = tokenProvider
+    this.customerTokenProvider = customerTokenProvider
   }
 
 
   async place(draft: OrderDraft): Promise<PlacedOrder> {
-    const response = await this.client.post('/orders', {
-      store_slug: draft.storeSlug,
-      items: draft.lines.map((line) => ({ product_id: line.productId, quantity: line.quantity })),
-      dine_in: draft.dineIn,
-      payment_method: draft.paymentMethod,
-    })
+    const customerToken = this.customerTokenProvider?.() ?? null
+    const response = await this.client.post(
+      '/orders',
+      {
+        store_slug: draft.storeSlug,
+        items: draft.lines.map((line) => ({ product_id: line.productId, quantity: line.quantity })),
+        dine_in: draft.dineIn,
+        payment_method: draft.paymentMethod,
+      },
+      customerToken,
+    )
     if (
+      response.status === 401 ||
       response.status === 404 ||
       response.status === 409 ||
       response.status === 422 ||
       response.status === 429
     ) {
-      throw await refusal(response, 'Não foi possível registrar o pedido.')
+      throw await refusal(
+        response,
+        response.status === 401
+          ? 'Sua sessão expirou. Faça login novamente.'
+          : 'Não foi possível registrar o pedido.',
+      )
     }
     if (!response.ok) throw new Error(`POST /orders answered ${response.status}`)
     const order = (await response.json()) as OrderJson

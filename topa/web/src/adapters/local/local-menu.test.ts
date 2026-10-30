@@ -25,6 +25,11 @@ describe('LocalMenu', () => {
     expect(DEMO_CATALOG[0].available).toBe(true)
   })
 
+  it('loads other supported stores like brasa-burgers', async () => {
+    const { store } = await new LocalMenu(new MemoryStorage()).load('brasa-burgers')
+    expect(store).toEqual({ slug: 'brasa-burgers', name: 'Brasa Burgers' })
+  })
+
   it('remembers a sold-out product for every tab on the same storage, until it is back', async () => {
     const storage = new MemoryStorage()
 

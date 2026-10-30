@@ -3,13 +3,17 @@ import { isTauri } from '@tauri-apps/api/core'
 import { HttpAuth } from './adapters/http/http-auth'
 import { HttpClient } from './adapters/http/http-client'
 import { HttpConnection } from './adapters/http/http-connection'
+import { HttpCustomerAuth } from './adapters/http/http-customer-auth'
 import { HttpMenu } from './adapters/http/http-menu'
 import { HttpOrders } from './adapters/http/http-orders'
+import { HttpStores } from './adapters/http/http-stores'
 import { browserStorage, StoredValue } from './adapters/local/browser-storage'
 import { LocalAuth } from './adapters/local/local-auth'
 import { LocalConnection } from './adapters/local/local-connection'
+import { LocalCustomerAuth } from './adapters/local/local-customer-auth'
 import { LocalMenu } from './adapters/local/local-menu'
 import { LocalOrders } from './adapters/local/local-orders'
+import { LocalStores } from './adapters/local/local-stores'
 import { TauriNfc } from './adapters/tauri/tauri-nfc'
 import { type TagBridge, TauriTag } from './adapters/tauri/tauri-tag'
 import { UnavailableBuzzer } from './adapters/unavailable/unavailable-buzzer'
@@ -111,12 +115,16 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
   if (apiUrl) {
     const client = new HttpClient(apiUrl)
     const auth = new HttpAuth(client)
+    const customerAuth = new HttpCustomerAuth(client)
+    const stores = new HttpStores(client)
     return {
       mode: 'api',
       connection: new HttpConnection(client),
       menu: new HttpMenu(client, () => auth.getToken()),
-      orders: new HttpOrders(client, () => auth.getToken()),
+      orders: new HttpOrders(client, () => auth.getToken(), () => customerAuth.getToken()),
       auth,
+      customerAuth,
+      stores,
       nfc,
       tag,
       buzzer,
@@ -124,6 +132,8 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
     }
   }
   const auth = new LocalAuth()
+  const customerAuth = new LocalCustomerAuth()
+  const stores = new LocalStores()
   const menu = new LocalMenu()
   return {
     mode: 'demo',
@@ -131,6 +141,8 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
     menu,
     orders: new LocalOrders(menu),
     auth,
+    customerAuth,
+    stores,
     nfc,
     tag,
     buzzer,

@@ -45,6 +45,16 @@ describe('HttpOrders', () => {
     expect(placed).toEqual({ id: 'o47', number: 47, totalCents: 2980 })
   })
 
+  it('attaches customer token to headers when customerTokenProvider is configured', async () => {
+    const fetchFn = json({ ...order('o48', 'received'), number: 48, total_cents: 2980 }, 201)
+
+    const orders = new HttpOrders(new HttpClient('/api'), undefined, () => 'customer-jwt-token')
+    await orders.place(draft)
+
+    const requestHeaders = fetchFn.mock.calls[0][1]!.headers as Record<string, string>
+    expect(requestHeaders.Authorization).toBe('Bearer customer-jwt-token')
+  })
+
   it('turns a refusal or an unknown store into the message the API wrote for the customer', async () => {
     const orders = new HttpOrders(new HttpClient('/api'))
 
@@ -59,6 +69,16 @@ describe('HttpOrders', () => {
     json({ detail: 'Muitos pedidos enviados. Aguarde um momento.' }, 429)
     await expect(orders.place(draft)).rejects.toEqual(
       new OrderRejectedError('Muitos pedidos enviados. Aguarde um momento.'),
+    )
+
+    vi.restoreAllMocks()
+    json({ detail: 'Token inválido.' }, 401)
+    await expect(orders.place(draft)).rejects.toEqual(new OrderRejectedError('Token inválido.'))
+
+    vi.restoreAllMocks()
+    json({}, 401)
+    await expect(orders.place(draft)).rejects.toEqual(
+      new OrderRejectedError('Sua sessão expirou. Faça login novamente.'),
     )
   })
 
