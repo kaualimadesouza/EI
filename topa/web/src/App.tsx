@@ -36,9 +36,18 @@ export function App({
 
   useEffect(() => {
     void adapters.customerAuth.init().then((logged) => {
-      if (logged) setCustomer(logged)
+      setCustomer(logged)
     })
   }, [adapters.customerAuth])
+
+  useEffect(() => {
+    const onPopState = () => {
+      const loc = locationStore(window.location.href)
+      setSelectedStore(loc.kind === 'valid' ? loc.slug : null)
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
 
   if (phone) {
     return (
@@ -139,8 +148,9 @@ export function App({
         window.history.pushState(null, '', `?loja=${slug}`)
       }}
       onLogout={() => {
-        adapters.customerAuth.logout()
-        setCustomer(null)
+        void Promise.resolve(adapters.customerAuth.logout()).then(() => {
+          setCustomer(null)
+        })
       }}
     />
   )

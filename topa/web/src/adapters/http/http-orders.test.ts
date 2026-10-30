@@ -70,6 +70,16 @@ describe('HttpOrders', () => {
     await expect(orders.place(draft)).rejects.toEqual(
       new OrderRejectedError('Muitos pedidos enviados. Aguarde um momento.'),
     )
+
+    vi.restoreAllMocks()
+    json({ detail: 'Token inválido.' }, 401)
+    await expect(orders.place(draft)).rejects.toEqual(new OrderRejectedError('Token inválido.'))
+
+    vi.restoreAllMocks()
+    json({}, 401)
+    await expect(orders.place(draft)).rejects.toEqual(
+      new OrderRejectedError('Sua sessão expirou. Faça login novamente.'),
+    )
   })
 
   it('uses a generic message when the refusal is a validation list', async () => {

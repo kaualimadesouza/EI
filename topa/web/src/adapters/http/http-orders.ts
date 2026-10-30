@@ -71,12 +71,18 @@ export class HttpOrders implements OrdersPort {
       customerToken,
     )
     if (
+      response.status === 401 ||
       response.status === 404 ||
       response.status === 409 ||
       response.status === 422 ||
       response.status === 429
     ) {
-      throw await refusal(response, 'Não foi possível registrar o pedido.')
+      throw await refusal(
+        response,
+        response.status === 401
+          ? 'Sua sessão expirou. Faça login novamente.'
+          : 'Não foi possível registrar o pedido.',
+      )
     }
     if (!response.ok) throw new Error(`POST /orders answered ${response.status}`)
     const order = (await response.json()) as OrderJson

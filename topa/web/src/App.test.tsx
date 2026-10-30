@@ -254,4 +254,42 @@ describe('App', () => {
     expect(screen.queryByRole('heading', { name: 'Acesse sua conta TOPA' })).not.toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Peça aqui. Pague aqui.' })).toBeInTheDocument()
   })
+
+  it('resets customer to login screen when session is expired on init', async () => {
+    const adapters = createAdapters(undefined)
+    vi.spyOn(adapters.customerAuth, 'getCustomer').mockReturnValue({
+      id: 'old',
+      name: 'Expirado',
+      email: 'exp@topa.com',
+    })
+    vi.spyOn(adapters.customerAuth, 'init').mockResolvedValue(null)
+
+    render(<App adapters={adapters} />)
+
+    expect(await screen.findByRole('heading', { name: 'Acesse sua conta TOPA' })).toBeInTheDocument()
+  })
+
+  it('updates selected store on popstate event', async () => {
+    const user = userEvent.setup()
+    const adapters = createAdapters(undefined)
+    await adapters.customerAuth.login({ email: 'cliente@topa.com', password: 'topa123' })
+
+    render(<App adapters={adapters} />)
+
+    await user.click(await screen.findByRole('button', { name: 'Pedir em Brasa Burgers' }))
+    expect(await screen.findByRole('button', { name: /Comer aqui/ })).toBeInTheDocument()
+
+    window.history.replaceState(null, '', '/')
+    act(() => {
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+
+    expect(await screen.findByRole('heading', { name: 'Onde você quer pedir hoje?' })).toBeInTheDocument()
+
+    window.history.replaceState(null, '', '/?loja=brasa-burgers')
+    act(() => {
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+    expect(await screen.findByRole('button', { name: /Comer aqui/ })).toBeInTheDocument()
+  })
 })

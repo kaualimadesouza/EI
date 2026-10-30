@@ -17,7 +17,7 @@ describe('HttpStores', () => {
     const storesAdapter = new HttpStores(fakeClient as unknown as HttpClient)
     const result = await storesAdapter.listAll()
 
-    expect(fakeClient.get).toHaveBeenCalledWith('/stores')
+    expect(fakeClient.get).toHaveBeenCalledWith('/stores', undefined, null)
     expect(result).toEqual([
       { slug: 'brasa-burgers', name: 'Brasa Burgers' },
       { slug: 'bella-nonna', name: 'Cantina Bella Nonna' },

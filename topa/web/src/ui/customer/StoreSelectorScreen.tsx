@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import type { AuthenticatedCustomer } from '../../ports/customer-auth'
 import type { StoresPort, StoreSummary } from '../../ports/stores'
@@ -41,7 +41,7 @@ export function StoreSelectorScreen({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const loadStores = async () => {
+  const loadStores = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -52,11 +52,11 @@ export function StoreSelectorScreen({
     } finally {
       setLoading(false)
     }
-  }
+  }, [stores])
 
   useEffect(() => {
     void loadStores()
-  }, [])
+  }, [loadStores])
 
   return (
     <div className="flex min-h-dvh flex-col bg-cream text-ink">

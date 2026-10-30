@@ -46,16 +46,20 @@ export class HttpCustomerAuth implements CustomerAuthPort {
   }
 
   async login(credentials: CustomerCredentials): Promise<AuthenticatedCustomer> {
-    const response = await this.client.post('/auth/customer/login', {
-      email: credentials.email,
-      password: credentials.password,
-    })
+    const response = await this.client.post(
+      '/auth/customer/login',
+      {
+        email: credentials.email,
+        password: credentials.password,
+      },
+      null,
+    )
 
     if (!response.ok) {
       let detail = 'E-mail ou senha incorretos.'
       try {
         const body = (await response.json()) as ErrorJson
-        if (body?.detail) {
+        if (typeof body?.detail === 'string') {
           detail = body.detail
         }
       } catch {
@@ -66,27 +70,32 @@ export class HttpCustomerAuth implements CustomerAuthPort {
 
     const data = (await response.json()) as CustomerAuthResponseJson
     this.token = data.access_token
-    this.customer = {
+    const customer: AuthenticatedCustomer = {
       name: data.name,
       email: data.email,
     }
+    this.customer = customer
 
     this.persistSession()
-    return this.customer!
+    return customer
   }
 
   async register(data: CustomerRegistration): Promise<AuthenticatedCustomer> {
-    const response = await this.client.post('/auth/customer/register', {
-      name: data.name,
-      email: data.email,
-      password: data.password,
-    })
+    const response = await this.client.post(
+      '/auth/customer/register',
+      {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+      },
+      null,
+    )
 
     if (!response.ok) {
       let detail = 'Não foi possível concluir o cadastro.'
       try {
         const body = (await response.json()) as ErrorJson
-        if (body?.detail) {
+        if (typeof body?.detail === 'string') {
           detail = body.detail
         }
       } catch {
@@ -97,13 +106,14 @@ export class HttpCustomerAuth implements CustomerAuthPort {
 
     const res = (await response.json()) as CustomerAuthResponseJson
     this.token = res.access_token
-    this.customer = {
+    const customer: AuthenticatedCustomer = {
       name: res.name,
       email: res.email,
     }
+    this.customer = customer
 
     this.persistSession()
-    return this.customer!
+    return customer
   }
 
   async init(): Promise<AuthenticatedCustomer | null> {

@@ -15,7 +15,7 @@ export class HttpStores implements StoresPort {
   }
 
   async listAll(): Promise<StoreSummary[]> {
-    const response = await this.client.get('/stores')
+    const response = await this.client.get('/stores', undefined, null)
     if (!response.ok) {
       throw new Error(`GET /stores answered ${response.status}`)
     }

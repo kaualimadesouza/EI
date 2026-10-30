@@ -72,6 +72,11 @@ describe('HttpCustomerAuth', () => {
     const auth = new HttpCustomerAuth(fakeClient as unknown as HttpClient, store)
     const customer = await auth.login({ email: 'maria@email.com', password: 'secretpassword' })
 
+    expect(fakeClient.post).toHaveBeenCalledWith(
+      '/auth/customer/login',
+      { email: 'maria@email.com', password: 'secretpassword' },
+      null,
+    )
     expect(customer).toEqual({ name: 'Maria Silva', email: 'maria@email.com' })
     expect(auth.getToken()).toBe('cust-token-123')
     expect(auth.getCustomer()).toEqual({ name: 'Maria Silva', email: 'maria@email.com' })
@@ -113,6 +118,14 @@ describe('HttpCustomerAuth', () => {
     await expect(auth.login({ email: 'x@x.com', password: 'bad' })).rejects.toThrow(
       'E-mail ou senha incorretos.',
     )
+
+    fakeClient.post.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ detail: [{ loc: ['body', 'email'], msg: 'invalid' }] }),
+    })
+    await expect(auth.login({ email: 'x@x.com', password: 'bad' })).rejects.toThrow(
+      'E-mail ou senha incorretos.',
+    )
   })
 
   it('registers new customer successfully and persists session', async () => {
@@ -133,6 +146,11 @@ describe('HttpCustomerAuth', () => {
       password: 'password123',
     })
 
+    expect(fakeClient.post).toHaveBeenCalledWith(
+      '/auth/customer/register',
+      { name: 'João Santos', email: 'joao@email.com', password: 'password123' },
+      null,
+    )
     expect(customer).toEqual({ name: 'João Santos', email: 'joao@email.com' })
     expect(auth.getToken()).toBe('new-cust-token')
     expect(store.getItem('topa_customer_session')).toContain('new-cust-token')
@@ -162,6 +180,14 @@ describe('HttpCustomerAuth', () => {
     fakeClient.post.mockResolvedValueOnce({
       ok: false,
       json: async () => ({}),
+    })
+    await expect(
+      auth.register({ name: 'João', email: 'joao@email.com', password: '123' }),
+    ).rejects.toThrow('Não foi possível concluir o cadastro.')
+
+    fakeClient.post.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ detail: [{ msg: 'invalid' }] }),
     })
     await expect(
       auth.register({ name: 'João', email: 'joao@email.com', password: '123' }),
