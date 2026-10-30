@@ -1,7 +1,7 @@
 import { itemCount, MAX_QUANTITY, quantityOf, totalCents, type CartLine } from '../../domain/cart'
 import { CATEGORIES, findProduct, formatBRL, type Product } from '../../domain/menu'
 import type { Suggestion } from '../../domain/suggest'
-import { CategoryIcon, MinusIcon, PlusIcon } from '../icons'
+import { CategoryIcon, MicIcon, MinusIcon, PlusIcon } from '../icons'
 import { PRIMARY_ACTION } from './parts'
 import { photoOf } from './photo'
 
@@ -14,10 +14,11 @@ interface MenuScreenProps {
   onAdd: (product: Product) => void
   onRemove: (productId: string) => void
   onReview: () => void
+  onVoiceOrder?: () => void
 }
 
 export function MenuScreen(props: MenuScreenProps) {
-  const { products, lines, category, banner, onCategory, onAdd, onRemove, onReview } = props
+  const { products, lines, category, banner, onCategory, onAdd, onRemove, onReview, onVoiceOrder } = props
   const presetMap = new Map(CATEGORIES.map((c) => [c.id, c.label]))
   const categoryIds = Array.from(new Set(products.map((p) => p.category)))
   const categories = categoryIds.map((id) => ({ id, label: presetMap.get(id) ?? (id.charAt(0).toUpperCase() + id.slice(1)) }))
@@ -98,14 +99,27 @@ export function MenuScreen(props: MenuScreenProps) {
             </>
           )}
         </div>
-        <button
-          type="button"
-          onClick={onReview}
-          disabled={count === 0}
-          className={`${PRIMARY_ACTION} h-20 flex-none px-10 text-[26px] disabled:bg-line disabled:text-muted short:h-16 max-sm:h-16 max-sm:px-6 max-sm:text-[20px]`}
-        >
-          Ver pedido
-        </button>
+        <div className="flex items-center gap-3">
+          {onVoiceOrder && (
+            <button
+              type="button"
+              onClick={onVoiceOrder}
+              aria-label="Pedir por voz"
+              className="flex h-20 items-center justify-center gap-2 rounded-control border-2 border-teal bg-teal/10 px-5 text-[20px] font-bold text-teal transition hover:bg-teal/20 short:h-16 max-sm:h-16 max-sm:px-3 max-sm:text-[16px]"
+            >
+              <MicIcon size={26} />
+              <span className="max-sm:hidden">Voz</span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onReview}
+            disabled={count === 0}
+            className={`${PRIMARY_ACTION} h-20 flex-none px-10 text-[26px] disabled:bg-line disabled:text-muted short:h-16 max-sm:h-16 max-sm:px-6 max-sm:text-[20px]`}
+          >
+            Ver pedido
+          </button>
+        </div>
       </footer>
     </>
   )

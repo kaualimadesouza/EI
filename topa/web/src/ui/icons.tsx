@@ -86,3 +86,9 @@ export const ExternalIcon = (props: IconProps) => <Stroke d="M14 4h6v6M20 4l-9 9
 export const LogoutIcon = (props: IconProps) => (
   <Stroke d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" {...props} />
 )
+export const MicIcon = (props: IconProps) => (
+  <Stroke
+    d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v3M8 22h8"
+    {...props}
+  />
+)

@@ -14,11 +14,13 @@ import { LocalMenu } from './adapters/local/local-menu'
 import { LocalOrders } from './adapters/local/local-orders'
 import { LocalRecommendations } from './adapters/local/local-recommendations'
 import { LocalStores } from './adapters/local/local-stores'
+import { SimulatorVoiceAdapter } from './adapters/local/local-voice'
 import { TauriNfc } from './adapters/tauri/tauri-nfc'
 import { UnavailableBuzzer } from './adapters/unavailable/unavailable-buzzer'
 import { UnavailableNfc } from './adapters/unavailable/unavailable-nfc'
 import { UnavailableWakeLock } from './adapters/unavailable/unavailable-wake-lock'
 import { WebNfc } from './adapters/web/web-nfc'
+import { WebSpeechVoiceAdapter } from './adapters/web/web-voice'
 import { WebWakeLock } from './adapters/web/web-wake-lock'
 import type { NdefReader } from './adapters/web/web-nfc'
 import { createAdapters, detectRuntime, isPhoneApp, roleSwitch, type Runtime } from './composition'
@@ -71,6 +73,7 @@ describe('createAdapters', () => {
     expect(adapters.customerAuth).toBeInstanceOf(HttpCustomerAuth)
     expect(adapters.stores).toBeInstanceOf(HttpStores)
     expect(adapters.recommendations).toBeInstanceOf(HttpRecommendations)
+    expect(adapters.voice).toBeInstanceOf(WebSpeechVoiceAdapter)
 
     const menuProvider = (adapters.menu as unknown as { tokenProvider: () => string | null }).tokenProvider
     const ordersProvider = (adapters.orders as unknown as { tokenProvider: () => string | null }).tokenProvider
@@ -91,6 +94,7 @@ describe('createAdapters', () => {
     expect(adapters.customerAuth).toBeInstanceOf(LocalCustomerAuth)
     expect(adapters.stores).toBeInstanceOf(LocalStores)
     expect(adapters.recommendations).toBeInstanceOf(LocalRecommendations)
+    expect(adapters.voice).toBeInstanceOf(SimulatorVoiceAdapter)
   })
 
   it('treats an empty API URL as no API', () => {
