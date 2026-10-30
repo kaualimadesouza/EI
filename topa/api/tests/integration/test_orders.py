@@ -464,3 +464,62 @@ def test_a_malformed_store_slug_on_orders_gets_the_generic_message(
 
     assert (placed.status_code, placed.json()) == (422, {"detail": INVALID_REQUEST})
     assert (listed.status_code, listed.json()) == (422, {"detail": INVALID_REQUEST})
+
+
+def test_get_order_fiscal_document_and_not_found(client: TestClient) -> None:
+    placed = client.post(
+        "/orders", json=_order(("xsalada", 1), ("refri", 1), dine_in=True, payment_method="pix")
+    )
+    order_id = placed.json()["id"]
+
+    res = client.get(f"/orders/{order_id}/fiscal")
+    assert res.status_code == 200
+    body = res.json()
+    assert len(body["access_key"]) == 44
+    assert body["standard"] == "nfce"
+    assert "https://www.nfce.fazenda.sp.gov.br/qrcode" in body["qr_code_url"]
+    assert len(body["items"]) == 2
+    assert "<NFe" in body["xml_payload"]
+
+    not_found = client.get(f"/orders/{uuid.uuid4()}/fiscal")
+    assert not_found.status_code == 404
+
+
+def test_get_order_print_receipts_and_not_found(client: TestClient) -> None:
+    placed = client.post(
+        "/orders", json=_order(("xsalada", 1), dine_in=False, payment_method="card")
+    )
+    order_id = placed.json()["id"]
+
+    # Kitchen receipt
+    res_k = client.get(f"/orders/{order_id}/print/kitchen")
+    assert res_k.status_code == 200
+    body_k = res_k.json()
+    assert body_k["receipt_type"] == "kitchen"
+    assert "PEDIDO #" in body_k["plain_text"]
+    assert len(body_k["preview_lines"]) > 0
+
+    # Customer receipt
+    res_c = client.get(f"/orders/{order_id}/print/customer")
+    assert res_c.status_code == 200
+    body_c = res_c.json()
+    assert body_c["receipt_type"] == "customer"
+    assert "DOCUMENTO AUXILIAR" in body_c["plain_text"]
+
+    not_found = client.get(f"/orders/{uuid.uuid4()}/print/kitchen")
+    assert not_found.status_code == 404
+
+
+def test_export_order_pos_and_not_found(client: TestClient) -> None:
+    placed = client.post("/orders", json=_order(("refri", 2), dine_in=True, payment_method="pix"))
+    order_id = placed.json()["id"]
+
+    res = client.post(f"/orders/{order_id}/pos-export")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["success"] is True
+    assert body["adapter_name"] == "FileDropAdapter"
+    assert body["mechanism"] == "file_drop"
+
+    not_found = client.post(f"/orders/{uuid.uuid4()}/pos-export")
+    assert not_found.status_code == 404

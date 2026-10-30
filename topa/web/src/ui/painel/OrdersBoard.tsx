@@ -7,6 +7,7 @@ interface OrdersBoardProps {
   now: Date
   locked: boolean
   onAdvance: (order: OrderSummary) => void
+  onViewTicket?: (order: OrderSummary) => void
 }
 
 interface Column {
@@ -26,7 +27,7 @@ const LATE_MINUTES = 10
 
 const clock = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
-export function OrdersBoard({ orders, now, locked, onAdvance }: OrdersBoardProps) {
+export function OrdersBoard({ orders, now, locked, onAdvance, onViewTicket }: OrdersBoardProps) {
   const delivered = orders.filter((order) => order.status === 'delivered')
 
   return (
@@ -42,7 +43,15 @@ export function OrdersBoard({ orders, now, locked, onAdvance }: OrdersBoardProps
               </h3>
               {inColumn.length === 0 && <p className="px-2 pb-2 text-[14px] text-muted">Nenhum pedido aqui.</p>}
               {inColumn.map((order) => (
-                <OrderCard key={order.id} order={order} now={now} action={column.action} locked={locked} onAdvance={onAdvance} />
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  now={now}
+                  action={column.action}
+                  locked={locked}
+                  onAdvance={onAdvance}
+                  onViewTicket={onViewTicket}
+                />
               ))}
             </section>
           )
@@ -60,6 +69,15 @@ export function OrdersBoard({ orders, now, locked, onAdvance }: OrdersBoardProps
                 <span className="w-14 text-muted tabular-nums">{clock.format(new Date(order.createdAt))}</span>
                 <span className="min-w-0 flex-1 truncate">{order.items.map((item) => `${item.quantity}× ${item.name}`).join(', ')}</span>
                 <span className="font-semibold tabular-nums">{formatBRL(order.totalCents)}</span>
+                {onViewTicket && (
+                  <button
+                    type="button"
+                    onClick={() => onViewTicket(order)}
+                    className="text-[13px] font-medium text-teal hover:underline"
+                  >
+                    Cupom
+                  </button>
+                )}
               </li>
             ))}
           </ul>
@@ -75,9 +93,10 @@ interface OrderCardProps {
   action: string
   locked: boolean
   onAdvance: (order: OrderSummary) => void
+  onViewTicket?: (order: OrderSummary) => void
 }
 
-function OrderCard({ order, now, action, locked, onAdvance }: OrderCardProps) {
+function OrderCard({ order, now, action, locked, onAdvance, onViewTicket }: OrderCardProps) {
   const age = ageMinutes(order, now)
   const late = age >= LATE_MINUTES
   const number = displayNumber(order.number)
@@ -107,14 +126,25 @@ function OrderCard({ order, now, action, locked, onAdvance }: OrderCardProps) {
           </li>
         ))}
       </ul>
-      <button
-        type="button"
-        onClick={() => onAdvance(order)}
-        disabled={locked}
-        className="h-12 rounded-[12px] bg-teal px-4 text-[15px] font-semibold text-white disabled:opacity-50"
-      >
-        {action}
-      </button>
+      <div className="flex items-center gap-2">
+        {onViewTicket && (
+          <button
+            type="button"
+            onClick={() => onViewTicket(order)}
+            className="h-12 rounded-[12px] border border-line px-3 text-[14px] font-medium text-ink hover:bg-ground-2"
+          >
+            Cupom
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => onAdvance(order)}
+          disabled={locked}
+          className="h-12 flex-1 rounded-[12px] bg-teal px-4 text-[15px] font-semibold text-white disabled:opacity-50"
+        >
+          {action}
+        </button>
+      </div>
     </article>
   )
 }

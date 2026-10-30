@@ -68,6 +68,10 @@ function fakes(
       isSupported: () => true,
       startListening: vi.fn().mockReturnValue(() => {}),
     },
+    printer: {
+      isSupported: () => true,
+      print: vi.fn().mockResolvedValue(undefined),
+    },
     nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
     tag: { available: false, publish: vi.fn(), withdraw: vi.fn() },
     buzzer: { buzz },

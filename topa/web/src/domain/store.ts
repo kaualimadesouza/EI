@@ -4,6 +4,7 @@ import type { Product } from './menu'
 export interface Store {
   slug: string
   name: string
+  cnpj?: string
 }
 
 /** One store and its whole menu in display order, sold-out products included. */

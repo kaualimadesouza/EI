@@ -1,3 +1,4 @@
+import base64
 import uuid
 from datetime import date, datetime
 from typing import Annotated
@@ -7,14 +8,20 @@ from pydantic import BaseModel
 
 from topa_api.application.change_order_status import ChangeOrderStatusUseCase
 from topa_api.application.check_order_rate_limit import CheckOrderRateLimitUseCase
+from topa_api.application.export_order_to_pos import export_order_to_pos
+from topa_api.application.generate_order_fiscal import generate_order_fiscal
 from topa_api.application.list_customer_orders import ListCustomerOrdersUseCase
 from topa_api.application.list_orders import ListOrdersUseCase
 from topa_api.application.place_order import PlaceOrder, PlaceOrderUseCase
+from topa_api.application.ports import OrderRepository, StoreRepository
 from topa_api.application.read_order import ReadOrderUseCase
+from topa_api.application.render_order_print import PrintReceiptType, render_order_print
 from topa_api.domain.auth import AuthenticatedCustomer, AuthenticatedMerchant
 from topa_api.domain.catalog import DEFAULT_STORE_SLUG
 from topa_api.domain.errors import ForbiddenStoreAccessError
+from topa_api.domain.fiscal import FiscalStandard
 from topa_api.domain.orders import Order, OrderLine, OrderStatus, PaymentMethod
+from topa_api.domain.pos_integration import PosAdapterPort
 from topa_api.presentation.fastapi.dependencies import (
     StoreSlug,
     get_change_order_status_use_case,
@@ -24,8 +31,11 @@ from topa_api.presentation.fastapi.dependencies import (
     get_list_customer_orders_use_case,
     get_list_orders_use_case,
     get_optional_customer,
+    get_order_repository,
     get_place_order_use_case,
+    get_pos_adapter,
     get_read_order_use_case,
+    get_store_repository,
 )
 from topa_api.presentation.fastapi.errors import ErrorResponse
 
@@ -208,4 +218,156 @@ def _order_response(order: Order) -> OrderResponse:
             )
             for item in order.items
         ],
+    )
+
+
+class FiscalItemResponse(BaseModel):
+    product_id: str
+    name: str
+    quantity: int
+    unit_price_cents: int
+    total_price_cents: int
+    ncm: str
+    cfop: str
+    csosn: str
+    approx_tax_cents: int
+
+
+class FiscalDocumentResponse(BaseModel):
+    access_key: str
+    formatted_access_key: str
+    standard: str
+    environment: int
+    series: int
+    number: int
+    issued_at: datetime
+    subtotal_cents: int
+    total_cents: int
+    approx_tax_cents: int
+    payment_method: PaymentMethod
+    qr_code_url: str
+    digest_value: str
+    xml_payload: str
+    items: list[FiscalItemResponse]
+
+
+class EmulatorLineResponse(BaseModel):
+    text: str
+    align: str
+    bold: bool
+    double_size: bool
+    is_cut: bool
+
+
+class PrintReceiptResponse(BaseModel):
+    receipt_type: str
+    plain_text: str
+    preview_lines: list[EmulatorLineResponse]
+    raw_bytes_base64: str
+
+
+class PosExportItemResponse(BaseModel):
+    adapter_name: str
+    mechanism: str
+    success: bool
+    destination: str
+    timestamp: datetime
+    error_message: str | None = None
+
+
+@router.get(
+    "/orders/{order_id}/fiscal",
+    responses={
+        404: {"model": ErrorResponse, "description": "no order has that id"},
+    },
+)
+def get_order_fiscal(
+    order_id: uuid.UUID,
+    orders: Annotated[OrderRepository, Depends(get_order_repository)],
+    stores: Annotated[StoreRepository, Depends(get_store_repository)],
+    standard: FiscalStandard = FiscalStandard.NFCE,
+) -> FiscalDocumentResponse:
+    doc = generate_order_fiscal(order_id, orders, stores, standard=standard)
+    return FiscalDocumentResponse(
+        access_key=doc.access_key,
+        formatted_access_key=doc.formatted_access_key,
+        standard=doc.standard.value,
+        environment=int(doc.environment),
+        series=doc.series,
+        number=doc.number,
+        issued_at=doc.issued_at,
+        subtotal_cents=doc.subtotal_cents,
+        total_cents=doc.total_cents,
+        approx_tax_cents=doc.approx_tax_cents,
+        payment_method=doc.payment_method,
+        qr_code_url=doc.qr_code_url,
+        digest_value=doc.digest_value,
+        xml_payload=doc.xml_payload,
+        items=[
+            FiscalItemResponse(
+                product_id=it.product_id,
+                name=it.name,
+                quantity=it.quantity,
+                unit_price_cents=it.unit_price_cents,
+                total_price_cents=it.total_price_cents,
+                ncm=it.ncm,
+                cfop=it.cfop,
+                csosn=it.csosn,
+                approx_tax_cents=it.approx_tax_cents,
+            )
+            for it in doc.items
+        ],
+    )
+
+
+@router.get(
+    "/orders/{order_id}/print/{receipt_type}",
+    responses={
+        404: {"model": ErrorResponse, "description": "no order has that id"},
+    },
+)
+def get_order_print(
+    order_id: uuid.UUID,
+    receipt_type: PrintReceiptType,
+    orders: Annotated[OrderRepository, Depends(get_order_repository)],
+    stores: Annotated[StoreRepository, Depends(get_store_repository)],
+) -> PrintReceiptResponse:
+    res = render_order_print(order_id, receipt_type, orders, stores)
+    return PrintReceiptResponse(
+        receipt_type=res.receipt_type.value,
+        plain_text=res.plain_text,
+        preview_lines=[
+            EmulatorLineResponse(
+                text=line.text,
+                align=line.align,
+                bold=line.bold,
+                double_size=line.double_size,
+                is_cut=line.is_cut,
+            )
+            for line in res.preview_lines
+        ],
+        raw_bytes_base64=base64.b64encode(res.raw_bytes).decode("ascii"),
+    )
+
+
+@router.post(
+    "/orders/{order_id}/pos-export",
+    responses={
+        404: {"model": ErrorResponse, "description": "no order has that id"},
+    },
+)
+def export_order_pos(
+    order_id: uuid.UUID,
+    orders: Annotated[OrderRepository, Depends(get_order_repository)],
+    stores: Annotated[StoreRepository, Depends(get_store_repository)],
+    pos_adapter: Annotated[PosAdapterPort, Depends(get_pos_adapter)],
+) -> PosExportItemResponse:
+    res = export_order_to_pos(order_id, pos_adapter, orders, stores)
+    return PosExportItemResponse(
+        adapter_name=res.adapter_name,
+        mechanism=res.mechanism.value,
+        success=res.success,
+        destination=res.destination,
+        timestamp=res.timestamp,
+        error_message=res.error_message,
     )
