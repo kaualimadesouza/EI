@@ -71,3 +71,8 @@ class RateLimitExceededError(DomainError):
     def __init__(self, retry_after: int = 60) -> None:
         super().__init__("Muitos pedidos enviados. Aguarde um momento.")
         self.retry_after = retry_after
+
+
+class InvalidProductDataError(DomainError):
+    def __init__(self, message: str = "Dados do produto inválidos.") -> None:
+        super().__init__(message)

@@ -7,7 +7,7 @@ import { nextStatus } from '../../domain/status'
 import { DEMO_STORE_SLUG } from '../../domain/store'
 import type { Adapters } from '../../ports/adapters'
 import type { AuthenticatedMerchant } from '../../ports/auth'
-import { type CreateProductDraft, StoreNotFoundError, type UpdateProductDraft } from '../../ports/menu'
+import { type ProductDraft, StoreNotFoundError } from '../../ports/menu'
 import { OrderRejectedError } from '../../ports/orders'
 import { AlertIcon, BoardIcon, ChartIcon, ExternalIcon, ListIcon, LogoutIcon, PlusIcon, StoreMark, UndoIcon } from '../icons'
 import { HourlyChart } from './HourlyChart'
@@ -164,14 +164,14 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
     }
   }
 
-  const handleSaveProduct = async (draft: CreateProductDraft | UpdateProductDraft) => {
+  const handleSaveProduct = async (draft: ProductDraft) => {
     try {
       if (editingProduct === 'new') {
-        const created = await adapters.menu.create(draft as CreateProductDraft, storeSlug)
+        const created = await adapters.menu.create(draft, storeSlug)
         setProducts((list) => [...list, created])
       } else {
         const target = editingProduct!
-        const updated = await adapters.menu.update(target.id, draft as UpdateProductDraft, storeSlug)
+        const updated = await adapters.menu.update(target.id, draft, storeSlug)
         setProducts((list) => list.map((p) => (p.id === updated.id ? updated : p)))
       }
       setProblem(null)

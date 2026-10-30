@@ -87,6 +87,19 @@ describe('ProductModal', () => {
     expect(onSave).not.toHaveBeenCalled()
   })
 
+  it('validates invalid photo url format', async () => {
+    const onSave = vi.fn()
+    render(<ProductModal product={null} isOpen={true} onClose={vi.fn()} onSave={onSave} />)
+
+    await userEvent.type(screen.getByLabelText('Nome'), 'Pastel')
+    await userEvent.type(screen.getByLabelText('Preço (R$)'), '9,00')
+    await userEvent.type(screen.getByLabelText('URL da foto (opcional)'), 'ftp://invalido')
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('A foto deve ser uma URL válida.')
+    expect(onSave).not.toHaveBeenCalled()
+  })
+
   it('displays error message when onSave rejects', async () => {
     const onSave = vi.fn().mockRejectedValue(new Error('Erro no servidor.'))
     render(<ProductModal product={null} isOpen={true} onClose={vi.fn()} onSave={onSave} />)

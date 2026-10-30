@@ -1,7 +1,7 @@
 import type { Product } from '../domain/menu'
 import type { StoreMenu } from '../domain/store'
 
-export interface CreateProductDraft {
+export interface ProductDraft {
   id?: string
   name: string
   description: string
@@ -11,14 +11,8 @@ export interface CreateProductDraft {
   available?: boolean
 }
 
-export interface UpdateProductDraft {
-  name: string
-  description: string
-  category: string
-  priceCents: number
-  photoUrl?: string
-  available?: boolean
-}
+export type CreateProductDraft = ProductDraft
+export type UpdateProductDraft = ProductDraft
 
 export interface MenuPort {
   load(storeSlug: string): Promise<StoreMenu>

@@ -3,7 +3,11 @@ import pytest
 from tests.fakes import InMemoryProductRepository, InMemoryStoreRepository
 from topa_api.application.update_product import UpdateProductUseCase
 from topa_api.domain.catalog import Product, Store
-from topa_api.domain.errors import ProductNotFoundError, StoreNotFoundError
+from topa_api.domain.errors import (
+    InvalidProductDataError,
+    ProductNotFoundError,
+    StoreNotFoundError,
+)
 
 STORE = Store(slug="lanchonete-bem-te-vi", name="Lanchonete Bem-te-vi")
 EXISTING = Product(
@@ -117,4 +121,37 @@ def test_raises_when_repository_fails_to_update(stores: InMemoryStoreRepository)
             description="Desc.",
             category="salgados",
             price_cents=900,
+        )
+
+
+def test_refuses_updating_product_with_invalid_data(
+    stores: InMemoryStoreRepository, products: InMemoryProductRepository
+) -> None:
+    use_case = UpdateProductUseCase(stores, products)
+    with pytest.raises(InvalidProductDataError, match="nome do produto"):
+        use_case.execute(
+            store_slug=STORE.slug,
+            product_id="coxinha",
+            name="   ",
+            description="Sem nome.",
+            category="salgados",
+            price_cents=800,
+        )
+    with pytest.raises(InvalidProductDataError, match="categoria do produto"):
+        use_case.execute(
+            store_slug=STORE.slug,
+            product_id="coxinha",
+            name="Coxinha",
+            description="Sem categoria.",
+            category="   ",
+            price_cents=800,
+        )
+    with pytest.raises(InvalidProductDataError, match="não pode ser negativo"):
+        use_case.execute(
+            store_slug=STORE.slug,
+            product_id="coxinha",
+            name="Coxinha",
+            description="Preço negativo.",
+            category="salgados",
+            price_cents=-50,
         )

@@ -21,29 +21,41 @@ export const SUGGESTION_RULES: Readonly<Record<string, string>> = {
   paoqueijo: 'Oferecido após um café sem salgado',
 }
 
+function selectProduct(
+  products: readonly Product[],
+  preferredId: string,
+  preferredCategory: string,
+  defaultReason: string,
+  customDefaultReason: string = defaultReason,
+  predicate?: (p: Product) => boolean,
+): Suggestion {
+  if (products.length === 0 || products.some((p) => p.id === preferredId)) {
+    return { productId: preferredId, reason: defaultReason }
+  }
+  const match =
+    (predicate ? products.find(predicate) : undefined) ??
+    products.find((p) => p.category === preferredCategory) ??
+    products[0]
+  return { productId: match.id, reason: match.description || customDefaultReason }
+}
+
 /** What the menu banner offers at this time of day (store hours, local time). */
 export function suggestionAt(now: Date, products: readonly Product[] = []): Suggestion {
   const hour = now.getHours()
   if (hour < 11) {
-    if (products.length > 0 && !products.some((p) => p.id === 'combo-cafe')) {
-      const match = products.find((p) => p.category === 'combos') ?? products[0]
-      return { productId: match.id, reason: match.description || 'Para o café da manhã.' }
-    }
-    return { productId: 'combo-cafe', reason: 'Para o café da manhã.' }
+    return selectProduct(products, 'combo-cafe', 'combos', 'Para o café da manhã.')
   }
   if (hour < 15) {
-    if (products.length > 0 && !products.some((p) => p.id === 'combo-misto')) {
-      const combos = products.filter((p) => p.category === 'combos')
-      const match = combos.find((p) => p.id.includes('almoco')) ?? combos[0] ?? products[0]
-      return { productId: match.id, reason: match.description || 'Combo especial para o almoço.' }
-    }
-    return { productId: 'combo-misto', reason: 'Sai R$ 1,90 mais barato que separado.' }
+    return selectProduct(
+      products,
+      'combo-misto',
+      'combos',
+      'Sai R$ 1,90 mais barato que separado.',
+      'Combo especial para o almoço.',
+      (p) => p.category === 'combos' && p.id.includes('almoco'),
+    )
   }
-  if (products.length > 0 && !products.some((p) => p.id === 'bolo')) {
-    const match = products.find((p) => p.category === 'doces') ?? products[0]
-    return { productId: match.id, reason: match.description || 'Para acompanhar o café da tarde.' }
-  }
-  return { productId: 'bolo', reason: 'Para acompanhar o café da tarde.' }
+  return selectProduct(products, 'bolo', 'doces', 'Para acompanhar o café da tarde.')
 }
 
 /** The banner hides when it would repeat a card on screen, the cart already has it, or it sold out. */

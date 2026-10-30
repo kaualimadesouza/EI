@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 from topa_api.application.create_product import CreateProductUseCase
 from topa_api.application.get_store_menu import GetStoreMenuUseCase
@@ -23,28 +23,66 @@ from topa_api.presentation.fastapi.errors import ErrorResponse
 router = APIRouter(tags=["products"])
 
 
+def _clean_non_empty(v: str) -> str:
+    cleaned = v.strip()
+    if not cleaned:
+        raise ValueError("cannot be empty or whitespace only")
+    return cleaned
+
+
+def _clean_photo_url(v: str | None) -> str | None:
+    if not v or not v.strip():
+        return None
+    cleaned = v.strip()
+    if not (
+        cleaned.startswith("http://") or cleaned.startswith("https://") or cleaned.startswith("/")
+    ):
+        raise ValueError("photo_url must start with http://, https://, or /")
+    return cleaned
+
+
 class AvailabilityRequest(BaseModel):
     available: bool
 
 
 class CreateProductRequest(BaseModel):
     id: str | None = None
-    name: str
-    description: str
-    category: str
-    price_cents: int
+    name: str = Field(min_length=1)
+    description: str = ""
+    category: str = Field(min_length=1)
+    price_cents: int = Field(ge=0)
     photo_url: str | None = None
     available: bool = True
-    position: int | None = None
+    position: int | None = Field(default=None, ge=0)
+
+    @field_validator("name", "category")
+    @classmethod
+    def validate_non_empty(cls, v: str) -> str:
+        return _clean_non_empty(v)
+
+    @field_validator("photo_url")
+    @classmethod
+    def validate_photo_url(cls, v: str | None) -> str | None:
+        return _clean_photo_url(v)
 
 
 class UpdateProductRequest(BaseModel):
-    name: str
-    description: str
-    category: str
-    price_cents: int
+    name: str = Field(min_length=1)
+    description: str = ""
+    category: str = Field(min_length=1)
+    price_cents: int = Field(ge=0)
     photo_url: str | None = None
     available: bool | None = None
+
+    @field_validator("name", "category")
+    @classmethod
+    def validate_non_empty(cls, v: str) -> str:
+        return _clean_non_empty(v)
+
+    @field_validator("photo_url")
+    @classmethod
+    def validate_photo_url(cls, v: str | None) -> str | None:
+        return _clean_photo_url(v)
 
 
 class StoreResponse(BaseModel):

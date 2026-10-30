@@ -303,3 +303,79 @@ def test_update_unknown_product_returns_404(
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Produto não encontrado."}
+
+
+@pytest.mark.parametrize(
+    "patch",
+    [
+        {"price_cents": -10},
+        {"name": "   "},
+        {"category": "   "},
+        {"photo_url": "ftp://example.com/photo.jpg"},
+    ],
+    ids=["negative-price", "empty-name", "empty-category", "invalid-photo-url"],
+)
+def test_create_product_validates_inputs(
+    client: TestClient, patch: dict[str, object], auth_headers: dict[str, str]
+) -> None:
+    payload = {
+        "name": "Pastel Valido",
+        "description": "Queijo.",
+        "category": "salgados",
+        "price_cents": 800,
+        "photo_url": "https://example.com/valid.jpg",
+    } | patch
+    response = client.post("/products", json=payload, headers=auth_headers)
+    assert response.status_code == 422
+    assert response.json() == {"detail": INVALID_REQUEST}
+
+
+def test_create_and_update_product_normalizes_empty_photo_url(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
+    create_payload = {
+        "name": "Suco de Laranja",
+        "description": "300ml.",
+        "category": "bebidas",
+        "price_cents": 700,
+        "photo_url": "   ",
+    }
+    created = client.post("/products", json=create_payload, headers=auth_headers)
+    assert created.status_code == 201
+    assert created.json()["photo_url"] is None
+
+    product_id = created.json()["id"]
+    update_payload = {
+        "name": "Suco de Laranja Especial",
+        "description": "500ml.",
+        "category": "bebidas",
+        "price_cents": 900,
+        "photo_url": None,
+    }
+    updated = client.put(f"/products/{product_id}", json=update_payload, headers=auth_headers)
+    assert updated.status_code == 200
+    assert updated.json()["photo_url"] is None
+
+
+@pytest.mark.parametrize(
+    "patch",
+    [
+        {"price_cents": -10},
+        {"name": "   "},
+        {"category": "   "},
+        {"photo_url": "ftp://example.com/photo.jpg"},
+    ],
+    ids=["negative-price", "empty-name", "empty-category", "invalid-photo-url"],
+)
+def test_update_product_validates_inputs(
+    client: TestClient, patch: dict[str, object], auth_headers: dict[str, str]
+) -> None:
+    payload = {
+        "name": "Coxinha Atualizada",
+        "description": "Frango.",
+        "category": "salgados",
+        "price_cents": 890,
+    } | patch
+    response = client.put("/products/coxinha", json=payload, headers=auth_headers)
+    assert response.status_code == 422
+    assert response.json() == {"detail": INVALID_REQUEST}

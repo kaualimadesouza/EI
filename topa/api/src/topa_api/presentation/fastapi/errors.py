@@ -11,6 +11,7 @@ from topa_api.domain.errors import (
     EmptyOrderError,
     ForbiddenStoreAccessError,
     InvalidCredentialsError,
+    InvalidProductDataError,
     InvalidTokenError,
     OrderNotFoundError,
     ProductNotFoundError,
@@ -37,6 +38,7 @@ ERROR_STATUS: dict[type[DomainError], int] = {
     InvalidCredentialsError: 401,
     InvalidTokenError: 401,
     ForbiddenStoreAccessError: 403,
+    InvalidProductDataError: 422,
     RateLimitExceededError: 429,
 }
 

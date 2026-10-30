@@ -3,7 +3,11 @@ import pytest
 from tests.fakes import InMemoryProductRepository, InMemoryStoreRepository
 from topa_api.application.create_product import CreateProductUseCase
 from topa_api.domain.catalog import Product, Store
-from topa_api.domain.errors import DuplicateProductError, StoreNotFoundError
+from topa_api.domain.errors import (
+    DuplicateProductError,
+    InvalidProductDataError,
+    StoreNotFoundError,
+)
 
 STORE = Store(slug="lanchonete-bem-te-vi", name="Lanchonete Bem-te-vi")
 EXISTING = Product(
@@ -114,4 +118,34 @@ def test_refuses_creating_product_in_unknown_store(
             description="Queijo.",
             category="salgados",
             price_cents=850,
+        )
+
+
+def test_refuses_creating_product_with_invalid_data(
+    stores: InMemoryStoreRepository, products: InMemoryProductRepository
+) -> None:
+    use_case = CreateProductUseCase(stores, products)
+    with pytest.raises(InvalidProductDataError, match="nome do produto"):
+        use_case.execute(
+            store_slug=STORE.slug,
+            name="   ",
+            description="Sem nome.",
+            category="salgados",
+            price_cents=800,
+        )
+    with pytest.raises(InvalidProductDataError, match="categoria do produto"):
+        use_case.execute(
+            store_slug=STORE.slug,
+            name="Pastel",
+            description="Sem categoria.",
+            category="   ",
+            price_cents=800,
+        )
+    with pytest.raises(InvalidProductDataError, match="não pode ser negativo"):
+        use_case.execute(
+            store_slug=STORE.slug,
+            name="Pastel",
+            description="Preço negativo.",
+            category="salgados",
+            price_cents=-10,
         )

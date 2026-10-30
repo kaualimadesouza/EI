@@ -4,7 +4,11 @@ import uuid
 
 from topa_api.application.ports import ProductRepository, StoreRepository
 from topa_api.domain.catalog import Product
-from topa_api.domain.errors import DuplicateProductError, StoreNotFoundError
+from topa_api.domain.errors import (
+    DuplicateProductError,
+    InvalidProductDataError,
+    StoreNotFoundError,
+)
 
 
 def _slugify(text: str) -> str:
@@ -33,7 +37,15 @@ class CreateProductUseCase:
     ) -> Product:
         if self._stores.get(store_slug) is None:
             raise StoreNotFoundError
-        product_id = id.strip() if id and id.strip() else _slugify(name)
+        clean_name = name.strip()
+        clean_category = category.strip()
+        if not clean_name:
+            raise InvalidProductDataError("O nome do produto não pode ficar em branco.")
+        if not clean_category:
+            raise InvalidProductDataError("A categoria do produto não pode ficar em branco.")
+        if price_cents < 0:
+            raise InvalidProductDataError("O preço do produto não pode ser negativo.")
+        product_id = id.strip() if id and id.strip() else _slugify(clean_name)
         if not product_id:
             product_id = f"p-{uuid.uuid4().hex[:8]}"
         if self._products.get(store_slug, product_id) is not None:
@@ -42,11 +54,11 @@ class CreateProductUseCase:
             position = self._products.next_position(store_slug)
         product = Product(
             id=product_id,
-            name=name,
-            description=description,
-            category=category,
+            name=clean_name,
+            description=description.strip(),
+            category=clean_category,
             price_cents=price_cents,
             available=available,
-            photo_url=photo_url,
+            photo_url=photo_url.strip() if photo_url and photo_url.strip() else None,
         )
         return self._products.create(store_slug, product, position)

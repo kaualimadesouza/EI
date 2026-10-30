@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 
 import { CATEGORIES, type Product } from '../../domain/menu'
-import type { CreateProductDraft, UpdateProductDraft } from '../../ports/menu'
+import type { ProductDraft } from '../../ports/menu'
 import { CloseIcon } from '../icons'
 
 interface ProductModalProps {
   product: Product | null
   isOpen: boolean
   onClose: () => void
-  onSave: (draft: CreateProductDraft | UpdateProductDraft) => Promise<void>
+  onSave: (draft: ProductDraft) => Promise<void>
 }
 
 export function ProductModal({ product, isOpen, onClose, onSave }: ProductModalProps) {
@@ -57,6 +57,16 @@ export function ProductModal({ product, isOpen, onClose, onSave }: ProductModalP
       return
     }
     const priceCents = Math.round(parsedPrice * 100)
+    const cleanPhoto = photoUrl.trim()
+    if (
+      cleanPhoto &&
+      !cleanPhoto.startsWith('http://') &&
+      !cleanPhoto.startsWith('https://') &&
+      !cleanPhoto.startsWith('/')
+    ) {
+      setError('A foto deve ser uma URL válida.')
+      return
+    }
     setSaving(true)
     setError(null)
     try {
@@ -65,7 +75,7 @@ export function ProductModal({ product, isOpen, onClose, onSave }: ProductModalP
         category: cleanCategory,
         priceCents,
         description: description.trim(),
-        photoUrl: photoUrl.trim() || undefined,
+        photoUrl: cleanPhoto || undefined,
         available: product ? product.available : true,
       })
       onClose()
