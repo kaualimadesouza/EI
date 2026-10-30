@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.4](https://github.com/kaualimadesouza/EI/compare/topa-0.1.3...topa-0.1.4) (2026-10-30)
+
+
+### Features
+
+* **api:** schedule health readiness monitoring and increase client timeout with retry ([#53](https://github.com/kaualimadesouza/EI/issues/53)) ([dff2d63](https://github.com/kaualimadesouza/EI/commit/dff2d631cf04e0393be4a7b5175fff27b6f3d142))
+* **auth:** merchant authentication, rate limit and LGPD privacy policy ([#55](https://github.com/kaualimadesouza/EI/issues/55)) ([44d07c8](https://github.com/kaualimadesouza/EI/commit/44d07c84d9cffccd142fef535df7a60eafcbd0d5))
+* configurable menu by merchant, product photos and dynamic suggestions ([#59](https://github.com/kaualimadesouza/EI/issues/59)) ([41045ef](https://github.com/kaualimadesouza/EI/commit/41045ef6298899f3de778a99d2df9e98b5dbf2f1))
+* load store menu and scope phone orders to the scanned store ([#49](https://github.com/kaualimadesouza/EI/issues/49)) ([4ae29b0](https://github.com/kaualimadesouza/EI/commit/4ae29b01315eab1817eebaa417b5ac94b7d522b3))
+* **web:** separate store and customer android apps and derive dynamic version code ([#51](https://github.com/kaualimadesouza/EI/issues/51)) ([d861e14](https://github.com/kaualimadesouza/EI/commit/d861e145c87de541f5c54ea5648b18596388781a))
+
 ## [0.1.3](https://github.com/kaualimadesouza/EI/compare/topa-0.1.2...topa-0.1.3) (2026-10-28)
 
 
