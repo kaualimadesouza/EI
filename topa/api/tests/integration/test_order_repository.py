@@ -12,7 +12,7 @@ from sqlalchemy import Engine, insert, select, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-from topa_api.adapters.db.models import OrderRow, ProductRow, StoreRow
+from topa_api.adapters.db.models import CustomerRow, OrderRow, ProductRow, StoreRow
 from topa_api.adapters.db.repositories import SqlAlchemyOrderRepository
 from topa_api.domain.catalog import DEFAULT_STORE_SLUG
 from topa_api.domain.orders import Order, OrderItem, OrderStatus, PaymentMethod
@@ -226,3 +226,53 @@ def test_a_plain_read_of_an_order_holds_nothing(db_engine: Engine) -> None:
                 select(OrderRow.id).where(OrderRow.id == placed.id).with_for_update(nowait=True)
             )
             assert locked.scalar_one() == placed.id
+
+
+def test_list_for_customer_returns_orders_descending(db_engine: Engine) -> None:
+    customer_id = uuid.uuid4()
+    with Session(db_engine) as session, session.begin():
+        session.add(
+            CustomerRow(
+                id=customer_id,
+                name="Cliente Teste",
+                email="cliente@exemplo.com",
+                password_hash="hash",
+                created_at=datetime(2026, 10, 26, 9, 0, tzinfo=UTC),
+            )
+        )
+    order1 = Order(
+        id=uuid.uuid4(),
+        store_slug=DEFAULT_STORE_SLUG,
+        number=1,
+        business_date=MONDAY,
+        status=OrderStatus.RECEIVED,
+        dine_in=True,
+        payment_method=PaymentMethod.CARD,
+        items=(OrderItem(product_id="cafe", name="Café coado", quantity=1, unit_price_cents=550),),
+        created_at=datetime(2026, 10, 26, 10, 0, tzinfo=UTC),
+        customer_id=customer_id,
+    )
+    order2 = Order(
+        id=uuid.uuid4(),
+        store_slug=DEFAULT_STORE_SLUG,
+        number=2,
+        business_date=MONDAY,
+        status=OrderStatus.RECEIVED,
+        dine_in=False,
+        payment_method=PaymentMethod.PIX,
+        items=(OrderItem(product_id="cafe", name="Café coado", quantity=1, unit_price_cents=550),),
+        created_at=datetime(2026, 10, 26, 11, 0, tzinfo=UTC),
+        customer_id=customer_id,
+    )
+    with Session(db_engine) as session, session.begin():
+        repo = SqlAlchemyOrderRepository(session)
+        repo.add(order1)
+        repo.add(order2)
+
+    with Session(db_engine) as session:
+        repo = SqlAlchemyOrderRepository(session)
+        orders = repo.list_for_customer(customer_id)
+        assert len(orders) == 2
+        assert orders[0].id == order2.id
+        assert orders[1].id == order1.id
+        assert repo.list_for_customer(uuid.uuid4()) == []

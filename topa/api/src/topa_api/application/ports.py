@@ -4,7 +4,12 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Protocol
 
-from topa_api.domain.auth import AuthenticatedMerchant, Merchant
+from topa_api.domain.auth import (
+    AuthenticatedCustomer,
+    AuthenticatedMerchant,
+    Customer,
+    Merchant,
+)
 from topa_api.domain.catalog import Product, Store
 from topa_api.domain.orders import Order, OrderStatus
 
@@ -23,6 +28,8 @@ class Clock(Protocol):
 
 class StoreRepository(Protocol):
     def get(self, slug: str) -> Store | None: ...
+
+    def list_all(self) -> list[Store]: ...
 
 
 class ProductRepository(Protocol):
@@ -82,6 +89,25 @@ class OrderRepository(Protocol):
 
     def set_status(self, order_id: uuid.UUID, status: OrderStatus) -> None: ...
 
+    def list_for_customer(self, customer_id: uuid.UUID) -> list[Order]: ...
+
+
+@dataclass(frozen=True)
+class CustomerRecord:
+    customer: Customer
+    password_hash: str
+
+
+class CustomerRepositoryPort(Protocol):
+    def get_by_email(self, email: str) -> CustomerRecord | None: ...
+
+    def get_by_id(self, customer_id: uuid.UUID) -> CustomerRecord | None: ...
+
+    def add(self, customer: Customer, password_hash: str) -> None: ...
+
+
+CustomerRepository = CustomerRepositoryPort
+
 
 @dataclass(frozen=True)
 class MerchantRecord:
@@ -113,6 +139,12 @@ class TokenServicePort(Protocol):
     ) -> str: ...
 
     def verify_token(self, token: str) -> AuthenticatedMerchant: ...
+
+    def create_customer_token(
+        self, customer: AuthenticatedCustomer, expires_in_seconds: int = 86400
+    ) -> str: ...
+
+    def verify_customer_token(self, token: str) -> AuthenticatedCustomer: ...
 
 
 TokenService = TokenServicePort

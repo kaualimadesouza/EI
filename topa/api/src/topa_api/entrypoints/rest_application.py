@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from topa_api.adapters.clock import SystemClock
 from topa_api.adapters.db.repositories import (
+    SqlAlchemyCustomerRepository,
     SqlAlchemyMerchantRepository,
     SqlAlchemyOrderRepository,
     SqlAlchemyProductRepository,
@@ -18,6 +19,7 @@ from topa_api.adapters.rate_limiter import InMemoryRateLimiter
 from topa_api.adapters.security.password_hasher import ScryptPasswordHasher
 from topa_api.adapters.security.token_service import HmacTokenService
 from topa_api.application.ports import (
+    CustomerRepositoryPort,
     MerchantRepositoryPort,
     OrderRepository,
     ProductRepository,
@@ -29,6 +31,7 @@ from topa_api.presentation.fastapi.errors import install_error_handlers
 from topa_api.presentation.fastapi.health import router as health_router
 from topa_api.presentation.fastapi.orders import router as orders_router
 from topa_api.presentation.fastapi.products import router as products_router
+from topa_api.presentation.fastapi.stores import router as stores_router
 from topa_api.settings import Settings
 
 
@@ -63,6 +66,12 @@ def merchant_repository(
     return SqlAlchemyMerchantRepository(session)
 
 
+def customer_repository(
+    session: Annotated[Session, Depends(get_session, scope="function")],
+) -> CustomerRepositoryPort:
+    return SqlAlchemyCustomerRepository(session)
+
+
 def create_app() -> FastAPI:
     """Composition root: the one place that picks the adapter behind each port."""
     app = FastAPI(title="TOPA API")
@@ -88,6 +97,7 @@ def create_app() -> FastAPI:
             ports.get_product_repository: product_repository,
             ports.get_order_repository: order_repository,
             ports.get_merchant_repository: merchant_repository,
+            ports.get_customer_repository: customer_repository,
             ports.get_password_hasher: lambda: hasher,
             ports.get_token_service: lambda: tokens,
             ports.get_rate_limiter: lambda: limiter,
@@ -96,6 +106,7 @@ def create_app() -> FastAPI:
     )
     app.include_router(health_router)
     app.include_router(auth_router)
+    app.include_router(stores_router)
     app.include_router(products_router)
     app.include_router(orders_router)
     return app

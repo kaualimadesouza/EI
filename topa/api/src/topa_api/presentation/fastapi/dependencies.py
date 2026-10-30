@@ -3,15 +3,19 @@ from typing import Annotated
 from fastapi import Depends, Header
 from pydantic import StringConstraints
 
+from topa_api.application.authenticate_customer import AuthenticateCustomerUseCase
 from topa_api.application.authenticate_merchant import AuthenticateMerchantUseCase
 from topa_api.application.change_order_status import ChangeOrderStatusUseCase
 from topa_api.application.check_order_rate_limit import CheckOrderRateLimitUseCase
 from topa_api.application.create_product import CreateProductUseCase
 from topa_api.application.get_store_menu import GetStoreMenuUseCase
+from topa_api.application.list_customer_orders import ListCustomerOrdersUseCase
 from topa_api.application.list_orders import ListOrdersUseCase
+from topa_api.application.list_stores import ListStoresUseCase
 from topa_api.application.place_order import PlaceOrderUseCase
 from topa_api.application.ports import (
     Clock,
+    CustomerRepositoryPort,
     MerchantRepositoryPort,
     OrderRepository,
     PasswordHasherPort,
@@ -22,10 +26,12 @@ from topa_api.application.ports import (
     TokenServicePort,
 )
 from topa_api.application.read_order import ReadOrderUseCase
+from topa_api.application.register_customer import RegisterCustomerUseCase
 from topa_api.application.set_product_availability import SetProductAvailabilityUseCase
 from topa_api.application.update_product import UpdateProductUseCase
+from topa_api.application.verify_customer_token import VerifyCustomerTokenUseCase
 from topa_api.application.verify_merchant_token import VerifyMerchantTokenUseCase
-from topa_api.domain.auth import AuthenticatedMerchant
+from topa_api.domain.auth import AuthenticatedCustomer, AuthenticatedMerchant
 from topa_api.domain.catalog import STORE_SLUG_MAX_LENGTH, STORE_SLUG_PATTERN
 from topa_api.domain.errors import InvalidTokenError
 
@@ -156,6 +162,69 @@ def get_current_merchant(
 ) -> AuthenticatedMerchant:
     if authorization is None:
         raise InvalidTokenError("Token de autenticação não fornecido.")
+    parts = authorization.split(" ", 1)
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise InvalidTokenError("Formato de autorização inválido. Utilize Bearer <token>.")
+    return use_case.execute(parts[1].strip())
+
+
+def get_list_stores_use_case(
+    stores: Annotated[StoreRepository, Depends(get_store_repository)],
+) -> ListStoresUseCase:
+    return ListStoresUseCase(stores)
+
+
+def get_customer_repository() -> CustomerRepositoryPort:
+    raise NotImplementedError
+
+
+def get_register_customer_use_case(
+    customers: Annotated[CustomerRepositoryPort, Depends(get_customer_repository)],
+    hasher: Annotated[PasswordHasherPort, Depends(get_password_hasher)],
+    tokens: Annotated[TokenServicePort, Depends(get_token_service)],
+    clock: Annotated[Clock, Depends(get_clock)],
+) -> RegisterCustomerUseCase:
+    return RegisterCustomerUseCase(customers, hasher, tokens, clock)
+
+
+def get_authenticate_customer_use_case(
+    customers: Annotated[CustomerRepositoryPort, Depends(get_customer_repository)],
+    hasher: Annotated[PasswordHasherPort, Depends(get_password_hasher)],
+    tokens: Annotated[TokenServicePort, Depends(get_token_service)],
+) -> AuthenticateCustomerUseCase:
+    return AuthenticateCustomerUseCase(customers, hasher, tokens)
+
+
+def get_verify_customer_token_use_case(
+    tokens: Annotated[TokenServicePort, Depends(get_token_service)],
+) -> VerifyCustomerTokenUseCase:
+    return VerifyCustomerTokenUseCase(tokens)
+
+
+def get_list_customer_orders_use_case(
+    orders: Annotated[OrderRepository, Depends(get_order_repository)],
+) -> ListCustomerOrdersUseCase:
+    return ListCustomerOrdersUseCase(orders)
+
+
+def get_current_customer(
+    use_case: Annotated[VerifyCustomerTokenUseCase, Depends(get_verify_customer_token_use_case)],
+    authorization: Annotated[str | None, Header()] = None,
+) -> AuthenticatedCustomer:
+    if authorization is None:
+        raise InvalidTokenError("Token de autenticação não fornecido.")
+    parts = authorization.split(" ", 1)
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise InvalidTokenError("Formato de autorização inválido. Utilize Bearer <token>.")
+    return use_case.execute(parts[1].strip())
+
+
+def get_optional_customer(
+    use_case: Annotated[VerifyCustomerTokenUseCase, Depends(get_verify_customer_token_use_case)],
+    authorization: Annotated[str | None, Header()] = None,
+) -> AuthenticatedCustomer | None:
+    if authorization is None:
+        return None
     parts = authorization.split(" ", 1)
     if len(parts) != 2 or parts[0].lower() != "bearer":
         raise InvalidTokenError("Formato de autorização inválido. Utilize Bearer <token>.")

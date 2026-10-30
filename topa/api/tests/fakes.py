@@ -5,8 +5,13 @@ from collections.abc import Collection
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime
 
-from topa_api.application.ports import MerchantRecord
-from topa_api.domain.auth import AuthenticatedMerchant, Merchant
+from topa_api.application.ports import CustomerRecord, MerchantRecord
+from topa_api.domain.auth import (
+    AuthenticatedCustomer,
+    AuthenticatedMerchant,
+    Customer,
+    Merchant,
+)
 from topa_api.domain.catalog import Product, Store
 from topa_api.domain.errors import InvalidTokenError, RateLimitExceededError
 from topa_api.domain.orders import Order, OrderStatus
@@ -26,6 +31,9 @@ class InMemoryStoreRepository:
 
     def get(self, slug: str) -> Store | None:
         return next((store for store in self.stores if store.slug == slug), None)
+
+    def list_all(self) -> list[Store]:
+        return list(self.stores)
 
 
 @dataclass
@@ -110,6 +118,9 @@ class InMemoryOrderRepository:
             for order in self.orders
         ]
 
+    def list_for_customer(self, customer_id: uuid.UUID) -> list[Order]:
+        return [order for order in self.orders if order.customer_id == customer_id]
+
 
 @dataclass
 class FakeMerchantRepository:
@@ -142,6 +153,7 @@ class FakePasswordHasher:
 @dataclass
 class FakeTokenService:
     valid_tokens: dict[str, AuthenticatedMerchant] = field(default_factory=dict)
+    valid_customer_tokens: dict[str, AuthenticatedCustomer] = field(default_factory=dict)
 
     def create_token(self, merchant: AuthenticatedMerchant, expires_in_seconds: int = 86400) -> str:
         token = f"token_for_{merchant.id}"
@@ -152,6 +164,47 @@ class FakeTokenService:
         if token not in self.valid_tokens:
             raise InvalidTokenError()
         return self.valid_tokens[token]
+
+    def create_customer_token(
+        self, customer: AuthenticatedCustomer, expires_in_seconds: int = 86400
+    ) -> str:
+        token = f"token_for_customer_{customer.id}"
+        self.valid_customer_tokens[token] = customer
+        return token
+
+    def verify_customer_token(self, token: str) -> AuthenticatedCustomer:
+        if token not in self.valid_customer_tokens:
+            raise InvalidTokenError()
+        return self.valid_customer_tokens[token]
+
+
+@dataclass
+class FakeCustomerRepository:
+    customers: list[Customer] = field(default_factory=list)
+    password_hashes: dict[str, str] = field(default_factory=dict)
+
+    def get_by_email(self, email: str) -> CustomerRecord | None:
+        lowered = email.lower().strip()
+        customer = next((c for c in self.customers if c.email.lower() == lowered), None)
+        if customer is None:
+            return None
+        return CustomerRecord(
+            customer=customer,
+            password_hash=self.password_hashes.get(lowered, ""),
+        )
+
+    def get_by_id(self, customer_id: uuid.UUID) -> CustomerRecord | None:
+        customer = next((c for c in self.customers if c.id == customer_id), None)
+        if customer is None:
+            return None
+        return CustomerRecord(
+            customer=customer,
+            password_hash=self.password_hashes.get(customer.email.lower().strip(), ""),
+        )
+
+    def add(self, customer: Customer, password_hash: str) -> None:
+        self.customers.append(customer)
+        self.password_hashes[customer.email.lower().strip()] = password_hash
 
 
 @dataclass

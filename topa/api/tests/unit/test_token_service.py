@@ -118,3 +118,88 @@ def test_rejects_payload_that_is_not_a_json_object() -> None:
 
     with pytest.raises(InvalidTokenError):
         service.verify_token(token)
+
+
+def test_creates_and_verifies_valid_customer_token() -> None:
+    from topa_api.domain.auth import AuthenticatedCustomer
+
+    service = HmacTokenService(secret_key="test-secret-key")
+    customer_id = uuid.uuid4()
+    customer = AuthenticatedCustomer(
+        id=customer_id,
+        name="Lucas Lima",
+        email="lucas@exemplo.com",
+    )
+
+    token = service.create_customer_token(customer)
+    verified = service.verify_customer_token(token)
+
+    assert verified.id == customer_id
+    assert verified.name == "Lucas Lima"
+    assert verified.email == "lucas@exemplo.com"
+
+
+def test_merchant_service_rejects_customer_token() -> None:
+    from topa_api.domain.auth import AuthenticatedCustomer
+
+    service = HmacTokenService(secret_key="test-secret-key")
+    customer = AuthenticatedCustomer(
+        id=uuid.uuid4(),
+        name="Lucas Lima",
+        email="lucas@exemplo.com",
+    )
+    token = service.create_customer_token(customer)
+
+    with pytest.raises(InvalidTokenError):
+        service.verify_token(token)
+
+
+def test_customer_service_rejects_merchant_token() -> None:
+    service = HmacTokenService(secret_key="test-secret-key")
+    merchant = AuthenticatedMerchant(
+        id=uuid.uuid4(),
+        email="admin@bemtevi.topa.com",
+        store_slug="lanchonete-bem-te-vi",
+    )
+    token = service.create_token(merchant)
+
+    with pytest.raises(InvalidTokenError):
+        service.verify_customer_token(token)
+
+
+def test_merchant_service_rejects_corrupted_merchant_payload() -> None:
+    import base64
+    import hashlib
+    import hmac
+
+    service = HmacTokenService(secret_key="test-secret-key")
+    raw = (
+        b'{"role": "merchant", "sub": "invalid-uuid", "email": "a@b.com", '
+        b'"store_slug": "s", "exp": 9999999999}'
+    )
+    bad_payload = base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
+    sig = hmac.new(b"test-secret-key", bad_payload.encode("ascii"), hashlib.sha256).digest()
+    sig_b64 = base64.urlsafe_b64encode(sig).decode("ascii").rstrip("=")
+    token = f"{bad_payload}.{sig_b64}"
+
+    with pytest.raises(InvalidTokenError):
+        service.verify_token(token)
+
+
+def test_customer_service_rejects_corrupted_customer_payload() -> None:
+    import base64
+    import hashlib
+    import hmac
+
+    service = HmacTokenService(secret_key="test-secret-key")
+    raw = (
+        b'{"role": "customer", "sub": "invalid-uuid", "name": "n", '
+        b'"email": "a@b.com", "exp": 9999999999}'
+    )
+    bad_payload = base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
+    sig = hmac.new(b"test-secret-key", bad_payload.encode("ascii"), hashlib.sha256).digest()
+    sig_b64 = base64.urlsafe_b64encode(sig).decode("ascii").rstrip("=")
+    token = f"{bad_payload}.{sig_b64}"
+
+    with pytest.raises(InvalidTokenError):
+        service.verify_customer_token(token)

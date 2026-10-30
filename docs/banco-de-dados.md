@@ -13,6 +13,7 @@ erDiagram
     stores ||--o{ products : "vende"
     stores ||--o{ orders : "recebe"
     stores ||--o{ merchants : "possui"
+    customers ||--o{ orders : "realiza"
     products ||--o{ order_items : "aparece em"
     orders ||--o{ order_items : "contém"
 
@@ -26,6 +27,14 @@ erDiagram
         text email UK "e-mail de acesso do lojista"
         text password_hash "hash scrypt com salt"
         text store_slug FK "loja vinculada"
+        timestamptz created_at
+    }
+
+    customers {
+        uuid id PK "gerado pela API"
+        text name "nome do cliente"
+        text email UK "e-mail de acesso do cliente"
+        text password_hash "hash scrypt com salt"
         timestamptz created_at
     }
 
@@ -51,6 +60,7 @@ erDiagram
         text payment_method "card ou pix"
         integer total_cents "total cobrado, gravado no pedido"
         timestamptz created_at
+        uuid customer_id FK "cliente autenticado (nullable)"
     }
 
     order_items {
@@ -90,6 +100,10 @@ erDiagram
 - A tabela `merchants` guarda as contas de acesso dos lojistas ao painel administrativo. O hash da senha
   utiliza scrypt com salt aleatório (`scrypt$N$r$p$salt$hash`). O e-mail é único no sistema e vinculado
   por chave estrangeira à loja correspondente.
+- A tabela `customers` guarda as contas dos clientes finais para acesso via navegador e histórico de pedidos.
+  O hash da senha utiliza scrypt com salt aleatório. O e-mail é único no sistema. Na tabela `orders`,
+  a coluna `customer_id` é opcional (`nullable`), permitindo pedidos anônimos via totem e QR code, bem como
+  pedidos vinculados à conta do cliente no navegador.
 - Não há estado de pagamento: o pagamento ainda é simulado, e o app grava o pedido ao pagar.
 - O Alembic mantém também a tabela `alembic_version`, com a revisão aplicada.
 

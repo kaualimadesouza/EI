@@ -8,9 +8,11 @@ from pydantic import BaseModel
 from topa_api.domain.errors import (
     DomainError,
     DuplicateProductError,
+    EmailAlreadyInUseError,
     EmptyOrderError,
     ForbiddenStoreAccessError,
     InvalidCredentialsError,
+    InvalidCustomerDataError,
     InvalidProductDataError,
     InvalidTokenError,
     OrderNotFoundError,
@@ -40,6 +42,8 @@ ERROR_STATUS: dict[type[DomainError], int] = {
     ForbiddenStoreAccessError: 403,
     InvalidProductDataError: 422,
     RateLimitExceededError: 429,
+    EmailAlreadyInUseError: 409,
+    InvalidCustomerDataError: 422,
 }
 
 INVALID_REQUEST = "Não foi possível processar a solicitação. Tente de novo."
