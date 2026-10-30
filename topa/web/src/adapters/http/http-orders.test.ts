@@ -268,6 +268,14 @@ describe('HttpOrders', () => {
     expect(result[0].storeSlug).toBe('cantina-central')
   })
 
+  it('throws OrderRejectedError when fetching customer orders answers 401', async () => {
+    json({ detail: 'Token inválido.' }, 401)
+    const orders = new HttpOrders(new HttpClient('/api'), undefined, () => 'customer-token')
+    await expect(orders.listCustomerOrders()).rejects.toEqual(
+      new OrderRejectedError('Sua sessão expirou. Faça login novamente.'),
+    )
+  })
+
   it('throws on non-ok status when fetching customer orders', async () => {
     json({}, 500)
     const orders = new HttpOrders(new HttpClient('/api'), undefined, () => 'customer-token')

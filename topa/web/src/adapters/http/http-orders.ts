@@ -128,6 +128,9 @@ export class HttpOrders implements OrdersPort {
       return []
     }
     const response = await this.client.get('/orders/me', undefined, customerToken)
+    if (response.status === 401) {
+      throw new OrderRejectedError('Sua sessão expirou. Faça login novamente.')
+    }
     if (!response.ok) {
       throw new Error(`GET /orders/me answered ${response.status}`)
     }

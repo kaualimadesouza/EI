@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -164,7 +164,7 @@ describe('StoreSelectorScreen', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: 'Meus Pedidos' }))
+    await user.click(screen.getByRole('tab', { name: 'Meus Pedidos' }))
 
     expect(await screen.findByRole('heading', { name: 'Meus Pedidos' })).toBeInTheDocument()
     expect(await screen.findByText('Pedido #012')).toBeInTheDocument()
@@ -183,7 +183,7 @@ describe('StoreSelectorScreen', () => {
     expect(screen.getByText('Lasanha Bolonhesa')).toBeInTheDocument()
 
     // Switch back to stores tab via tab button
-    await user.click(screen.getByRole('button', { name: 'Restaurantes' }))
+    await user.click(screen.getByRole('tab', { name: 'Restaurantes' }))
     expect(await screen.findByRole('heading', { name: 'Onde você quer pedir hoje?' })).toBeInTheDocument()
   })
 
@@ -205,7 +205,7 @@ describe('StoreSelectorScreen', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: 'Meus Pedidos' }))
+    await user.click(screen.getByRole('tab', { name: 'Meus Pedidos' }))
 
     expect(await screen.findByText('Nenhum pedido realizado')).toBeInTheDocument()
 
@@ -234,13 +234,71 @@ describe('StoreSelectorScreen', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: 'Meus Pedidos' }))
+    await user.click(screen.getByRole('tab', { name: 'Meus Pedidos' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Não foi possível carregar o histórico de pedidos.',
+      'Failed to load orders',
     )
 
     await user.click(screen.getByRole('button', { name: 'Tentar novamente' }))
     expect(await screen.findByText('Pedido #012')).toBeInTheDocument()
+  })
+
+  it('displays fallback error message when loading orders throws non-Error', async () => {
+    const user = userEvent.setup()
+    const { stores, orders } = createPorts({
+      orders: {
+        listCustomerOrders: vi.fn().mockRejectedValueOnce('string error'),
+      },
+    })
+
+    render(
+      <StoreSelectorScreen
+        stores={stores}
+        orders={orders}
+        customer={customer}
+        onSelectStore={vi.fn()}
+        onLogout={vi.fn()}
+      />,
+    )
+
+    await user.click(screen.getByRole('tab', { name: 'Meus Pedidos' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Não foi possível carregar o histórico de pedidos.',
+    )
+  })
+
+  it('polls orders every 5 seconds while on orders tab', () => {
+    vi.useFakeTimers()
+    const { stores, orders } = createPorts()
+
+    render(
+      <StoreSelectorScreen
+        stores={stores}
+        orders={orders}
+        customer={customer}
+        onSelectStore={vi.fn()}
+        onLogout={vi.fn()}
+      />,
+    )
+
+    // Switch to orders tab
+    fireEvent.click(screen.getByRole('tab', { name: 'Meus Pedidos' }))
+    expect(orders.listCustomerOrders).toHaveBeenCalledTimes(1)
+
+    // Advance 5 seconds
+    act(() => {
+      vi.advanceTimersByTime(5000)
+    })
+    expect(orders.listCustomerOrders).toHaveBeenCalledTimes(2)
+
+    // Advance another 5 seconds
+    act(() => {
+      vi.advanceTimersByTime(5000)
+    })
+    expect(orders.listCustomerOrders).toHaveBeenCalledTimes(3)
+
+    vi.useRealTimers()
   })
 })

@@ -35,6 +35,8 @@ const STORE_DESCRIPTIONS: Record<string, { tag: string; description: string }> =
   },
 }
 
+const POLL_INTERVAL_MS = 5000
+
 function statusBadge(status: OrderSummary['status']) {
   switch (status) {
     case 'received':
@@ -113,8 +115,9 @@ export function StoreSelectorScreen({
     try {
       const items = await orders.listCustomerOrders()
       setOrdersList(items)
-    } catch {
-      setOrdersError('Não foi possível carregar o histórico de pedidos.')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Não foi possível carregar o histórico de pedidos.'
+      setOrdersError(message)
     } finally {
       setLoadingOrders(false)
     }
@@ -125,8 +128,13 @@ export function StoreSelectorScreen({
   }, [loadStores])
 
   useEffect(() => {
-    if (activeTab === 'orders') {
+    if (activeTab !== 'orders') return
+    void loadOrders()
+    const timer = setInterval(() => {
       void loadOrders()
+    }, POLL_INTERVAL_MS)
+    return () => {
+      clearInterval(timer)
     }
   }, [activeTab, loadOrders])
 
@@ -164,9 +172,11 @@ export function StoreSelectorScreen({
           </p>
         </div>
 
-        <div className="mb-6 flex gap-2 border-b border-line pb-3">
+        <div role="tablist" aria-label="Navegação do cliente" className="mb-6 flex gap-2 border-b border-line pb-3">
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'stores'}
             onClick={() => setActiveTab('stores')}
             className={`cursor-pointer rounded-[12px] px-4 py-2 text-[14px] font-semibold transition ${
               activeTab === 'stores' ? 'bg-ink text-white' : 'bg-surface text-muted hover:text-ink'
@@ -176,6 +186,8 @@ export function StoreSelectorScreen({
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'orders'}
             onClick={() => setActiveTab('orders')}
             className={`cursor-pointer rounded-[12px] px-4 py-2 text-[14px] font-semibold transition ${
               activeTab === 'orders' ? 'bg-ink text-white' : 'bg-surface text-muted hover:text-ink'
@@ -326,17 +338,15 @@ export function StoreSelectorScreen({
 
                       <div className="flex flex-wrap items-center justify-between gap-2 text-[13px] text-muted">
                         <span>{formatOrderDate(order.createdAt)}</span>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <span>{order.dineIn ? 'Comer no local' : 'Para viagem'}</span>
-                          <span>(</span>
-                          <span>{order.paymentMethod === 'pix' ? 'PIX' : 'Cartão'}</span>
-                          <span>)</span>
+                          <span>({order.paymentMethod === 'pix' ? 'PIX' : 'Cartão'})</span>
                         </div>
                       </div>
 
                       <ul className="flex flex-col gap-1 border-y border-line py-3 text-[14px]">
                         {order.items.map((item, idx) => (
-                          <li key={idx} className="flex items-center justify-between">
+                          <li key={`${item.productId}-${idx}`} className="flex items-center justify-between">
                             <span className="text-ink">
                               <span className="font-semibold tabular-nums">{item.quantity}×</span> {item.name}
                             </span>
