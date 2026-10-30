@@ -8,6 +8,8 @@ export interface OrdersPort {
   setStatus(orderId: string, status: OrderSummary['status']): Promise<OrderSummary>
   /** Where one order is now; the customer's phone asks while its order screen is open. */
   statusOf(orderId: string): Promise<OrderSummary['status']>
+  /** Orders placed by the authenticated customer across all stores. */
+  listCustomerOrders(): Promise<OrderSummary[]>
 }
 
 /** The store refused the request (an item sold out, a status that cannot follow); the message is for people. */

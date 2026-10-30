@@ -100,7 +100,7 @@ describe('App', () => {
             initialToken: 'token',
           }),
           menu: { load, setAvailability: vi.fn(), create: vi.fn(), update: vi.fn() },
-          orders: { place: vi.fn(), list, setStatus: vi.fn(), statusOf: vi.fn() },
+          orders: { place: vi.fn(), list, setStatus: vi.fn(), statusOf: vi.fn(), listCustomerOrders: vi.fn() },
         }}
         path="/painel"
       />,

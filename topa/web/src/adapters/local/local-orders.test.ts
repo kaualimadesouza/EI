@@ -197,4 +197,17 @@ describe('LocalOrders', () => {
     expect(placed.number).toBe(1)
     expect(JSON.parse(localStorage.getItem('topa.orders.v3')!)).toHaveLength(1)
   })
+
+  it('lists customer orders newest first across stores', async () => {
+    const { storage, menu } = store()
+    const orders = new LocalOrders(menu, storage, monday)
+    await orders.place(draft)
+    const secondOrders = new LocalOrders(menu, storage, tuesday)
+    await secondOrders.place({ ...draft, storeSlug: 'brasa-burgers' })
+
+    const customerOrders = await orders.listCustomerOrders()
+    expect(customerOrders).toHaveLength(2)
+    expect(customerOrders[0].storeSlug).toBe('brasa-burgers')
+    expect(customerOrders[1].storeSlug).toBe(DEMO_STORE_SLUG)
+  })
 })

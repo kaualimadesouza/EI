@@ -122,6 +122,7 @@ describe('HttpOrders', () => {
     expect(orders).toEqual([
       {
         id: 'o1',
+        storeSlug: 'cantina-central',
         number: 3,
         status: 'preparing',
         dineIn: true,
@@ -244,5 +245,40 @@ describe('HttpOrders', () => {
     json({ detail: 'Pedido não encontrado.' }, 404)
 
     await expect(new HttpOrders(new HttpClient('/api')).statusOf('o3')).rejects.toThrow('GET /orders/o3 answered 404')
+  })
+
+  it('returns empty list when no customer token is present', async () => {
+    const orders = new HttpOrders(new HttpClient('/api'))
+    expect(await orders.listCustomerOrders()).toEqual([])
+  })
+
+  it('fetches customer orders with customer token', async () => {
+    const fetchFn = json([order('o10', 'received')])
+    const orders = new HttpOrders(new HttpClient('/api'), undefined, () => 'customer-token')
+    const result = await orders.listCustomerOrders()
+
+    expect(fetchFn).toHaveBeenCalledWith(
+      '/api/orders/me',
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer customer-token' }),
+      }),
+    )
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe('o10')
+    expect(result[0].storeSlug).toBe('cantina-central')
+  })
+
+  it('throws OrderRejectedError when fetching customer orders answers 401', async () => {
+    json({ detail: 'Token inválido.' }, 401)
+    const orders = new HttpOrders(new HttpClient('/api'), undefined, () => 'customer-token')
+    await expect(orders.listCustomerOrders()).rejects.toEqual(
+      new OrderRejectedError('Sua sessão expirou. Faça login novamente.'),
+    )
+  })
+
+  it('throws on non-ok status when fetching customer orders', async () => {
+    json({}, 500)
+    const orders = new HttpOrders(new HttpClient('/api'), undefined, () => 'customer-token')
+    await expect(orders.listCustomerOrders()).rejects.toThrow('GET /orders/me answered 500')
   })
 })
