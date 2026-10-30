@@ -45,6 +45,7 @@ export function KioskApp({ adapters, storeSlug, surface = 'totem', now = () => n
   const [recommendations, setRecommendations] = useState<readonly RecommendationItem[]>([])
   const [touches, setTouches] = useState(0)
   const requestId = useRef(0)
+  const sessionId = useRef(crypto.randomUUID())
 
   useEffect(() => () => {
     requestId.current += 1
@@ -118,7 +119,7 @@ export function KioskApp({ adapters, storeSlug, surface = 'totem', now = () => n
     }
     const cartIds = state.lines.map((l) => l.productId)
     adapters.recommendations
-      .getRecommendations(storeSlug, cartIds)
+      .getRecommendations(storeSlug, cartIds, sessionId.current)
       .then((res) => setRecommendations(res.items))
       .catch(() => setRecommendations([]))
   }, [state.screen, state.lines, adapters.recommendations, storeSlug])

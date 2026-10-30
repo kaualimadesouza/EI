@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from hashlib import md5
 
-from topa_api.domain.catalog import Product
+from topa_api.domain.catalog import Category, Product
 from topa_api.domain.orders import Order
 
 
@@ -30,26 +30,26 @@ class RecommendationResponse:
 
 
 CATEGORY_COMPLEMENTS: dict[str, dict[str, tuple[float, str]]] = {
-    "lanches": {
-        "bebidas": (0.95, "Acompanhamento ideal para matar a sede."),
-        "salgados": (0.80, "Adicione uma porção ao seu lanche."),
-        "doces": (0.65, "Finalize com uma sobremesa."),
+    Category.LANCHES: {
+        Category.BEBIDAS: (0.95, "Acompanhamento ideal para matar a sede."),
+        Category.SALGADOS: (0.80, "Adicione uma porção ao seu lanche."),
+        Category.DOCES: (0.65, "Finalize com uma sobremesa."),
     },
-    "combos": {
-        "doces": (0.90, "Que tal uma sobremesa para fechar o combo?"),
-        "bebidas": (0.70, "Adicione uma bebida extra."),
+    Category.COMBOS: {
+        Category.DOCES: (0.90, "Que tal uma sobremesa para fechar o combo?"),
+        Category.BEBIDAS: (0.70, "Adicione uma bebida extra."),
     },
-    "salgados": {
-        "bebidas": (0.95, "Perfeito para acompanhar o salgado."),
-        "doces": (0.75, "Um doce para depois do salgado."),
+    Category.SALGADOS: {
+        Category.BEBIDAS: (0.95, "Perfeito para acompanhar o salgado."),
+        Category.DOCES: (0.75, "Um doce para depois do salgado."),
     },
-    "bebidas": {
-        "lanches": (0.90, "Escolha um lanche para acompanhar sua bebida."),
-        "salgados": (0.85, "Vai muito bem com um salgado quentinho."),
-        "doces": (0.70, "Adoce o seu momento."),
+    Category.BEBIDAS: {
+        Category.LANCHES: (0.90, "Escolha um lanche para acompanhar sua bebida."),
+        Category.SALGADOS: (0.85, "Vai muito bem com um salgado quentinho."),
+        Category.DOCES: (0.70, "Adoce o seu momento."),
     },
-    "doces": {
-        "bebidas": (0.90, "Um café ou suco para acompanhar o doce."),
+    Category.DOCES: {
+        Category.BEBIDAS: (0.90, "Um café ou suco para acompanhar o doce."),
     },
 }
 
@@ -148,6 +148,7 @@ def rank_recommendations(
                 )
             )
 
-    scored_candidates.sort(key=lambda r: (r.score, -r.price_cents), reverse=True)
-    selected = tuple(scored_candidates[:limit])
+    scored_candidates.sort(key=lambda r: (r.score, r.price_cents), reverse=True)
+    safe_limit = max(0, limit)
+    selected = tuple(scored_candidates[:safe_limit])
     return RecommendationResponse(items=selected, strategy_used=strategy, ab_group=ab_group)

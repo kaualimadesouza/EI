@@ -239,4 +239,3 @@ def get_recommendations_use_case(
     clock: Annotated[Clock, Depends(get_clock)],
 ) -> GetRecommendations:
     return GetRecommendations(stores, products, orders, clock)
-

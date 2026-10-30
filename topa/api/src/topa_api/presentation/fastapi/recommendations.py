@@ -16,8 +16,8 @@ router = APIRouter(tags=["recommendations"])
 
 
 class RecommendationRequest(BaseModel):
-    cart_product_ids: list[str] = Field(default_factory=list)
-    client_id: str | None = None
+    cart_product_ids: list[str] = Field(default_factory=list, max_length=50)
+    client_id: str | None = Field(default=None, max_length=128)
     limit: int = Field(default=3, ge=1, le=10)
 
 

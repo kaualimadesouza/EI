@@ -101,6 +101,27 @@ describe('BagScreen', () => {
     expect(onAddRecommendation).toHaveBeenCalledWith('suco')
   })
 
+  it('filters out recommendations already in cart', () => {
+    const linesWithSuco = [
+      { productId: 'misto', quantity: 1 },
+      { productId: 'suco', quantity: 1 },
+    ]
+
+    render(
+      <BagScreen
+        products={PRODUCTS}
+        lines={linesWithSuco}
+        recommendations={RECOMMENDATIONS}
+        onIncrement={vi.fn()}
+        onDecrement={vi.fn()}
+        onBack={vi.fn()}
+        onPay={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByText('Complete seu pedido')).not.toBeInTheDocument()
+  })
+
   it('renders decrement button when quantity > 1', async () => {
     const user = userEvent.setup()
     const onDecrement = vi.fn()

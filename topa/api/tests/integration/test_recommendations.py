@@ -33,3 +33,11 @@ def test_recommendations_unknown_store_returns_404(client: TestClient) -> None:
     )
     assert response.status_code == 404
     assert response.json() == {"detail": "Loja não encontrada."}
+
+
+def test_recommendations_invalid_payload_returns_422(client: TestClient) -> None:
+    response = client.post(
+        "/stores/brasa-burgers/recommendations",
+        json={"cart_product_ids": ["a"] * 51, "limit": 20},
+    )
+    assert response.status_code == 422

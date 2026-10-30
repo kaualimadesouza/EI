@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 
 import pytest
 
@@ -15,7 +15,13 @@ from topa_api.application.get_recommendations import (
 )
 from topa_api.domain.catalog import Category, Product, Store
 from topa_api.domain.errors import StoreNotFoundError
-from topa_api.domain.orders import Order, OrderItem, OrderStatus, PaymentMethod
+from topa_api.domain.orders import (
+    BUSINESS_TIMEZONE,
+    Order,
+    OrderItem,
+    OrderStatus,
+    PaymentMethod,
+)
 from topa_api.domain.recommendations import RecommendationStrategy
 
 STORE = Store(slug="brasa-burgers", name="Brasa Burgers")
@@ -70,7 +76,7 @@ def make_use_case(
     stores = InMemoryStoreRepository(stores=[STORE])
     catalog = products if products is not None else [BURGER, FRIES, COCA, BROWNIE, SOLDOUT_SHAKE]
     product_repo = InMemoryProductRepository(products_by_store={STORE.slug: catalog})
-    clock = FixedClock(moment=datetime(2026, 10, 30, hour, 0, tzinfo=UTC))
+    clock = FixedClock(moment=datetime(2026, 10, 30, hour, 0, tzinfo=BUSINESS_TIMEZONE))
     order_repo = InMemoryOrderRepository()
     if past_orders:
         for order in past_orders:
@@ -104,7 +110,7 @@ def test_basket_recommendations_with_association_rules_and_cooccurrence() -> Non
         id=uuid.uuid4(),
         store_slug=STORE.slug,
         number=1,
-        business_date=datetime(2026, 10, 30, tzinfo=UTC).date(),
+        business_date=datetime(2026, 10, 30, tzinfo=BUSINESS_TIMEZONE).date(),
         status=OrderStatus.DELIVERED,
         dine_in=False,
         payment_method=PaymentMethod.PIX,
@@ -122,13 +128,13 @@ def test_basket_recommendations_with_association_rules_and_cooccurrence() -> Non
                 unit_price_cents=COCA.price_cents,
             ),
         ),
-        created_at=datetime(2026, 10, 30, 12, 0, tzinfo=UTC),
+        created_at=datetime(2026, 10, 30, 12, 0, tzinfo=BUSINESS_TIMEZONE),
     )
     unrelated_order = Order(
         id=uuid.uuid4(),
         store_slug=STORE.slug,
         number=2,
-        business_date=datetime(2026, 10, 30, tzinfo=UTC).date(),
+        business_date=datetime(2026, 10, 30, tzinfo=BUSINESS_TIMEZONE).date(),
         status=OrderStatus.DELIVERED,
         dine_in=False,
         payment_method=PaymentMethod.CARD,
@@ -140,7 +146,7 @@ def test_basket_recommendations_with_association_rules_and_cooccurrence() -> Non
                 unit_price_cents=COCA.price_cents,
             ),
         ),
-        created_at=datetime(2026, 10, 30, 12, 5, tzinfo=UTC),
+        created_at=datetime(2026, 10, 30, 12, 5, tzinfo=BUSINESS_TIMEZONE),
     )
     use_case = make_use_case(hour=12, past_orders=[matched_order, unrelated_order])
     query = GetRecommendationsQuery(
@@ -190,5 +196,42 @@ def test_empty_catalog_returns_empty_recommendations() -> None:
     use_case = make_use_case(products=[])
     result = use_case.execute(
         GetRecommendationsQuery(store_slug=STORE.slug, cart_product_ids=(), client_id=None)
+    )
+    assert result.items == ()
+
+
+def test_tie_breaking_prioritizes_higher_price_for_ticket_lift() -> None:
+    cheaper_snack = Product(
+        id="pão-de-queijo",
+        name="Pão de Queijo",
+        description="Mineiro tradicional.",
+        category=Category.SALGADOS,
+        price_cents=600,
+        available=True,
+    )
+    expensive_snack = Product(
+        id="coxinha-catupiry",
+        name="Coxinha com Catupiry",
+        description="Frita na hora.",
+        category=Category.SALGADOS,
+        price_cents=1200,
+        available=True,
+    )
+    use_case = make_use_case(
+        hour=8,
+        products=[cheaper_snack, expensive_snack],
+    )
+    result = use_case.execute(
+        GetRecommendationsQuery(store_slug=STORE.slug, cart_product_ids=(), client_id=None, limit=2)
+    )
+    assert len(result.items) == 2
+    assert result.items[0].product_id == "coxinha-catupiry"
+    assert result.items[1].product_id == "pão-de-queijo"
+
+
+def test_zero_or_negative_limit_returns_empty_tuple() -> None:
+    use_case = make_use_case(hour=12)
+    result = use_case.execute(
+        GetRecommendationsQuery(store_slug=STORE.slug, cart_product_ids=(), client_id=None, limit=0)
     )
     assert result.items == ()

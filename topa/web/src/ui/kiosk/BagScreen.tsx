@@ -27,6 +27,9 @@ export function BagScreen({
   onPay,
 }: BagScreenProps) {
   const count = itemCount(lines)
+  const availableRecs = (recommendations ?? []).filter(
+    (rec) => !lines.some((line) => line.productId === rec.productId),
+  )
   return (
     <>
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-12 py-8 [scrollbar-width:none] short:py-6 max-sm:p-4">
@@ -76,14 +79,14 @@ export function BagScreen({
               )
             })}
           </ul>
-          {recommendations && recommendations.length > 0 && (
+          {availableRecs.length > 0 && (
             <div className="mt-4 flex flex-col gap-3 rounded-[20px] border border-line bg-surface/50 p-5">
               <div className="flex items-center justify-between">
                 <h2 className="text-[20px] font-bold tracking-tight max-sm:text-[17px]">Complete seu pedido</h2>
                 <span className="text-[13px] font-medium text-muted">Sugestões para você</span>
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {recommendations.map((rec) => (
+                {availableRecs.map((rec) => (
                   <div
                     key={rec.productId}
                     className="flex items-center justify-between gap-3 rounded-[16px] border border-line bg-white p-4 shadow-xs"
