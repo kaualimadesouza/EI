@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.5](https://github.com/kaualimadesouza/EI/compare/topa-0.1.4...topa-0.1.5) (2026-10-31)
+
+
+### Features
+
+* **api:** multi-store catalog and customer authentication ([#61](https://github.com/kaualimadesouza/EI/issues/61)) ([acfad66](https://github.com/kaualimadesouza/EI/commit/acfad66e70f859e91e44a2a726a1cefa9a28a16c))
+* **engine:** recommendation engine for small data and cold start (FAPESP D2) ([#71](https://github.com/kaualimadesouza/EI/issues/71)) ([ec2f20f](https://github.com/kaualimadesouza/EI/commit/ec2f20f3b9f04d24a6b5180a3ee5389caf3f3cf2))
+* **offline:** edge-resilient local sync queue with automatic reconnection (FAPESP D5) ([#74](https://github.com/kaualimadesouza/EI/issues/74)) ([f2f7623](https://github.com/kaualimadesouza/EI/commit/f2f762394a462ef41eb76f40840e62bd481b4e51))
+* **pos:** legacy adapters, fiscal payload generator and thermal printing (FAPESP D4) ([#73](https://github.com/kaualimadesouza/EI/issues/73)) ([97c8224](https://github.com/kaualimadesouza/EI/commit/97c822464070b6d6a331d79cc9c04f9b825c15be))
+* **ui:** responsive tactile animations and micro-interactions ([#75](https://github.com/kaualimadesouza/EI/issues/75)) ([85c6640](https://github.com/kaualimadesouza/EI/commit/85c664032263922d050054ea653133518ed0de0e))
+* **voice:** voice ordering interface restricted to store menu (FAPESP D3) ([#72](https://github.com/kaualimadesouza/EI/issues/72)) ([e5374bd](https://github.com/kaualimadesouza/EI/commit/e5374bd2e3d6a358a9ab83a573f2024a21f98f26))
+* **web:** customer auth, store selector and qr bypass ([#69](https://github.com/kaualimadesouza/EI/issues/69)) ([a9935a4](https://github.com/kaualimadesouza/EI/commit/a9935a478a9f31249d8e8ab6dc83f48b61897487))
+* **web:** customer order history and tracking in store selector ([#70](https://github.com/kaualimadesouza/EI/issues/70)) ([bb7fa36](https://github.com/kaualimadesouza/EI/commit/bb7fa369ce64c1a4a35e644add09ddf8b4ac5b91))
+
 ## [0.1.4](https://github.com/kaualimadesouza/EI/compare/topa-0.1.3...topa-0.1.4) (2026-10-30)
 
 
