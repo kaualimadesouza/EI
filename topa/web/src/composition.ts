@@ -14,6 +14,7 @@ import { LocalConnection } from './adapters/local/local-connection'
 import { LocalCustomerAuth } from './adapters/local/local-customer-auth'
 import { LocalMenu } from './adapters/local/local-menu'
 import { LocalOrders } from './adapters/local/local-orders'
+import { LocalPrinterAdapter } from './adapters/local/local-printer'
 import { LocalRecommendations } from './adapters/local/local-recommendations'
 import { LocalStores } from './adapters/local/local-stores'
 import { SimulatorVoiceAdapter } from './adapters/local/local-voice'
@@ -25,6 +26,7 @@ import { UnavailableTag } from './adapters/unavailable/unavailable-tag'
 import { UnavailableWakeLock } from './adapters/unavailable/unavailable-wake-lock'
 import { WebBuzzer } from './adapters/web/web-buzzer'
 import { type NdefReader, WebNfc } from './adapters/web/web-nfc'
+import { WebPrinterAdapter } from './adapters/web/web-printer'
 import { WebSpeechVoiceAdapter } from './adapters/web/web-voice'
 import { WebWakeLock } from './adapters/web/web-wake-lock'
 import type { Adapters } from './ports/adapters'
@@ -131,6 +133,7 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
       stores,
       recommendations: new HttpRecommendations(client),
       voice: new WebSpeechVoiceAdapter(),
+      printer: new WebPrinterAdapter(),
       nfc,
       tag,
       buzzer,
@@ -151,6 +154,7 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
     stores,
     recommendations: new LocalRecommendations(menu),
     voice: new SimulatorVoiceAdapter(),
+    printer: new LocalPrinterAdapter(),
     nfc,
     tag,
     buzzer,

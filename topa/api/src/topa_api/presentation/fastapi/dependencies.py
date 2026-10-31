@@ -35,6 +35,7 @@ from topa_api.application.verify_merchant_token import VerifyMerchantTokenUseCas
 from topa_api.domain.auth import AuthenticatedCustomer, AuthenticatedMerchant
 from topa_api.domain.catalog import STORE_SLUG_MAX_LENGTH, STORE_SLUG_PATTERN
 from topa_api.domain.errors import InvalidTokenError
+from topa_api.domain.pos_integration import PosAdapterPort
 
 StoreSlug = Annotated[
     str, StringConstraints(pattern=STORE_SLUG_PATTERN, max_length=STORE_SLUG_MAX_LENGTH)
@@ -42,6 +43,10 @@ StoreSlug = Annotated[
 
 # The ports a route asks for. Presentation never sees an adapter: create_app() binds
 # each of these to its adapter through dependency_overrides, and tests rebind them.
+
+
+def get_pos_adapter() -> PosAdapterPort:
+    raise NotImplementedError
 
 
 def get_readiness_probe() -> ReadinessProbe:

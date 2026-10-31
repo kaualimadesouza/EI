@@ -16,6 +16,7 @@ import { LoginScreen } from './LoginScreen'
 import { MenuTable } from './MenuTable'
 import { OrdersBoard } from './OrdersBoard'
 import { ProductModal } from './ProductModal'
+import { TicketPreviewModal } from './TicketPreviewModal'
 
 interface PainelAppProps {
   adapters: Adapters
@@ -67,6 +68,7 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
   const [undo, setUndo] = useState<Undo | null>(null)
   const [locked, setLocked] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | 'new' | null>(null)
+  const [viewingTicketOrder, setViewingTicketOrder] = useState<OrderSummary | null>(null)
 
   const today = now()
   const todayKey = businessDate(today)
@@ -336,7 +338,13 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
         </section>
         <section id="pedidos" aria-labelledby="pedidos-title" className="flex scroll-mt-6 flex-col gap-4">
           <h2 id="pedidos-title" className="text-[22px] font-bold">Pedidos em andamento</h2>
-          <OrdersBoard orders={orders} now={today} locked={locked} onAdvance={(order) => void advance(order)} />
+          <OrdersBoard
+            orders={orders}
+            now={today}
+            locked={locked}
+            onAdvance={(order) => void advance(order)}
+            onViewTicket={(order) => setViewingTicketOrder(order)}
+          />
         </section>
         <HourlyChart byHour={metrics.byHour} currentHour={today.getHours()} />
         <section id="cardapio" aria-labelledby="cardapio-title" className="flex scroll-mt-6 flex-col gap-4">
@@ -368,6 +376,13 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
         isOpen={editingProduct !== null}
         onClose={() => setEditingProduct(null)}
         onSave={handleSaveProduct}
+      />
+      <TicketPreviewModal
+        order={viewingTicketOrder}
+        storeName={storeName || 'Loja'}
+        printer={adapters.printer}
+        isOpen={viewingTicketOrder !== null}
+        onClose={() => setViewingTicketOrder(null)}
       />
       {undo && (
         <div role="status" className="fixed bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 rounded-[16px] bg-ink py-3 pr-3 pl-5 text-[15px] text-white shadow-lg">

@@ -11,6 +11,7 @@ import { LocalAuth } from '../../adapters/local/local-auth'
 import { LocalCustomerAuth } from '../../adapters/local/local-customer-auth'
 import { LocalMenu } from '../../adapters/local/local-menu'
 import { LocalOrders } from '../../adapters/local/local-orders'
+import { LocalPrinterAdapter } from '../../adapters/local/local-printer'
 import { LocalRecommendations } from '../../adapters/local/local-recommendations'
 import { LocalStores } from '../../adapters/local/local-stores'
 import { UnavailableBuzzer } from '../../adapters/unavailable/unavailable-buzzer'
@@ -53,6 +54,7 @@ function demoStore(storeSlug: string = DEMO_STORE_SLUG) {
     stores: new LocalStores(),
     recommendations: new LocalRecommendations(menu),
     voice: { isSupported: () => true, startListening: vi.fn().mockReturnValue(() => {}) },
+    printer: new LocalPrinterAdapter(),
     nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
     tag: new UnavailableTag(),
     buzzer: new UnavailableBuzzer(),
@@ -175,6 +177,10 @@ describe('PainelApp', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Pedido 001 foi entregue.')
     expect(screen.getByText('2× X-salada')).toBeInTheDocument()
     expect(screen.getByText('15:58')).toBeInTheDocument()
+    const cupomBtn = screen.getByRole('button', { name: 'Cupom' })
+    await user.click(cupomBtn)
+    expect(screen.getByRole('dialog', { name: 'Visualização de impressão ESC-POS' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Fechar' }))
   })
 
   it('locks the buttons briefly after a move, so a double tap moves the order once', async () => {
@@ -301,6 +307,7 @@ describe('PainelApp', () => {
       stores: new LocalStores(),
       recommendations: { getRecommendations: vi.fn() },
       voice: { isSupported: () => true, startListening: vi.fn().mockReturnValue(() => {}) },
+      printer: new LocalPrinterAdapter(),
       nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
       tag: new UnavailableTag(),
       buzzer: new UnavailableBuzzer(),
@@ -352,6 +359,7 @@ describe('PainelApp', () => {
       stores: new LocalStores(),
       recommendations: { getRecommendations: vi.fn() },
       voice: { isSupported: () => true, startListening: vi.fn().mockReturnValue(() => {}) },
+      printer: new LocalPrinterAdapter(),
       nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
       tag: new UnavailableTag(),
       buzzer: new UnavailableBuzzer(),
@@ -401,6 +409,7 @@ describe('PainelApp', () => {
       stores: new LocalStores(),
       recommendations: { getRecommendations: vi.fn() },
       voice: { isSupported: () => true, startListening: vi.fn().mockReturnValue(() => {}) },
+      printer: new LocalPrinterAdapter(),
       nfc: { scan: () => Promise.resolve({ kind: 'no-nfc' as const }) },
       tag: new UnavailableTag(),
       buzzer: new UnavailableBuzzer(),
@@ -599,5 +608,23 @@ describe('PainelApp', () => {
 
     const alerts = await screen.findAllByText('Não foi possível salvar o produto. Tente de novo.')
     expect(alerts.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('opens ESC/POS ticket preview modal when clicking Cupom on an order card', async () => {
+    const user = userEvent.setup()
+    const { adapters, ordersAt } = demoStore()
+    await ordersAt(at(26, 12)).place(xsalada)
+
+    renderPainel(adapters)
+    expect(await screen.findByRole('article', { name: 'Pedido 001' })).toBeInTheDocument()
+
+    const cupomBtn = screen.getByRole('button', { name: 'Cupom' })
+    await user.click(cupomBtn)
+
+    expect(screen.getByRole('dialog', { name: 'Visualização de impressão ESC-POS' })).toBeInTheDocument()
+    expect(screen.getByText('PEDIDO #1')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Fechar' }))
+    expect(screen.queryByRole('dialog', { name: 'Visualização de impressão ESC-POS' })).not.toBeInTheDocument()
   })
 })

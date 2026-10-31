@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, FastAPI
@@ -25,6 +26,7 @@ from topa_api.application.ports import (
     ProductRepository,
     StoreRepository,
 )
+from topa_api.domain.pos_integration import FileDropPosAdapter
 from topa_api.presentation.fastapi import dependencies as ports
 from topa_api.presentation.fastapi.auth import router as auth_router
 from topa_api.presentation.fastapi.errors import install_error_handlers
@@ -91,6 +93,7 @@ def create_app() -> FastAPI:
     hasher = ScryptPasswordHasher()
     tokens = HmacTokenService(secret_key=settings.auth_secret_key)
     limiter = InMemoryRateLimiter(limit=10, window_seconds=60)
+    pos_adapter = FileDropPosAdapter(Path("/tmp/topa_pos_export"))
     app.dependency_overrides.update(
         {
             ports.get_readiness_probe: lambda: probe,
@@ -103,6 +106,7 @@ def create_app() -> FastAPI:
             ports.get_token_service: lambda: tokens,
             ports.get_rate_limiter: lambda: limiter,
             ports.get_clock: SystemClock,
+            ports.get_pos_adapter: lambda: pos_adapter,
         }
     )
     app.include_router(health_router)
