@@ -49,9 +49,9 @@ export function TicketPreviewModal({
       role="dialog"
       aria-modal="true"
       aria-label="Visualização de impressão ESC-POS"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 motion-safe:animate-fade-in"
     >
-      <div className="flex max-h-[90vh] w-full max-w-[420px] flex-col rounded-[24px] bg-white shadow-2xl">
+      <div className="flex max-h-[90vh] w-full max-w-[420px] flex-col rounded-[24px] bg-white shadow-2xl motion-safe:animate-modal-pop">
         <header className="flex items-center justify-between border-b border-line px-5 py-4">
           <h2 className="text-[17px] font-semibold">Impressão térmica (ESC/POS)</h2>
           <button

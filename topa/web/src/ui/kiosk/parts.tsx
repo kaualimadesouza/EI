@@ -3,9 +3,10 @@ import type { ReactNode } from 'react'
 import { CloseIcon, DineInIcon, StoreMark, TakeAwayIcon } from '../icons'
 
 // radius, weight and phone size every kiosk button shares; each call site keeps its tablet height and type
-export const KIOSK_ACTION = 'rounded-control font-semibold phone:h-16 phone:text-label'
-export const PRIMARY_ACTION = `${KIOSK_ACTION} bg-teal text-white`
-export const SECONDARY_ACTION = `${KIOSK_ACTION} border-2 border-slate`
+export const KIOSK_ACTION =
+  'rounded-control font-semibold cursor-pointer select-none transition-all duration-150 motion-safe:active:scale-[0.98] phone:h-16 phone:text-label'
+export const PRIMARY_ACTION = `${KIOSK_ACTION} bg-teal text-white hover:bg-teal/95`
+export const SECONDARY_ACTION = `${KIOSK_ACTION} border-2 border-slate hover:bg-ground-2`
 
 interface SheetProps {
   title: string
@@ -15,12 +16,12 @@ interface SheetProps {
 /** Bottom sheet over a dimmed screen: the kiosk's only modal, kept within arm's reach. */
 export function Sheet({ title, children }: SheetProps) {
   return (
-    <div className="fixed inset-0 z-10 flex items-end justify-center bg-ink/55">
+    <div className="fixed inset-0 z-10 flex items-end justify-center bg-ink/55 motion-safe:animate-fade-in">
       <section
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="flex max-h-full w-full max-w-[800px] flex-col gap-6 overflow-y-auto rounded-t-panel bg-white p-12 text-ink short:gap-4 short:p-8 max-sm:gap-4 max-sm:p-5 phone:gap-3"
+        className="flex max-h-full w-full max-w-[800px] flex-col gap-6 overflow-y-auto rounded-t-panel bg-white p-12 text-ink motion-safe:animate-sheet-up short:gap-4 short:p-8 max-sm:gap-4 max-sm:p-5 phone:gap-3"
       >
         {children}
       </section>

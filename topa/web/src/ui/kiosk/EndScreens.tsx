@@ -27,7 +27,7 @@ export function OrderScreen({ placed, icon, title, hint, calling = false, onNewO
     <section className="flex min-h-0 flex-1 flex-col items-center justify-center-safe gap-8 overflow-y-auto bg-teal px-12 py-8 text-center text-white short:gap-4 max-sm:gap-6 max-sm:px-4">
       <span
         className={`flex size-24 items-center justify-center rounded-full bg-white text-teal phone:size-20 ${
-          calling ? 'ring-8 ring-on-teal motion-safe:animate-blink' : ''
+          calling ? 'ring-8 ring-on-teal motion-safe:animate-blink motion-safe:animate-pager-ripple' : ''
         }`}
       >
         {icon}
@@ -35,7 +35,7 @@ export function OrderScreen({ placed, icon, title, hint, calling = false, onNewO
       <p role="status" className="text-heading font-semibold">
         {title}
       </p>
-      <p aria-label={`Pedido número ${displayNumber(placed.number)}`} className="text-[clamp(140px,24dvh,220px)] leading-none font-bold tabular-nums max-sm:text-[140px]">
+      <p aria-label={`Pedido número ${displayNumber(placed.number)}`} className="text-[clamp(140px,24dvh,220px)] leading-none font-bold tabular-nums motion-safe:animate-fade-in max-sm:text-[140px]">
         {displayNumber(placed.number)}
       </p>
       <p className="max-w-[560px] text-lead text-on-teal">{hint}</p>

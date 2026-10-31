@@ -39,9 +39,96 @@
   /* the ready call on the customer's phone, like a pager's light: faster and deeper than
      animate-pulse on purpose, which reads as loading; used under motion-safe only */
   --animate-blink: blink 1s ease-in-out infinite;
+  --animate-fade-in: fade-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-sheet-up: sheet-up 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-modal-pop: modal-pop 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-toast-up: toast-up 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-badge-pop: badge-pop 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-pager-ripple: pager-ripple 1.8s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+  --animate-beacon: beacon 2.2s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+
   @keyframes blink {
     50% {
       opacity: 0.25;
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes sheet-up {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes modal-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes toast-up {
+    from {
+      opacity: 0;
+      transform: translate(-50%, 16px);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  }
+
+  @keyframes badge-pop {
+    0% {
+      transform: scale(0.7);
+    }
+    60% {
+      transform: scale(1.2);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes pager-ripple {
+    0% {
+      box-shadow: 0 0 0 0 rgba(220, 230, 226, 0.8);
+    }
+    70% {
+      box-shadow: 0 0 0 24px rgba(220, 230, 226, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(220, 230, 226, 0);
+    }
+  }
+
+  @keyframes beacon {
+    0% {
+      transform: scale(0.95);
+      opacity: 0.8;
+    }
+    60% {
+      transform: scale(1.25);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1.25);
+      opacity: 0;
     }
   }
 }

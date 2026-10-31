@@ -396,12 +396,12 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
         onClose={() => setViewingTicketOrder(null)}
       />
       {undo && (
-        <div role="status" className="fixed bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 rounded-[16px] bg-ink py-3 pr-3 pl-5 text-[15px] text-white shadow-lg">
+        <div role="status" className="fixed bottom-6 left-1/2 z-20 flex -translate-x-1/2 items-center gap-4 rounded-[16px] bg-ink py-3 pr-3 pl-5 text-[15px] text-white shadow-lg motion-safe:animate-toast-up">
           Pedido {displayNumber(undo.number)} {MOVED_TO[undo.status]}.
           <button
             type="button"
             onClick={() => void revert(undo)}
-            className="flex h-10 items-center gap-2 rounded-[10px] bg-white px-3 font-semibold text-ink"
+            className="flex h-10 cursor-pointer items-center gap-2 rounded-[10px] bg-white px-3 font-semibold text-ink transition-transform duration-100 motion-safe:active:scale-95"
           >
             <UndoIcon size={18} />
             Desfazer

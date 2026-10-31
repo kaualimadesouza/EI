@@ -131,7 +131,7 @@ function OrderCard({ order, now, action, locked, onAdvance, onViewTicket }: Orde
           <button
             type="button"
             onClick={() => onViewTicket(order)}
-            className="h-12 rounded-[12px] border border-line px-3 text-[14px] font-medium text-ink hover:bg-ground-2"
+            className="h-12 cursor-pointer rounded-[12px] border border-line px-3 text-[14px] font-medium text-ink transition-all duration-100 hover:bg-ground-2 motion-safe:active:scale-95"
           >
             Cupom
           </button>
@@ -140,7 +140,7 @@ function OrderCard({ order, now, action, locked, onAdvance, onViewTicket }: Orde
           type="button"
           onClick={() => onAdvance(order)}
           disabled={locked}
-          className="h-12 flex-1 rounded-[12px] bg-teal px-4 text-[15px] font-semibold text-white disabled:opacity-50"
+          className="h-12 flex-1 cursor-pointer rounded-[12px] bg-teal px-4 text-[15px] font-semibold text-white transition-all duration-100 hover:bg-teal/95 motion-safe:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {action}
         </button>

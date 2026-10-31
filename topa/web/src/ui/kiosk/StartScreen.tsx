@@ -33,7 +33,7 @@ const PLACES = [
 function lookOf(status: 'checking' | 'demo' | 'online' | 'offline'): StatusLook {
   switch (status) {
     case 'checking':
-      return { label: 'Verificando conexão', dot: 'bg-sage' }
+      return { label: 'Verificando conexão', dot: 'bg-sage motion-safe:animate-pulse' }
     case 'demo':
       return { label: 'Modo demonstração', dot: 'bg-sage' }
     case 'online':
@@ -103,7 +103,7 @@ export function StartScreen({
               key={label}
               type="button"
               onClick={() => onBegin(dineIn)}
-              className="flex min-h-40 flex-col items-start justify-between gap-3 rounded-panel bg-white p-6 text-left text-[32px] leading-tight font-semibold text-ink short:min-h-32 short:text-[26px] max-sm:min-h-32 max-sm:p-4 max-sm:text-[22px] phone:min-h-0 phone:gap-2 phone:text-label"
+              className="flex min-h-40 cursor-pointer flex-col items-start justify-between gap-3 rounded-panel bg-white p-6 text-left text-[32px] leading-tight font-semibold text-ink transition-all duration-150 hover:shadow-md motion-safe:active:scale-[0.97] short:min-h-32 short:text-[26px] max-sm:min-h-32 max-sm:p-4 max-sm:text-[22px] phone:min-h-0 phone:gap-2 phone:text-label"
             >
               <Icon size={44} className="text-teal phone:size-8" />
               {label}

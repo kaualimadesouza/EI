@@ -58,7 +58,7 @@ export function VoiceOrderModal({
     <Sheet title="Fazer pedido por voz">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex size-12 items-center justify-center rounded-[14px] bg-teal/15 text-teal">
+          <div className="flex size-12 items-center justify-center rounded-[14px] bg-teal/15 text-teal transition-transform motion-safe:animate-pulse">
             <MicIcon size={28} />
           </div>
           <div>
@@ -70,15 +70,15 @@ export function VoiceOrderModal({
           type="button"
           onClick={onClose}
           aria-label="Fechar"
-          className="flex size-11 items-center justify-center rounded-[12px] border border-line text-muted hover:text-ink"
+          className="flex size-11 cursor-pointer items-center justify-center rounded-[12px] border border-line text-muted transition-all duration-150 hover:text-ink motion-safe:active:scale-95"
         >
           <CloseIcon size={22} />
         </button>
       </div>
 
       {error ? (
-        <div className="flex items-start gap-3 rounded-[16px] border border-amber-300 bg-amber-50 p-4 text-amber-900">
-          <AlertIcon size={24} className="text-amber-600" />
+        <div className="flex items-start gap-3 rounded-[16px] border border-warning/30 bg-warning-tint p-4 text-warning">
+          <AlertIcon size={24} className="text-warning" />
           <div className="flex-1 text-[15px]">
             <p className="font-semibold">Erro no microfone</p>
             <p className="mt-0.5">{error}</p>
@@ -86,8 +86,8 @@ export function VoiceOrderModal({
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3 rounded-[16px] border border-line bg-surface/50 p-4">
-            <span className="flex size-4 rounded-full animate-pulse bg-teal" />
+          <div className="flex items-center gap-3 rounded-[16px] border border-line bg-ground-2 p-4">
+            <span className="flex size-4 rounded-full bg-teal motion-safe:animate-pulse" />
             <p className="text-[15px] font-medium text-slate">
               Ouvindo... Fale com naturalidade
             </p>
@@ -107,7 +107,7 @@ export function VoiceOrderModal({
                 {parsed.matchedItems.map((item) => (
                   <li
                     key={item.productId}
-                    className="flex items-center justify-between p-3.5"
+                    className="flex items-center justify-between p-3.5 motion-safe:animate-fade-in"
                   >
                     <div className="flex items-center gap-2.5">
                       <span className="flex size-7 items-center justify-center rounded-[8px] bg-teal/15 text-[14px] font-bold text-teal">
@@ -116,7 +116,7 @@ export function VoiceOrderModal({
                       <div>
                         <p className="text-[15px] font-semibold text-ink">{item.name}</p>
                         {!item.available && (
-                          <p className="text-[12px] font-medium text-amber-700">
+                          <p className="text-[12px] font-medium text-warning">
                             Esgotado temporariamente
                           </p>
                         )}
@@ -135,7 +135,7 @@ export function VoiceOrderModal({
           )}
 
           {parsed.unmatchedItems.length > 0 && (
-            <div className="flex flex-col gap-1.5 rounded-[14px] border border-amber-200 bg-amber-50/60 p-3 text-[13px] text-amber-900">
+            <div className="flex flex-col gap-1.5 rounded-[14px] border border-warning/30 bg-warning-tint p-3 text-[13px] text-warning">
               <p className="font-semibold">Itens não reconhecidos no cardápio desta loja:</p>
               <ul className="list-disc pl-5">
                 {parsed.unmatchedItems.map((unmatched, idx) => (

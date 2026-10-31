@@ -91,9 +91,9 @@ export function ProductModal({ product, isOpen, onClose, onSave }: ProductModalP
       role="dialog"
       aria-modal="true"
       aria-labelledby="product-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 motion-safe:animate-fade-in"
     >
-      <div className="flex w-full max-w-[500px] flex-col gap-4 rounded-[20px] bg-white p-6 shadow-xl max-sm:p-4">
+      <div className="flex w-full max-w-[500px] flex-col gap-4 rounded-[20px] bg-white p-6 shadow-xl motion-safe:animate-modal-pop max-sm:p-4">
         <div className="flex items-center justify-between border-b border-line pb-3">
           <h2 id="product-modal-title" className="text-[20px] font-bold text-ink">
             {product ? 'Editar produto' : 'Novo produto'}

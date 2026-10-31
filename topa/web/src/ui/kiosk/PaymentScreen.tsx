@@ -104,14 +104,14 @@ function MethodTile({ selected, disabled, label, onClick, children }: MethodTile
       aria-pressed={selected}
       disabled={disabled}
       onClick={onClick}
-      className={`relative flex min-h-40 flex-col items-start justify-between gap-3 rounded-control p-6 text-left text-[26px] leading-tight font-semibold short:min-h-32 short:text-[22px] max-sm:min-h-32 max-sm:p-4 max-sm:text-[20px] phone:min-h-0 phone:gap-2 phone:text-label ${
+      className={`relative flex min-h-40 cursor-pointer flex-col items-start justify-between gap-3 rounded-control p-6 text-left text-[26px] leading-tight font-semibold transition-all duration-150 motion-safe:active:scale-[0.98] short:min-h-32 short:text-[22px] max-sm:min-h-32 max-sm:p-4 max-sm:text-[20px] phone:min-h-0 phone:gap-2 phone:text-label ${
         selected ? 'border-4 border-teal bg-sage-tint' : 'border-2 border-slate bg-white'
       }`}
     >
       {children}
       {label}
       {selected && (
-        <span className="absolute top-5 right-5 flex size-10 items-center justify-center rounded-full bg-teal text-white max-sm:top-3 max-sm:right-3 max-sm:size-8 phone:size-7">
+        <span className="absolute top-5 right-5 flex size-10 items-center justify-center rounded-full bg-teal text-white motion-safe:animate-badge-pop max-sm:top-3 max-sm:right-3 max-sm:size-8 phone:size-7">
           <CheckIcon size={24} className="phone:size-5" />
         </span>
       )}
@@ -123,7 +123,10 @@ function CardInstructions() {
   return (
     <>
       <p className="text-lead font-semibold phone:leading-snug">Aproxime o cartão ou o celular da parte de trás do totem.</p>
-      <ContactlessIcon size={140} className="text-teal phone:size-24" />
+      <div className="relative flex items-center justify-center">
+        <span className="absolute size-44 rounded-full bg-teal/10 motion-safe:animate-beacon phone:size-32" />
+        <ContactlessIcon size={140} className="relative text-teal phone:size-24" />
+      </div>
       <p className="flex flex-col items-center gap-2 text-body font-semibold text-teal phone:gap-1">
         Encoste aqui, atrás da tela
         <ArrowDownIcon size={48} className="phone:size-9" />

@@ -52,7 +52,7 @@ export function BagScreen({
                         type="button"
                         onClick={() => onDecrement(product.id)}
                         aria-label={line.quantity === 1 ? `Remover ${product.name}` : `Tirar um ${product.name}`}
-                        className="flex h-16 min-w-16 items-center justify-center gap-2 rounded-[16px] border-2 border-slate px-3 text-[18px] font-semibold max-sm:text-[16px]"
+                        className="flex h-16 min-w-16 cursor-pointer items-center justify-center gap-2 rounded-[16px] border-2 border-slate px-3 text-[18px] font-semibold transition-transform duration-100 motion-safe:active:scale-90 max-sm:text-[16px]"
                       >
                         {line.quantity === 1 ? (
                           <>
@@ -69,7 +69,7 @@ export function BagScreen({
                         onClick={() => onIncrement(product.id)}
                         disabled={line.quantity >= MAX_QUANTITY}
                         aria-label={`Mais um ${product.name}`}
-                        className="flex size-16 items-center justify-center rounded-[16px] bg-teal text-white disabled:opacity-40"
+                        className="flex size-16 cursor-pointer items-center justify-center rounded-[16px] bg-teal text-white transition-transform duration-100 motion-safe:active:scale-90 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <PlusIcon size={24} />
                       </button>
@@ -80,7 +80,7 @@ export function BagScreen({
             })}
           </ul>
           {availableRecs.length > 0 && (
-            <div className="mt-4 flex flex-col gap-3 rounded-[20px] border border-line bg-surface/50 p-5">
+            <div className="mt-4 flex flex-col gap-3 rounded-[20px] border border-line bg-ground-2 p-5">
               <div className="flex items-center justify-between">
                 <h2 className="text-[20px] font-bold tracking-tight max-sm:text-[17px]">Complete seu pedido</h2>
                 <span className="text-[13px] font-medium text-muted">Sugestões para você</span>
@@ -89,7 +89,7 @@ export function BagScreen({
                 {availableRecs.map((rec) => (
                   <div
                     key={rec.productId}
-                    className="flex items-center justify-between gap-3 rounded-[16px] border border-line bg-white p-4 shadow-xs"
+                    className="flex items-center justify-between gap-3 rounded-[16px] border border-line bg-white p-4 shadow-xs transition-all duration-150 hover:shadow-sm"
                   >
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[16px] font-semibold">{rec.name}</p>
@@ -100,7 +100,7 @@ export function BagScreen({
                       type="button"
                       onClick={() => onAddRecommendation?.(rec.productId)}
                       aria-label={`Adicionar ${rec.name}`}
-                      className="flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-ink px-4 text-[14px] font-semibold text-white transition hover:bg-slate"
+                      className="flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-ink px-4 text-[14px] font-semibold text-white transition-all duration-150 hover:bg-slate motion-safe:active:scale-95"
                     >
                       Adicionar
                     </button>
