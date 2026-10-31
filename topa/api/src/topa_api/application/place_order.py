@@ -21,6 +21,7 @@ class PlaceOrder:
     dine_in: bool
     payment_method: PaymentMethod
     customer_id: uuid.UUID | None = None
+    client_order_id: uuid.UUID | None = None
 
 
 class PlaceOrderUseCase:
@@ -37,6 +38,12 @@ class PlaceOrderUseCase:
         self._clock = clock
 
     def execute(self, request: PlaceOrder) -> Order:
+        if request.client_order_id is not None:
+            existing = self._orders.get_by_client_order_id(
+                request.store_slug, request.client_order_id
+            )
+            if existing is not None:
+                return existing
         lines = merge_lines(request.lines)
         if self._stores.get(request.store_slug) is None:
             raise StoreNotFoundError
@@ -55,6 +62,7 @@ class PlaceOrderUseCase:
             items=items,
             created_at=created_at,
             customer_id=request.customer_id,
+            client_order_id=request.client_order_id,
         )
         self._orders.add(order)
         return order

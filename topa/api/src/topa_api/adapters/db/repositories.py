@@ -145,6 +145,7 @@ class SqlAlchemyOrderRepository:
             total_cents=order.total_cents,
             created_at=order.created_at,
             customer_id=order.customer_id,
+            client_order_id=order.client_order_id,
             items=[
                 OrderItemRow(
                     store_slug=order.store_slug,
@@ -191,6 +192,17 @@ class SqlAlchemyOrderRepository:
         )
         return [_order_of(row) for row in rows]
 
+    def get_by_client_order_id(self, store_slug: str, client_order_id: uuid.UUID) -> Order | None:
+        row = self._session.scalars(
+            select(OrderRow)
+            .where(
+                OrderRow.store_slug == store_slug,
+                OrderRow.client_order_id == client_order_id,
+            )
+            .options(WITH_ITEMS)
+        ).first()
+        return None if row is None else _order_of(row)
+
 
 def _product_of(row: ProductRow) -> Product:
     return Product(
@@ -225,6 +237,7 @@ def _order_of(row: OrderRow) -> Order:
         ),
         created_at=row.created_at,
         customer_id=row.customer_id,
+        client_order_id=row.client_order_id,
     )
 
 

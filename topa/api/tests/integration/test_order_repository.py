@@ -276,3 +276,32 @@ def test_list_for_customer_returns_orders_descending(db_engine: Engine) -> None:
         assert orders[0].id == order2.id
         assert orders[1].id == order1.id
         assert repo.list_for_customer(uuid.uuid4()) == []
+
+
+def test_get_by_client_order_id(db_engine: Engine) -> None:
+    client_id = uuid.uuid4()
+    order = Order(
+        id=uuid.uuid4(),
+        store_slug=DEFAULT_STORE_SLUG,
+        number=1,
+        business_date=MONDAY,
+        status=OrderStatus.RECEIVED,
+        dine_in=True,
+        payment_method=PaymentMethod.CARD,
+        items=(OrderItem(product_id="cafe", name="Café coado", quantity=1, unit_price_cents=550),),
+        created_at=datetime(2026, 10, 26, 10, 0, tzinfo=UTC),
+        client_order_id=client_id,
+    )
+    with Session(db_engine) as session, session.begin():
+        repo = SqlAlchemyOrderRepository(session)
+        repo.add(order)
+
+    with Session(db_engine) as session:
+        repo = SqlAlchemyOrderRepository(session)
+        found = repo.get_by_client_order_id(DEFAULT_STORE_SLUG, client_id)
+        assert found is not None
+        assert found.id == order.id
+        assert found.client_order_id == client_id
+
+        assert repo.get_by_client_order_id(DEFAULT_STORE_SLUG, uuid.uuid4()) is None
+        assert repo.get_by_client_order_id("other-store", client_id) is None

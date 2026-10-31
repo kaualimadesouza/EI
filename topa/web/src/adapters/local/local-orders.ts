@@ -25,7 +25,7 @@ export class LocalOrders implements OrdersPort {
     this.now = now
   }
 
-  async place(draft: OrderDraft): Promise<PlacedOrder> {
+  async place(draft: OrderDraft, clientOrderId?: string): Promise<PlacedOrder> {
     const products = await this.menu.load(draft.storeSlug).then(
       (menu) => menu.products,
       (error: unknown) => {
@@ -55,7 +55,7 @@ export class LocalOrders implements OrdersPort {
       items,
     }
     this.orders.write([...orders, order])
-    return { id: order.id, number: order.number, totalCents: order.totalCents }
+    return { id: order.id, number: order.number, totalCents: order.totalCents, clientOrderId }
   }
 
   async list(businessDate: string, storeSlug: string): Promise<OrderSummary[]> {

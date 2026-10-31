@@ -18,6 +18,7 @@ import { LocalPrinterAdapter } from './adapters/local/local-printer'
 import { LocalRecommendations } from './adapters/local/local-recommendations'
 import { LocalStores } from './adapters/local/local-stores'
 import { SimulatorVoiceAdapter } from './adapters/local/local-voice'
+import { OfflineResilientOrders } from './adapters/resilient/offline-resilient-orders'
 import { TauriNfc } from './adapters/tauri/tauri-nfc'
 import { type TagBridge, TauriTag } from './adapters/tauri/tauri-tag'
 import { UnavailableBuzzer } from './adapters/unavailable/unavailable-buzzer'
@@ -127,7 +128,9 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
       mode: 'api',
       connection: new HttpConnection(client),
       menu: new HttpMenu(client, () => auth.getToken()),
-      orders: new HttpOrders(client, () => auth.getToken(), () => customerAuth.getToken()),
+      orders: new OfflineResilientOrders({
+        underlying: new HttpOrders(client, () => auth.getToken(), () => customerAuth.getToken()),
+      }),
       auth,
       customerAuth,
       stores,
@@ -148,7 +151,9 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
     mode: 'demo',
     connection: new LocalConnection(),
     menu,
-    orders: new LocalOrders(menu),
+    orders: new OfflineResilientOrders({
+      underlying: new LocalOrders(menu),
+    }),
     auth,
     customerAuth,
     stores,

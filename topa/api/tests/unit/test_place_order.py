@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, date, datetime, timedelta
 
 import pytest
@@ -199,3 +200,40 @@ def test_an_order_that_breaks_a_rule_is_not_stored(
         place_order.execute(_order_of(*lines, store_slug=store_slug))
 
     assert orders.orders == []
+
+
+def test_place_order_with_client_order_id_is_stored(
+    place_order: PlaceOrderUseCase,
+    orders: InMemoryOrderRepository,
+) -> None:
+    client_id = uuid.uuid4()
+    req = PlaceOrder(
+        store_slug=BEM_TE_VI.slug,
+        lines=(OrderLine(product_id="xsalada", quantity=1),),
+        dine_in=True,
+        payment_method=PaymentMethod.CARD,
+        client_order_id=client_id,
+    )
+    order = place_order.execute(req)
+    assert order.client_order_id == client_id
+    assert len(orders.orders) == 1
+
+
+def test_place_order_with_existing_client_order_id_returns_existing_order_idempotently(
+    place_order: PlaceOrderUseCase,
+    orders: InMemoryOrderRepository,
+) -> None:
+    client_id = uuid.uuid4()
+    req = PlaceOrder(
+        store_slug=BEM_TE_VI.slug,
+        lines=(OrderLine(product_id="xsalada", quantity=1),),
+        dine_in=True,
+        payment_method=PaymentMethod.CARD,
+        client_order_id=client_id,
+    )
+    first_order = place_order.execute(req)
+    second_order = place_order.execute(req)
+
+    assert first_order.id == second_order.id
+    assert first_order.number == second_order.number
+    assert len(orders.orders) == 1

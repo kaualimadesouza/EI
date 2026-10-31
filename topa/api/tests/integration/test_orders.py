@@ -59,6 +59,7 @@ def test_placing_an_order_returns_its_number_and_the_priced_items(client: TestCl
             {"product_id": "xsalada", "name": "X-salada", "quantity": 2, "unit_price_cents": 2290},
             {"product_id": "refri", "name": "Refrigerante", "quantity": 1, "unit_price_cents": 690},
         ],
+        "client_order_id": None,
     }
 
 
@@ -523,3 +524,50 @@ def test_export_order_pos_and_not_found(client: TestClient) -> None:
 
     not_found = client.post(f"/orders/{uuid.uuid4()}/pos-export")
     assert not_found.status_code == 404
+
+
+def test_placing_order_with_client_order_id_in_body_is_idempotent(
+    client: TestClient, db_engine: Engine
+) -> None:
+    client_id = str(uuid.uuid4())
+    payload = _order(("xsalada", 1), dine_in=True, payment_method="card")
+    payload["client_order_id"] = client_id
+
+    res1 = client.post("/orders", json=payload)
+    assert res1.status_code == 201
+    data1 = res1.json()
+    assert data1["client_order_id"] == client_id
+
+    res2 = client.post("/orders", json=payload)
+    assert res2.status_code == 201
+    data2 = res2.json()
+    assert data2["id"] == data1["id"]
+    assert data2["number"] == data1["number"]
+    assert data2["client_order_id"] == client_id
+    assert _stored_orders(db_engine) == 1
+
+
+def test_placing_order_with_idempotency_header_is_idempotent(
+    client: TestClient, db_engine: Engine
+) -> None:
+    client_id = str(uuid.uuid4())
+    payload = _order(("refri", 1), dine_in=False, payment_method="pix")
+
+    res1 = client.post("/orders", json=payload, headers={"Idempotency-Key": client_id})
+    assert res1.status_code == 201
+    data1 = res1.json()
+    assert data1["client_order_id"] == client_id
+
+    res2 = client.post("/orders", json=payload, headers={"Idempotency-Key": client_id})
+    assert res2.status_code == 201
+    data2 = res2.json()
+    assert data2["id"] == data1["id"]
+    assert data2["number"] == data1["number"]
+    assert _stored_orders(db_engine) == 1
+
+
+def test_placing_order_with_invalid_idempotency_header_ignores_it(client: TestClient) -> None:
+    payload = _order(("refri", 1), dine_in=True, payment_method="card")
+    res = client.post("/orders", json=payload, headers={"Idempotency-Key": "invalid-uuid"})
+    assert res.status_code == 201
+    assert res.json()["client_order_id"] is None

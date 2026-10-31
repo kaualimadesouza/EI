@@ -1,7 +1,7 @@
 import type { OrderDraft, OrderSummary, PlacedOrder } from '../domain/order'
 
 export interface OrdersPort {
-  place(draft: OrderDraft): Promise<PlacedOrder>
+  place(draft: OrderDraft, clientOrderId?: string): Promise<PlacedOrder>
   /** One business day (YYYY-MM-DD, store time) for one store, in order-number order. */
   list(businessDate: string, storeSlug: string): Promise<OrderSummary[]>
   /** One step forward through the kitchen, or one back to undo. */

@@ -121,6 +121,16 @@ class InMemoryOrderRepository:
     def list_for_customer(self, customer_id: uuid.UUID) -> list[Order]:
         return [order for order in self.orders if order.customer_id == customer_id]
 
+    def get_by_client_order_id(self, store_slug: str, client_order_id: uuid.UUID) -> Order | None:
+        return next(
+            (
+                order
+                for order in self.orders
+                if order.store_slug == store_slug and order.client_order_id == client_order_id
+            ),
+            None,
+        )
+
 
 @dataclass
 class FakeMerchantRepository:

@@ -61,6 +61,7 @@ erDiagram
         integer total_cents "total cobrado, gravado no pedido"
         timestamptz created_at
         uuid customer_id FK "cliente autenticado (nullable)"
+        uuid client_order_id UK "chave de idempotencia gerada pelo cliente (nullable)"
     }
 
     order_items {

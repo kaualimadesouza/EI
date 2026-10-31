@@ -12,6 +12,7 @@ export interface PlacedOrder {
   id: string
   number: number
   totalCents: number
+  clientOrderId?: string
 }
 
 /** A placed order as the dashboard follows it through the kitchen. */

@@ -91,6 +91,10 @@ class OrderRepository(Protocol):
 
     def list_for_customer(self, customer_id: uuid.UUID) -> list[Order]: ...
 
+    def get_by_client_order_id(self, store_slug: str, client_order_id: uuid.UUID) -> Order | None:
+        """Finds an existing order by its client-generated idempotency key."""
+        ...
+
 
 @dataclass(frozen=True)
 class CustomerRecord:
