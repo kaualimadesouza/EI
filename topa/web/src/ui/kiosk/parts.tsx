@@ -4,7 +4,7 @@ import { CloseIcon, DineInIcon, StoreMark, TakeAwayIcon } from '../icons'
 
 // radius, weight and phone size every kiosk button shares; each call site keeps its tablet height and type
 export const KIOSK_ACTION =
-  'rounded-control font-semibold cursor-pointer select-none transition-all duration-150 motion-safe:active:scale-[0.98] phone:h-16 phone:text-label'
+  'rounded-control font-semibold cursor-pointer select-none transition-all duration-150 motion-safe:active:scale-[0.98] disabled:cursor-not-allowed disabled:pointer-events-none phone:h-16 phone:text-label'
 export const PRIMARY_ACTION = `${KIOSK_ACTION} bg-teal text-white hover:bg-teal/95`
 export const SECONDARY_ACTION = `${KIOSK_ACTION} border-2 border-slate hover:bg-ground-2`
 

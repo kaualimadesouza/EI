@@ -104,7 +104,7 @@ function MethodTile({ selected, disabled, label, onClick, children }: MethodTile
       aria-pressed={selected}
       disabled={disabled}
       onClick={onClick}
-      className={`relative flex min-h-40 cursor-pointer flex-col items-start justify-between gap-3 rounded-control p-6 text-left text-[26px] leading-tight font-semibold transition-all duration-150 motion-safe:active:scale-[0.98] short:min-h-32 short:text-[22px] max-sm:min-h-32 max-sm:p-4 max-sm:text-[20px] phone:min-h-0 phone:gap-2 phone:text-label ${
+      className={`relative flex min-h-40 cursor-pointer flex-col items-start justify-between gap-3 rounded-control p-6 text-left text-[26px] leading-tight font-semibold transition-[transform,background-color,border-color] duration-150 motion-safe:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:pointer-events-none short:min-h-32 short:text-[22px] max-sm:min-h-32 max-sm:p-4 max-sm:text-[20px] phone:min-h-0 phone:gap-2 phone:text-label ${
         selected ? 'border-4 border-teal bg-sage-tint' : 'border-2 border-slate bg-white'
       }`}
     >

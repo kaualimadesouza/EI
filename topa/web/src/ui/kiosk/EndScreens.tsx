@@ -25,13 +25,18 @@ interface OrderScreenProps {
 export function OrderScreen({ placed, icon, title, hint, calling = false, onNewOrder, children }: OrderScreenProps) {
   return (
     <section className="flex min-h-0 flex-1 flex-col items-center justify-center-safe gap-8 overflow-y-auto bg-teal px-12 py-8 text-center text-white short:gap-4 max-sm:gap-6 max-sm:px-4">
-      <span
-        className={`flex size-24 items-center justify-center rounded-full bg-white text-teal phone:size-20 ${
-          calling ? 'ring-8 ring-on-teal motion-safe:animate-blink motion-safe:animate-pager-ripple' : ''
-        }`}
-      >
-        {icon}
-      </span>
+      <div className="relative flex items-center justify-center">
+        {calling && (
+          <span className="absolute size-24 rounded-full bg-on-teal/20 motion-safe:animate-beacon phone:size-20" />
+        )}
+        <span
+          className={`relative flex size-24 items-center justify-center rounded-full bg-white text-teal phone:size-20 ${
+            calling ? 'ring-8 ring-on-teal motion-safe:animate-blink' : ''
+          }`}
+        >
+          {icon}
+        </span>
+      </div>
       <p role="status" className="text-heading font-semibold">
         {title}
       </p>

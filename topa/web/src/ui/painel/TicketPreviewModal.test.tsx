@@ -47,7 +47,10 @@ describe('TicketPreviewModal', () => {
       />
     )
 
-    expect(screen.getByRole('dialog', { name: 'Visualização de impressão ESC-POS' })).toBeInTheDocument()
+    const dialog = screen.getByRole('dialog', { name: 'Visualização de impressão ESC-POS' })
+    expect(dialog).toBeInTheDocument()
+    expect(dialog).toHaveClass('motion-safe:animate-fade-in')
+    expect(dialog.firstElementChild).toHaveClass('motion-safe:animate-modal-pop')
     expect(screen.getByText('PEDIDO #77')).toBeInTheDocument()
     expect(screen.getByText('COZINHA: LANCHONETE BEM-TE-VI')).toBeInTheDocument()
 

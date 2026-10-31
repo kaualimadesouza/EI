@@ -49,7 +49,7 @@ function statusBadge(status: OrderSummary['status']) {
       return {
         label: STATUS_LABEL.preparing,
         badgeClass: 'bg-warning-tint text-warning border-warning/30',
-        dotClass: 'bg-warning animate-pulse',
+        dotClass: 'bg-warning motion-safe:animate-pulse',
       }
     case 'ready':
       return {
