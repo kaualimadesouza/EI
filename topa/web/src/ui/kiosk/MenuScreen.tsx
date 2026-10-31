@@ -40,7 +40,7 @@ export function MenuScreen(props: MenuScreenProps) {
               type="button"
               aria-pressed={c.id === activeCategory}
               onClick={() => onCategory(c.id)}
-              className={`flex h-28 flex-none flex-col items-center justify-center gap-2 rounded-[24px] text-[18px] short:h-20 short:gap-1 max-sm:h-16 max-sm:flex-row max-sm:rounded-full max-sm:px-4 max-sm:text-[16px] ${
+              className={`flex h-28 flex-none cursor-pointer flex-col items-center justify-center gap-2 rounded-[24px] text-[18px] transition-all duration-150 motion-safe:active:scale-[0.96] short:h-20 short:gap-1 max-sm:h-16 max-sm:flex-row max-sm:rounded-full max-sm:px-4 max-sm:text-[16px] ${
                 c.id === activeCategory ? 'bg-teal font-semibold text-white' : 'font-medium text-ink'
               }`}
             >
@@ -57,7 +57,7 @@ export function MenuScreen(props: MenuScreenProps) {
                 type="button"
                 onClick={() => onAdd(bannerProduct)}
                 aria-label={`Adicionar ${bannerProduct.name} por ${formatBRL(bannerProduct.priceCents)}`}
-                className="flex h-[120px] flex-none items-center gap-4 rounded-[24px] bg-teal p-[15px] text-left text-white max-sm:h-auto max-sm:gap-3 max-sm:p-3 lg:landscape:w-[min(100%,640px)]"
+                className="flex h-[120px] flex-none cursor-pointer items-center gap-4 rounded-[24px] bg-teal p-[15px] text-left text-white transition-all duration-150 hover:bg-teal/95 motion-safe:active:scale-[0.98] max-sm:h-auto max-sm:gap-3 max-sm:p-3 lg:landscape:w-[min(100%,640px)]"
               >
                 <img src={photoOf(bannerProduct)} alt="" className="h-[90px] w-[120px] flex-none rounded-[16px] object-cover max-sm:h-16 max-sm:w-20 max-sm:rounded-[12px]" />
                 <span className="flex min-w-0 flex-1 flex-col gap-1 max-sm:gap-0">
@@ -105,7 +105,7 @@ export function MenuScreen(props: MenuScreenProps) {
               type="button"
               onClick={onVoiceOrder}
               aria-label="Pedir por voz"
-              className="flex h-20 items-center justify-center gap-2 rounded-control border-2 border-teal bg-teal/10 px-5 text-[20px] font-bold text-teal transition hover:bg-teal/20 short:h-16 max-sm:h-16 max-sm:px-3 max-sm:text-[16px]"
+              className="flex h-20 cursor-pointer items-center justify-center gap-2 rounded-control border-2 border-teal bg-teal/10 px-5 text-[20px] font-bold text-teal transition-all duration-150 hover:bg-teal/20 motion-safe:active:scale-95 short:h-16 max-sm:h-16 max-sm:px-3 max-sm:text-[16px]"
             >
               <MicIcon size={26} />
               <span className="max-sm:hidden">Voz</span>
@@ -134,13 +134,13 @@ interface ProductCardProps {
 
 function ProductCard({ product, quantity, onAdd, onRemove }: ProductCardProps) {
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-[24px] border border-line bg-white">
+    <article className="flex h-full flex-col overflow-hidden rounded-[24px] border border-line bg-white transition-all duration-150 hover:shadow-md">
       <button
         type="button"
         onClick={onAdd}
         disabled={!product.available}
         aria-label={product.available ? `Adicionar ${product.name}` : `${product.name}, esgotado`}
-        className="flex flex-1 flex-col text-left"
+        className="flex flex-1 cursor-pointer flex-col text-left transition-transform duration-100 motion-safe:active:scale-[0.98]"
       >
         <span className="relative block">
           <img
@@ -150,7 +150,7 @@ function ProductCard({ product, quantity, onAdd, onRemove }: ProductCardProps) {
             className={`aspect-[4/3] w-full object-cover lg:landscape:aspect-[16/10] ${product.available ? '' : 'opacity-40'}`}
           />
           {quantity > 0 && (
-            <span className="absolute top-3 right-3 flex size-12 items-center justify-center rounded-full bg-teal text-[22px] font-bold text-white ring-[3px] ring-white tabular-nums max-sm:top-2 max-sm:right-2 max-sm:size-9 max-sm:text-[17px]">
+            <span className="absolute top-3 right-3 flex size-12 items-center justify-center rounded-full bg-teal text-[22px] font-bold text-white ring-[3px] ring-white tabular-nums motion-safe:animate-badge-pop max-sm:top-2 max-sm:right-2 max-sm:size-9 max-sm:text-[17px]">
               {quantity}
             </span>
           )}
@@ -172,11 +172,11 @@ function ProductCard({ product, quantity, onAdd, onRemove }: ProductCardProps) {
       </button>
       {quantity > 0 && (
         <div className="flex h-16 items-center justify-between border-t border-line px-2 max-sm:px-0">
-          <button type="button" onClick={onRemove} aria-label={`Tirar um ${product.name}`} className="flex size-16 items-center justify-center max-sm:w-14">
+          <button type="button" onClick={onRemove} aria-label={`Tirar um ${product.name}`} className="flex size-16 cursor-pointer items-center justify-center transition-transform duration-100 motion-safe:active:scale-90 max-sm:w-14">
             <MinusIcon />
           </button>
           <span aria-label={`${quantity} no pedido`} className="text-[26px] font-bold tabular-nums">{quantity}</span>
-          <button type="button" onClick={onAdd} disabled={quantity >= MAX_QUANTITY} aria-label={`Mais um ${product.name}`} className="flex size-16 items-center justify-center disabled:opacity-40 max-sm:w-14">
+          <button type="button" onClick={onAdd} disabled={quantity >= MAX_QUANTITY} aria-label={`Mais um ${product.name}`} className="flex size-16 cursor-pointer items-center justify-center transition-transform duration-100 motion-safe:active:scale-90 disabled:cursor-not-allowed disabled:opacity-40 max-sm:w-14">
             <PlusIcon />
           </button>
         </div>

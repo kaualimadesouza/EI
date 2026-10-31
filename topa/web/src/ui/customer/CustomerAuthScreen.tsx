@@ -65,8 +65,8 @@ export function CustomerAuthScreen({ auth, onAuthSuccess }: CustomerAuthScreenPr
             role="tab"
             aria-selected={tab === 'login'}
             onClick={() => handleTabChange('login')}
-            className={`flex-1 rounded-[10px] py-2 text-[14px] font-semibold transition ${
-              tab === 'login' ? 'bg-surface text-ink shadow-sm' : 'text-muted hover:text-ink'
+            className={`flex-1 rounded-[10px] py-2 text-[14px] font-semibold transition-all duration-150 motion-safe:active:scale-95 ${
+              tab === 'login' ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink'
             }`}
           >
             Entrar
@@ -76,8 +76,8 @@ export function CustomerAuthScreen({ auth, onAuthSuccess }: CustomerAuthScreenPr
             role="tab"
             aria-selected={tab === 'register'}
             onClick={() => handleTabChange('register')}
-            className={`flex-1 rounded-[10px] py-2 text-[14px] font-semibold transition ${
-              tab === 'register' ? 'bg-surface text-ink shadow-sm' : 'text-muted hover:text-ink'
+            className={`flex-1 rounded-[10px] py-2 text-[14px] font-semibold transition-all duration-150 motion-safe:active:scale-95 ${
+              tab === 'register' ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink'
             }`}
           >
             Criar conta
@@ -87,7 +87,7 @@ export function CustomerAuthScreen({ auth, onAuthSuccess }: CustomerAuthScreenPr
         {error && (
           <div
             role="alert"
-            className="mb-6 flex items-start gap-3 rounded-[12px] bg-warning-tint px-4 py-3 text-[14px] font-medium text-warning"
+            className="mb-6 flex items-start gap-3 rounded-[12px] bg-warning-tint px-4 py-3 text-[14px] font-medium text-warning motion-safe:animate-fade-in"
           >
             <AlertIcon size={18} className="mt-0.5" />
             <span>{error}</span>
@@ -148,7 +148,7 @@ export function CustomerAuthScreen({ auth, onAuthSuccess }: CustomerAuthScreenPr
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 flex h-12 w-full cursor-pointer items-center justify-center rounded-[12px] bg-ink text-[16px] font-semibold text-white transition hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-2 flex h-12 w-full cursor-pointer items-center justify-center rounded-[12px] bg-ink text-[16px] font-semibold text-white transition-all duration-150 hover:bg-ink/90 motion-safe:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading
               ? 'Carregando...'

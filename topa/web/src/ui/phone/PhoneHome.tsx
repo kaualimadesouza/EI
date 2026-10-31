@@ -143,7 +143,7 @@ export function PhoneHome({ nfc, onStore, onSwitchRole }: PhoneHomeProps) {
           </>
         )}
         {problem && (
-          <div role="alert" className="flex gap-3 rounded-2xl bg-ground-2 p-4">
+          <div role="alert" className="flex gap-3 rounded-2xl bg-ground-2 p-4 motion-safe:animate-fade-in">
             <WarningGlyph />
             <div className="flex flex-col gap-1">
               <p className="text-lg font-semibold text-warning">{problem.title}</p>

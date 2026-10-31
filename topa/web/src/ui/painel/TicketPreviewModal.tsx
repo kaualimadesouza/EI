@@ -49,9 +49,9 @@ export function TicketPreviewModal({
       role="dialog"
       aria-modal="true"
       aria-label="Visualização de impressão ESC-POS"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/55 p-4 motion-safe:animate-fade-in"
     >
-      <div className="flex max-h-[90vh] w-full max-w-[420px] flex-col rounded-[24px] bg-white shadow-2xl">
+      <div className="flex max-h-[90vh] w-full max-w-[420px] flex-col rounded-[24px] bg-white shadow-2xl motion-safe:animate-modal-pop">
         <header className="flex items-center justify-between border-b border-line px-5 py-4">
           <h2 className="text-[17px] font-semibold">Impressão térmica (ESC/POS)</h2>
           <button
@@ -90,14 +90,14 @@ export function TicketPreviewModal({
             {lines.map((line, idx) => {
               if (line.isCut) {
                 return (
-                  <div key={idx} className="my-2 border-b-2 border-dashed border-gray-400 text-center text-[10px] text-gray-500">
+                  <div key={idx} className="my-2 border-b-2 border-dashed border-line text-center text-[10px] text-muted">
                     {line.text}
                   </div>
                 )
               }
               const alignClass =
                 line.align === 'center' ? 'text-center' : line.align === 'right' ? 'text-right' : 'text-left'
-              const boldClass = line.bold ? 'font-bold text-black' : 'text-gray-800'
+              const boldClass = line.bold ? 'font-bold text-ink' : 'text-ink/80'
               const sizeClass = line.doubleSize ? 'text-[14px] font-bold' : ''
               return (
                 <div key={idx} className={`${alignClass} ${boldClass} ${sizeClass} whitespace-pre-wrap break-words`}>
@@ -116,14 +116,14 @@ export function TicketPreviewModal({
             <button
               type="button"
               onClick={onClose}
-              className="h-10 rounded-[12px] border border-line px-4 text-[14px] font-medium hover:bg-ground-2"
+              className="h-10 cursor-pointer rounded-[12px] border border-line px-4 text-[14px] font-medium transition-all duration-150 hover:bg-ground-2 motion-safe:active:scale-95"
             >
               Fechar
             </button>
             <button
               type="button"
               onClick={handlePrint}
-              className="h-10 rounded-[12px] bg-teal px-5 text-[14px] font-semibold text-white hover:bg-teal-dark"
+              className="h-10 cursor-pointer rounded-[12px] bg-teal px-5 text-[14px] font-semibold text-white transition-all duration-150 hover:bg-teal/95 motion-safe:active:scale-95"
             >
               Imprimir
             </button>

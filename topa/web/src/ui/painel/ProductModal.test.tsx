@@ -29,6 +29,9 @@ describe('ProductModal', () => {
     const onClose = vi.fn()
     render(<ProductModal product={null} isOpen={true} onClose={onClose} onSave={vi.fn()} />)
 
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toHaveClass('motion-safe:animate-fade-in')
+    expect(dialog.firstElementChild).toHaveClass('motion-safe:animate-modal-pop')
     expect(screen.getByRole('heading', { name: 'Novo produto' })).toBeDefined()
     await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(onClose).toHaveBeenCalledOnce()

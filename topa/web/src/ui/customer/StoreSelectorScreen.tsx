@@ -49,13 +49,13 @@ function statusBadge(status: OrderSummary['status']) {
       return {
         label: STATUS_LABEL.preparing,
         badgeClass: 'bg-warning-tint text-warning border-warning/30',
-        dotClass: 'bg-warning animate-pulse',
+        dotClass: 'bg-warning motion-safe:animate-pulse',
       }
     case 'ready':
       return {
         label: STATUS_LABEL.ready,
         badgeClass: 'bg-sage-tint text-teal border-teal/30',
-        dotClass: 'bg-teal',
+        dotClass: 'bg-teal motion-safe:animate-pulse',
       }
     case 'delivered':
       return {
@@ -178,8 +178,8 @@ export function StoreSelectorScreen({
             role="tab"
             aria-selected={activeTab === 'stores'}
             onClick={() => setActiveTab('stores')}
-            className={`cursor-pointer rounded-[12px] px-4 py-2 text-[14px] font-semibold transition ${
-              activeTab === 'stores' ? 'bg-ink text-white' : 'bg-surface text-muted hover:text-ink'
+            className={`cursor-pointer rounded-[12px] px-4 py-2 text-[14px] font-semibold transition-all duration-150 motion-safe:active:scale-95 ${
+              activeTab === 'stores' ? 'bg-ink text-white' : 'bg-ground-2 text-muted hover:text-ink'
             }`}
           >
             Restaurantes
@@ -189,8 +189,8 @@ export function StoreSelectorScreen({
             role="tab"
             aria-selected={activeTab === 'orders'}
             onClick={() => setActiveTab('orders')}
-            className={`cursor-pointer rounded-[12px] px-4 py-2 text-[14px] font-semibold transition ${
-              activeTab === 'orders' ? 'bg-ink text-white' : 'bg-surface text-muted hover:text-ink'
+            className={`cursor-pointer rounded-[12px] px-4 py-2 text-[14px] font-semibold transition-all duration-150 motion-safe:active:scale-95 ${
+              activeTab === 'orders' ? 'bg-ink text-white' : 'bg-ground-2 text-muted hover:text-ink'
             }`}
           >
             Meus Pedidos
@@ -232,7 +232,7 @@ export function StoreSelectorScreen({
                   return (
                     <article
                       key={store.slug}
-                      className="flex flex-col justify-between rounded-[20px] border border-line bg-surface p-6 shadow-sm transition hover:shadow-md"
+                      className="flex flex-col justify-between rounded-[20px] border border-line bg-white p-6 shadow-sm transition-all duration-150 hover:shadow-md motion-safe:active:scale-[0.99]"
                     >
                       <div>
                         <div className="mb-2 flex items-center justify-between">
@@ -254,7 +254,7 @@ export function StoreSelectorScreen({
                       <button
                         type="button"
                         onClick={() => onSelectStore(store.slug)}
-                        className="mt-6 flex h-11 w-full cursor-pointer items-center justify-center rounded-[12px] bg-ink text-[14px] font-semibold text-white transition hover:bg-ink/90"
+                        className="mt-6 flex h-11 w-full cursor-pointer items-center justify-center rounded-[12px] bg-ink text-[14px] font-semibold text-white transition-all duration-150 hover:bg-ink/90 motion-safe:active:scale-[0.98]"
                       >
                         Pedir em {store.name}
                       </button>
