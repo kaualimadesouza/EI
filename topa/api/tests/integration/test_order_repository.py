@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from topa_api.adapters.db.models import CustomerRow, OrderRow, ProductRow, StoreRow
 from topa_api.adapters.db.repositories import SqlAlchemyOrderRepository
 from topa_api.domain.catalog import DEFAULT_STORE_SLUG
+from topa_api.domain.errors import DuplicateClientOrderIdError
 from topa_api.domain.orders import Order, OrderItem, OrderStatus, PaymentMethod
 
 MONDAY = date(2026, 10, 26)
@@ -305,3 +306,38 @@ def test_get_by_client_order_id(db_engine: Engine) -> None:
 
         assert repo.get_by_client_order_id(DEFAULT_STORE_SLUG, uuid.uuid4()) is None
         assert repo.get_by_client_order_id("other-store", client_id) is None
+
+
+def test_add_duplicate_client_order_id_raises_duplicate_client_order_id_error(
+    db_engine: Engine,
+) -> None:
+    client_id = uuid.uuid4()
+    order1 = Order(
+        id=uuid.uuid4(),
+        store_slug=DEFAULT_STORE_SLUG,
+        number=1,
+        business_date=MONDAY,
+        status=OrderStatus.RECEIVED,
+        dine_in=True,
+        payment_method=PaymentMethod.CARD,
+        items=(OrderItem(product_id="cafe", name="Café coado", quantity=1, unit_price_cents=550),),
+        created_at=datetime(2026, 10, 26, 10, 0, tzinfo=UTC),
+        client_order_id=client_id,
+    )
+    order2 = Order(
+        id=uuid.uuid4(),
+        store_slug=DEFAULT_STORE_SLUG,
+        number=2,
+        business_date=MONDAY,
+        status=OrderStatus.RECEIVED,
+        dine_in=True,
+        payment_method=PaymentMethod.CARD,
+        items=(OrderItem(product_id="cafe", name="Café coado", quantity=1, unit_price_cents=550),),
+        created_at=datetime(2026, 10, 26, 10, 5, tzinfo=UTC),
+        client_order_id=client_id,
+    )
+    with Session(db_engine) as session, session.begin():
+        repo = SqlAlchemyOrderRepository(session)
+        repo.add(order1)
+        with pytest.raises(DuplicateClientOrderIdError):
+            repo.add(order2)

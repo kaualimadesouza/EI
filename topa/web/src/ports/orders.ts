@@ -10,6 +10,10 @@ export interface OrdersPort {
   statusOf(orderId: string): Promise<OrderSummary['status']>
   /** Orders placed by the authenticated customer across all stores. */
   listCustomerOrders(): Promise<OrderSummary[]>
+  /** Live count of queued offline orders waiting to be synced. */
+  getPendingSyncCount?(): number
+  /** Subscribes to changes in the offline sync queue state. */
+  subscribeSync?(listener: () => void): () => void
 }
 
 /** The store refused the request (an item sold out, a status that cannot follow); the message is for people. */

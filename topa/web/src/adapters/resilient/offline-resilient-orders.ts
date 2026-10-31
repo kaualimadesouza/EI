@@ -27,8 +27,12 @@ export class OfflineResilientOrders implements OrdersPort {
 
   async place(draft: OrderDraft, clientOrderId?: string): Promise<PlacedOrder> {
     const id = clientOrderId ?? generateClientOrderId()
-    if (!this.isOnline()) {
-      return this.enqueueOptimistic(draft, id)
+    if (!this.isOnline() || this.queue.getPendingCount() > 0) {
+      const optimistic = this.enqueueOptimistic(draft, id)
+      if (this.isOnline()) {
+        void this.syncPending()
+      }
+      return optimistic
     }
     try {
       return await this.underlying.place(draft, id)
@@ -67,7 +71,7 @@ export class OfflineResilientOrders implements OrdersPort {
           completionPayload.push({ clientOrderId: item.clientOrderId, order: placed })
         } catch (error) {
           if (error instanceof OrderRejectedError) {
-            this.queue.markFailed(item.clientOrderId, error.message)
+            this.queue.markRejected(item.clientOrderId, error.message)
           } else {
             this.queue.markFailed(item.clientOrderId, error instanceof Error ? error.message : 'Falha de rede')
             break
@@ -92,9 +96,20 @@ export class OfflineResilientOrders implements OrdersPort {
       void this.syncPending()
     }
     target.addEventListener('online', handleOnline)
+    if (this.isOnline()) {
+      void this.syncPending()
+    }
     return () => {
       target.removeEventListener('online', handleOnline)
     }
+  }
+
+  getPendingSyncCount(): number {
+    return this.queue.getPendingCount()
+  }
+
+  subscribeSync(listener: () => void): () => void {
+    return this.queue.subscribe(listener)
   }
 
   list(businessDate: string, storeSlug: string): Promise<OrderSummary[]> {

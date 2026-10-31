@@ -566,8 +566,21 @@ def test_placing_order_with_idempotency_header_is_idempotent(
     assert _stored_orders(db_engine) == 1
 
 
-def test_placing_order_with_invalid_idempotency_header_ignores_it(client: TestClient) -> None:
+def test_placing_order_with_invalid_idempotency_header_returns_422(client: TestClient) -> None:
     payload = _order(("refri", 1), dine_in=True, payment_method="card")
     res = client.post("/orders", json=payload, headers={"Idempotency-Key": "invalid-uuid"})
-    assert res.status_code == 201
-    assert res.json()["client_order_id"] is None
+    assert res.status_code == 422
+    assert "Chave de idempotência inválida" in res.json()["detail"]
+
+
+def test_placing_order_with_idempotency_conflict_returns_409(client: TestClient) -> None:
+    client_id = str(uuid.uuid4())
+    payload1 = _order(("refri", 1), dine_in=False, payment_method="pix")
+    payload2 = _order(("xsalada", 1), dine_in=False, payment_method="pix")
+
+    res1 = client.post("/orders", json=payload1, headers={"Idempotency-Key": client_id})
+    assert res1.status_code == 201
+
+    res2 = client.post("/orders", json=payload2, headers={"Idempotency-Key": client_id})
+    assert res2.status_code == 409
+    assert "parâmetros diferentes" in res2.json()["detail"]

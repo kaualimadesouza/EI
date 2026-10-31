@@ -70,13 +70,15 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
   const [editingProduct, setEditingProduct] = useState<Product | 'new' | null>(null)
   const [viewingTicketOrder, setViewingTicketOrder] = useState<OrderSummary | null>(null)
 
-  const syncQueue = 'queue' in adapters.orders ? (adapters.orders.queue as { getPendingCount: () => number; subscribe?: (listener: () => void) => () => void }) : null
-  const [pendingSync, setPendingSync] = useState(() => syncQueue?.getPendingCount() ?? 0)
+  const [pendingSync, setPendingSync] = useState(() =>
+    adapters.orders.getPendingSyncCount ? adapters.orders.getPendingSyncCount() : 0,
+  )
 
   useEffect(() => {
-    if (!syncQueue?.subscribe) return
-    return syncQueue.subscribe(() => setPendingSync(syncQueue.getPendingCount()))
-  }, [syncQueue])
+    if (!adapters.orders.subscribeSync || !adapters.orders.getPendingSyncCount) return
+    const getCount = adapters.orders.getPendingSyncCount.bind(adapters.orders)
+    return adapters.orders.subscribeSync(() => setPendingSync(getCount()))
+  }, [adapters.orders])
 
   const today = now()
   const todayKey = businessDate(today)

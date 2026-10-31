@@ -1,6 +1,8 @@
 import type { OrderDraft, PlacedOrder } from './order'
 
-export type QueuedOrderStatus = 'pending' | 'syncing' | 'synced' | 'failed'
+export type QueuedOrderStatus = 'pending' | 'syncing' | 'synced' | 'failed' | 'rejected'
+
+export const MAX_SYNC_RETRIES = 5
 
 export interface KeyValueStore {
   getItem(key: string): string | null
@@ -92,7 +94,9 @@ export class SyncQueue {
   }
 
   listPending(): QueuedOrder[] {
-    return this.readFromStorage().filter((item) => item.status === 'pending' || item.status === 'failed')
+    return this.readFromStorage().filter(
+      (item) => item.status === 'pending' || (item.status === 'failed' && item.retryCount < MAX_SYNC_RETRIES),
+    )
   }
 
   peek(): QueuedOrder | undefined {
@@ -137,6 +141,21 @@ export class SyncQueue {
         ? {
             ...item,
             status: 'failed' as const,
+            errorMessage,
+          }
+        : item,
+    )
+    this.writeToStorage(updated)
+    this.notify()
+  }
+
+  markRejected(clientOrderId: string, errorMessage: string): void {
+    const current = this.readFromStorage()
+    const updated = current.map((item) =>
+      item.clientOrderId === clientOrderId
+        ? {
+            ...item,
+            status: 'rejected' as const,
             errorMessage,
           }
         : item,

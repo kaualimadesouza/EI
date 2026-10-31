@@ -18,7 +18,7 @@ from topa_api.application.read_order import ReadOrderUseCase
 from topa_api.application.render_order_print import PrintReceiptType, render_order_print
 from topa_api.domain.auth import AuthenticatedCustomer, AuthenticatedMerchant
 from topa_api.domain.catalog import DEFAULT_STORE_SLUG
-from topa_api.domain.errors import ForbiddenStoreAccessError
+from topa_api.domain.errors import ForbiddenStoreAccessError, InvalidIdempotencyKeyError
 from topa_api.domain.fiscal import FiscalStandard
 from topa_api.domain.orders import Order, OrderLine, OrderStatus, PaymentMethod
 from topa_api.domain.pos_integration import PosAdapterPort
@@ -118,8 +118,8 @@ def place_order(
         if raw_header:
             try:
                 client_order_id = uuid.UUID(raw_header)
-            except ValueError:
-                client_order_id = None
+            except ValueError as err:
+                raise InvalidIdempotencyKeyError from err
     order = use_case.execute(
         PlaceOrder(
             store_slug=request.store_slug,

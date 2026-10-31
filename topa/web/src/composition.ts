@@ -124,13 +124,15 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
     const auth = new HttpAuth(client)
     const customerAuth = new HttpCustomerAuth(client)
     const stores = new HttpStores(client)
+    const orders = new OfflineResilientOrders({
+      underlying: new HttpOrders(client, () => auth.getToken(), () => customerAuth.getToken()),
+    })
+    orders.startAutoSync()
     return {
       mode: 'api',
       connection: new HttpConnection(client),
       menu: new HttpMenu(client, () => auth.getToken()),
-      orders: new OfflineResilientOrders({
-        underlying: new HttpOrders(client, () => auth.getToken(), () => customerAuth.getToken()),
-      }),
+      orders,
       auth,
       customerAuth,
       stores,
@@ -147,13 +149,15 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
   const customerAuth = new LocalCustomerAuth()
   const stores = new LocalStores()
   const menu = new LocalMenu()
+  const orders = new OfflineResilientOrders({
+    underlying: new LocalOrders(menu),
+  })
+  orders.startAutoSync()
   return {
     mode: 'demo',
     connection: new LocalConnection(),
     menu,
-    orders: new OfflineResilientOrders({
-      underlying: new LocalOrders(menu),
-    }),
+    orders,
     auth,
     customerAuth,
     stores,

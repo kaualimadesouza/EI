@@ -632,12 +632,12 @@ describe('PainelApp', () => {
     const { adapters } = demoStore()
     const listeners = new Set<() => void>()
     let pendingCount = 2
-    ;(adapters.orders as unknown as { queue: unknown }).queue = {
-      getPendingCount: () => pendingCount,
-      subscribe: (fn: () => void) => {
-        listeners.add(fn)
-        return () => listeners.delete(fn)
-      },
+    adapters.orders.getPendingSyncCount = () => pendingCount
+    adapters.orders.subscribeSync = (fn: () => void) => {
+      listeners.add(fn)
+      return () => {
+        listeners.delete(fn)
+      }
     }
 
     renderPainel(adapters)
@@ -649,5 +649,13 @@ describe('PainelApp', () => {
       listeners.forEach((fn) => fn())
     })
     expect(screen.queryByText('2 pedido(s) aguardando sincronização com o servidor.')).not.toBeInTheDocument()
+  })
+
+  it('renders painel without error when orders port does not have subscribeSync', async () => {
+    const { adapters: customAdapters } = demoStore()
+    customAdapters.orders.subscribeSync = undefined
+    customAdapters.orders.getPendingSyncCount = undefined
+    renderPainel(customAdapters)
+    expect(await screen.findByRole('heading', { name: 'Cardápio' })).toBeInTheDocument()
   })
 })

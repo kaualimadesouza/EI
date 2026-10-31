@@ -98,12 +98,29 @@ describe('SyncQueue', () => {
     expect(queue.peek()?.clientOrderId).toBe('order-1')
     queue.markFailed('non-existent', 'error')
 
+    queue.markRejected('order-1', 'Product sold out')
+    expect(queue.list()[0].status).toBe('rejected')
+    expect(queue.list()[0].errorMessage).toBe('Product sold out')
+    expect(queue.listPending().length).toBe(0)
+    queue.markRejected('non-existent', 'error')
+
     queue.remove('order-1')
     expect(queue.list().length).toBe(0)
 
     queue.enqueue(DRAFT, 'order-3')
     queue.clear()
     expect(queue.list().length).toBe(0)
+  })
+
+  it('excludes items from listPending when retries exceed maximum', () => {
+    const queue = new SyncQueue()
+    queue.enqueue(DRAFT, 'order-retried')
+    for (let i = 0; i < 5; i++) {
+      queue.markSyncing('order-retried')
+      queue.markFailed('order-retried', 'Network timeout')
+    }
+    expect(queue.list()[0].retryCount).toBe(5)
+    expect(queue.listPending().length).toBe(0)
   })
 
   it('handles corrupted JSON or non-array data in storage gracefully', () => {

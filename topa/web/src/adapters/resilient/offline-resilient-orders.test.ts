@@ -171,7 +171,7 @@ describe('OfflineResilientOrders', () => {
     expect(synced.length).toBe(0)
 
     const list = queue.list()
-    expect(list[0].status).toBe('failed')
+    expect(list[0].status).toBe('rejected')
     expect(list[0].errorMessage).toBe('Item expirou')
     expect(list[1].status).toBe('failed')
     expect(list[1].errorMessage).toBe('Connection reset')
@@ -248,6 +248,49 @@ describe('OfflineResilientOrders', () => {
     const cleanup = resilient.startAutoSync()
     expect(typeof cleanup).toBe('function')
     cleanup()
+  })
+
+  it('does not trigger syncPending on startAutoSync when offline', () => {
+    const underlying = makeFakeOrdersPort()
+    const resilient = new OfflineResilientOrders({
+      underlying,
+      isOnline: () => false,
+    })
+    const cleanup = resilient.startAutoSync()
+    expect(typeof cleanup).toBe('function')
+    cleanup()
+  })
+
+  it('enqueues and drains when online but queue already has pending items', async () => {
+    const underlying = makeFakeOrdersPort()
+    const queue = new SyncQueue()
+    queue.enqueue(DRAFT, 'prior-order')
+    underlying.placeMock.mockResolvedValue({ id: 's-1', number: 1, totalCents: 100 })
+
+    const resilient = new OfflineResilientOrders({
+      underlying,
+      queue,
+      isOnline: () => true,
+    })
+
+    const placed = await resilient.place(DRAFT, 'new-order')
+    expect(placed.id).toBe('new-order')
+    expect(placed.number).toBe(0)
+  })
+
+  it('exposes getPendingSyncCount and subscribeSync', () => {
+    const underlying = makeFakeOrdersPort()
+    const queue = new SyncQueue()
+    const resilient = new OfflineResilientOrders({ underlying, queue })
+
+    expect(resilient.getPendingSyncCount()).toBe(0)
+    const listener = vi.fn()
+    const unsubscribe = resilient.subscribeSync(listener)
+
+    queue.enqueue(DRAFT, 'queued-test')
+    expect(listener).toHaveBeenCalled()
+    expect(resilient.getPendingSyncCount()).toBe(1)
+    unsubscribe()
   })
 
   it('delegates list, setStatus, statusOf, listCustomerOrders to underlying', async () => {

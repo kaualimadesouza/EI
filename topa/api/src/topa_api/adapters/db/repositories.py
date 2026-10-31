@@ -17,7 +17,7 @@ from topa_api.adapters.db.models import (
 from topa_api.application.ports import CustomerRecord, MerchantRecord
 from topa_api.domain.auth import Customer, Merchant
 from topa_api.domain.catalog import DEFAULT_STORE_SLUG, Product, Store
-from topa_api.domain.errors import EmailAlreadyInUseError
+from topa_api.domain.errors import DuplicateClientOrderIdError, EmailAlreadyInUseError
 from topa_api.domain.orders import Order, OrderItem, OrderStatus, PaymentMethod
 
 # namespace of the per-store-day number lock, so it never meets another advisory lock
@@ -157,6 +157,12 @@ class SqlAlchemyOrderRepository:
             ],
         )
         self._session.add(row)
+        if order.client_order_id is not None:
+            try:
+                with self._session.begin_nested():
+                    self._session.flush()
+            except IntegrityError as err:
+                raise DuplicateClientOrderIdError from err
 
     def list_for_day(self, store_slug: str, business_date: date) -> list[Order]:
         rows = self._session.scalars(

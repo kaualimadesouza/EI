@@ -86,3 +86,18 @@ class EmailAlreadyInUseError(DomainError):
 class InvalidCustomerDataError(DomainError):
     def __init__(self, message: str = "Dados de cliente inválidos.") -> None:
         super().__init__(message)
+
+
+class InvalidIdempotencyKeyError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Chave de idempotência inválida.")
+
+
+class IdempotencyConflictError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Chave de idempotência já utilizada com parâmetros diferentes.")
+
+
+class DuplicateClientOrderIdError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Identificador de pedido do cliente já registrado.")
