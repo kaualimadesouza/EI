@@ -1,6 +1,6 @@
 [project]
 name = "topa-api"
-version = "0.1.4"
+version = "0.1.5"
 description = "TOPA API: self-service ordering backend for the subscription kiosk"
 readme = "README.md"
 requires-python = ">=3.12"
