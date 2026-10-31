@@ -80,6 +80,9 @@ class OrderRow(Base):
     customer_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid, ForeignKey("customers.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    client_order_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, nullable=True, unique=True, index=True
+    )
 
     items: Mapped[list["OrderItemRow"]] = relationship(
         cascade="all, delete-orphan",

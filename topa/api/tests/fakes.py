@@ -13,7 +13,11 @@ from topa_api.domain.auth import (
     Merchant,
 )
 from topa_api.domain.catalog import Product, Store
-from topa_api.domain.errors import InvalidTokenError, RateLimitExceededError
+from topa_api.domain.errors import (
+    DuplicateClientOrderIdError,
+    InvalidTokenError,
+    RateLimitExceededError,
+)
 from topa_api.domain.orders import Order, OrderStatus
 
 
@@ -94,6 +98,10 @@ class InMemoryOrderRepository:
         return max(taken, default=0) + 1
 
     def add(self, order: Order) -> None:
+        if order.client_order_id is not None:
+            for existing in self.orders:
+                if existing.client_order_id == order.client_order_id:
+                    raise DuplicateClientOrderIdError
         self.orders.append(order)
 
     def list_for_day(self, store_slug: str, business_date: date) -> list[Order]:
@@ -120,6 +128,16 @@ class InMemoryOrderRepository:
 
     def list_for_customer(self, customer_id: uuid.UUID) -> list[Order]:
         return [order for order in self.orders if order.customer_id == customer_id]
+
+    def get_by_client_order_id(self, store_slug: str, client_order_id: uuid.UUID) -> Order | None:
+        return next(
+            (
+                order
+                for order in self.orders
+                if order.store_slug == store_slug and order.client_order_id == client_order_id
+            ),
+            None,
+        )
 
 
 @dataclass

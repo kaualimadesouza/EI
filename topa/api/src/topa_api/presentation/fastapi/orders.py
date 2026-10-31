@@ -18,7 +18,7 @@ from topa_api.application.read_order import ReadOrderUseCase
 from topa_api.application.render_order_print import PrintReceiptType, render_order_print
 from topa_api.domain.auth import AuthenticatedCustomer, AuthenticatedMerchant
 from topa_api.domain.catalog import DEFAULT_STORE_SLUG
-from topa_api.domain.errors import ForbiddenStoreAccessError
+from topa_api.domain.errors import ForbiddenStoreAccessError, InvalidIdempotencyKeyError
 from topa_api.domain.fiscal import FiscalStandard
 from topa_api.domain.orders import Order, OrderLine, OrderStatus, PaymentMethod
 from topa_api.domain.pos_integration import PosAdapterPort
@@ -54,6 +54,7 @@ class PlaceOrderRequest(BaseModel):
     items: list[OrderItemRequest]
     dine_in: bool
     payment_method: PaymentMethod
+    client_order_id: uuid.UUID | None = None
 
 
 class ChangeStatusRequest(BaseModel):
@@ -77,6 +78,7 @@ class OrderResponse(BaseModel):
     total_cents: int
     created_at: datetime
     items: list[OrderItemResponse]
+    client_order_id: uuid.UUID | None = None
 
 
 def _client_ip(request: Request) -> str:
@@ -108,6 +110,16 @@ def place_order(
     customer: Annotated[AuthenticatedCustomer | None, Depends(get_optional_customer)] = None,
 ) -> OrderResponse:
     rate_limit.execute(_client_ip(request_obj))
+    client_order_id = request.client_order_id
+    if client_order_id is None:
+        raw_header = request_obj.headers.get("x-idempotency-key") or request_obj.headers.get(
+            "idempotency-key"
+        )
+        if raw_header:
+            try:
+                client_order_id = uuid.UUID(raw_header)
+            except ValueError as err:
+                raise InvalidIdempotencyKeyError from err
     order = use_case.execute(
         PlaceOrder(
             store_slug=request.store_slug,
@@ -118,6 +130,7 @@ def place_order(
             dine_in=request.dine_in,
             payment_method=request.payment_method,
             customer_id=customer.id if customer is not None else None,
+            client_order_id=client_order_id,
         )
     )
     return _order_response(order)
@@ -218,6 +231,7 @@ def _order_response(order: Order) -> OrderResponse:
             )
             for item in order.items
         ],
+        client_order_id=order.client_order_id,
     )
 
 

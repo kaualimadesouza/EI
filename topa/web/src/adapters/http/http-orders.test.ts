@@ -45,6 +45,21 @@ describe('HttpOrders', () => {
     expect(placed).toEqual({ id: 'o47', number: 47, totalCents: 2980 })
   })
 
+  it('posts the order with client_order_id when supplied for idempotency', async () => {
+    const fetchFn = json({ ...order('o49', 'received'), number: 49, total_cents: 2980 }, 201)
+
+    const placed = await new HttpOrders(new HttpClient('/api')).place(draft, 'client-id-xyz')
+
+    expect(JSON.parse(fetchFn.mock.calls[0][1]!.body as string)).toEqual({
+      store_slug: 'cantina-central',
+      items: [{ product_id: 'misto', quantity: 2 }],
+      dine_in: false,
+      payment_method: 'pix',
+      client_order_id: 'client-id-xyz',
+    })
+    expect(placed).toEqual({ id: 'o49', number: 49, totalCents: 2980, clientOrderId: 'client-id-xyz' })
+  })
+
   it('attaches customer token to headers when customerTokenProvider is configured', async () => {
     const fetchFn = json({ ...order('o48', 'received'), number: 48, total_cents: 2980 }, 201)
 

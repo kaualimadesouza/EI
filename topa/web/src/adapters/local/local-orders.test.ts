@@ -47,6 +47,17 @@ describe('LocalOrders', () => {
     expect(nextDay.number).toBe(1)
   })
 
+  it('returns existing order idempotently when same clientOrderId is placed again', async () => {
+    const { orders } = store()
+    const first = await orders.place(draft, 'idempotent-local-key')
+    const second = await orders.place(draft, 'idempotent-local-key')
+
+    expect(first.id).toBe(second.id)
+    expect(first.number).toBe(second.number)
+    const list = await orders.list('2026-10-26', DEMO_STORE_SLUG)
+    expect(list.length).toBe(1)
+  })
+
   it('lists one day of orders for that store only', async () => {
     const { orders } = store()
     await orders.place(draft)

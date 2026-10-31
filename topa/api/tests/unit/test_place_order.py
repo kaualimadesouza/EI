@@ -1,3 +1,5 @@
+import uuid
+from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 
 import pytest
@@ -11,13 +13,15 @@ from tests.fakes import (
 from topa_api.application.place_order import PlaceOrder, PlaceOrderUseCase
 from topa_api.domain.catalog import Category, Product, Store
 from topa_api.domain.errors import (
+    DuplicateClientOrderIdError,
     EmptyOrderError,
+    IdempotencyConflictError,
     ProductUnavailableError,
     QuantityOutOfRangeError,
     StoreNotFoundError,
     UnknownProductError,
 )
-from topa_api.domain.orders import OrderItem, OrderLine, OrderStatus, PaymentMethod
+from topa_api.domain.orders import Order, OrderItem, OrderLine, OrderStatus, PaymentMethod
 
 NOON_IN_SAO_PAULO = datetime(2026, 10, 26, 15, 0, tzinfo=UTC)
 BEM_TE_VI = Store(slug="lanchonete-bem-te-vi", name="Lanchonete Bem-te-vi")
@@ -199,3 +203,179 @@ def test_an_order_that_breaks_a_rule_is_not_stored(
         place_order.execute(_order_of(*lines, store_slug=store_slug))
 
     assert orders.orders == []
+
+
+def test_place_order_with_client_order_id_is_stored(
+    place_order: PlaceOrderUseCase,
+    orders: InMemoryOrderRepository,
+) -> None:
+    client_id = uuid.uuid4()
+    req = PlaceOrder(
+        store_slug=BEM_TE_VI.slug,
+        lines=(OrderLine(product_id="xsalada", quantity=1),),
+        dine_in=True,
+        payment_method=PaymentMethod.CARD,
+        client_order_id=client_id,
+    )
+    order = place_order.execute(req)
+    assert order.client_order_id == client_id
+    assert len(orders.orders) == 1
+
+
+def test_place_order_with_existing_client_order_id_returns_existing_order_idempotently(
+    place_order: PlaceOrderUseCase,
+    orders: InMemoryOrderRepository,
+) -> None:
+    client_id = uuid.uuid4()
+    req = PlaceOrder(
+        store_slug=BEM_TE_VI.slug,
+        lines=(OrderLine(product_id="xsalada", quantity=1),),
+        dine_in=True,
+        payment_method=PaymentMethod.CARD,
+        client_order_id=client_id,
+    )
+    first_order = place_order.execute(req)
+    second_order = place_order.execute(req)
+
+    assert first_order.id == second_order.id
+    assert first_order.number == second_order.number
+    assert len(orders.orders) == 1
+
+
+def test_place_order_idempotency_conflict_on_mismatched_payload(
+    place_order: PlaceOrderUseCase,
+) -> None:
+    client_id = uuid.uuid4()
+    req1 = PlaceOrder(
+        store_slug=BEM_TE_VI.slug,
+        lines=(OrderLine(product_id="xsalada", quantity=1),),
+        dine_in=True,
+        payment_method=PaymentMethod.CARD,
+        client_order_id=client_id,
+    )
+    place_order.execute(req1)
+
+    req_diff_items = PlaceOrder(
+        store_slug=BEM_TE_VI.slug,
+        lines=(OrderLine(product_id="refri", quantity=1),),
+        dine_in=True,
+        payment_method=PaymentMethod.CARD,
+        client_order_id=client_id,
+    )
+    with pytest.raises(IdempotencyConflictError):
+        place_order.execute(req_diff_items)
+
+    req_diff_count = PlaceOrder(
+        store_slug=BEM_TE_VI.slug,
+        lines=(
+            OrderLine(product_id="xsalada", quantity=1),
+            OrderLine(product_id="refri", quantity=1),
+        ),
+        dine_in=True,
+        payment_method=PaymentMethod.CARD,
+        client_order_id=client_id,
+    )
+    with pytest.raises(IdempotencyConflictError):
+        place_order.execute(req_diff_count)
+
+    req_diff_qty = PlaceOrder(
+        store_slug=BEM_TE_VI.slug,
+        lines=(OrderLine(product_id="xsalada", quantity=2),),
+        dine_in=True,
+        payment_method=PaymentMethod.CARD,
+        client_order_id=client_id,
+    )
+    with pytest.raises(IdempotencyConflictError):
+        place_order.execute(req_diff_qty)
+
+    req_diff_dine_in = PlaceOrder(
+        store_slug=BEM_TE_VI.slug,
+        lines=(OrderLine(product_id="xsalada", quantity=1),),
+        dine_in=False,
+        payment_method=PaymentMethod.CARD,
+        client_order_id=client_id,
+    )
+    with pytest.raises(IdempotencyConflictError):
+        place_order.execute(req_diff_dine_in)
+
+    req_diff_customer = PlaceOrder(
+        store_slug=BEM_TE_VI.slug,
+        lines=(OrderLine(product_id="xsalada", quantity=1),),
+        dine_in=True,
+        payment_method=PaymentMethod.CARD,
+        customer_id=uuid.uuid4(),
+        client_order_id=client_id,
+    )
+    with pytest.raises(IdempotencyConflictError):
+        place_order.execute(req_diff_customer)
+
+
+def test_place_order_recovers_from_concurrent_race_insert(
+    place_order: PlaceOrderUseCase,
+    orders: InMemoryOrderRepository,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client_id = uuid.uuid4()
+    req = PlaceOrder(
+        store_slug=BEM_TE_VI.slug,
+        lines=(OrderLine(product_id="xsalada", quantity=1),),
+        dine_in=True,
+        payment_method=PaymentMethod.CARD,
+        client_order_id=client_id,
+    )
+
+    original_add = orders.add
+
+    def racing_add(order: Order) -> None:
+        original_add(order)
+        raise DuplicateClientOrderIdError
+
+    monkeypatch.setattr(orders, "add", racing_add)
+    recovered = place_order.execute(req)
+    assert recovered.client_order_id == client_id
+
+
+def test_place_order_concurrent_race_with_mismatch_raises_conflict(
+    place_order: PlaceOrderUseCase,
+    orders: InMemoryOrderRepository,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client_id = uuid.uuid4()
+    req = PlaceOrder(
+        store_slug=BEM_TE_VI.slug,
+        lines=(OrderLine(product_id="xsalada", quantity=1),),
+        dine_in=True,
+        payment_method=PaymentMethod.CARD,
+        client_order_id=client_id,
+    )
+
+    def racing_add(order: Order) -> None:
+        diff_order = replace(order, dine_in=False)
+        orders.orders.append(diff_order)
+        raise DuplicateClientOrderIdError
+
+    monkeypatch.setattr(orders, "add", racing_add)
+    with pytest.raises(IdempotencyConflictError):
+        place_order.execute(req)
+
+
+def test_place_order_concurrent_race_where_existing_not_found_raises(
+    place_order: PlaceOrderUseCase,
+    orders: InMemoryOrderRepository,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client_id = uuid.uuid4()
+    req = PlaceOrder(
+        store_slug=BEM_TE_VI.slug,
+        lines=(OrderLine(product_id="xsalada", quantity=1),),
+        dine_in=True,
+        payment_method=PaymentMethod.CARD,
+        client_order_id=client_id,
+    )
+
+    def racing_add(order: Order) -> None:
+        raise DuplicateClientOrderIdError
+
+    monkeypatch.setattr(orders, "add", racing_add)
+    with pytest.raises(DuplicateClientOrderIdError):
+        place_order.execute(req)

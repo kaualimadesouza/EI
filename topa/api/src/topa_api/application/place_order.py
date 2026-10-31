@@ -2,7 +2,11 @@ import uuid
 from dataclasses import dataclass
 
 from topa_api.application.ports import Clock, OrderRepository, ProductRepository, StoreRepository
-from topa_api.domain.errors import StoreNotFoundError
+from topa_api.domain.errors import (
+    DuplicateClientOrderIdError,
+    IdempotencyConflictError,
+    StoreNotFoundError,
+)
 from topa_api.domain.orders import (
     Order,
     OrderLine,
@@ -21,6 +25,7 @@ class PlaceOrder:
     dine_in: bool
     payment_method: PaymentMethod
     customer_id: uuid.UUID | None = None
+    client_order_id: uuid.UUID | None = None
 
 
 class PlaceOrderUseCase:
@@ -36,7 +41,25 @@ class PlaceOrderUseCase:
         self._orders = orders
         self._clock = clock
 
+    def _validate_idempotency(self, existing: Order, request: PlaceOrder) -> None:
+        if existing.customer_id != request.customer_id or existing.dine_in != request.dine_in:
+            raise IdempotencyConflictError
+        lines = merge_lines(request.lines)
+        if len(existing.items) != len(lines):
+            raise IdempotencyConflictError
+        existing_map = {item.product_id: item.quantity for item in existing.items}
+        for line in lines:
+            if existing_map.get(line.product_id) != line.quantity:
+                raise IdempotencyConflictError
+
     def execute(self, request: PlaceOrder) -> Order:
+        if request.client_order_id is not None:
+            existing = self._orders.get_by_client_order_id(
+                request.store_slug, request.client_order_id
+            )
+            if existing is not None:
+                self._validate_idempotency(existing, request)
+                return existing
         lines = merge_lines(request.lines)
         if self._stores.get(request.store_slug) is None:
             raise StoreNotFoundError
@@ -55,6 +78,17 @@ class PlaceOrderUseCase:
             items=items,
             created_at=created_at,
             customer_id=request.customer_id,
+            client_order_id=request.client_order_id,
         )
-        self._orders.add(order)
+        try:
+            self._orders.add(order)
+        except DuplicateClientOrderIdError:
+            assert request.client_order_id is not None
+            existing = self._orders.get_by_client_order_id(
+                request.store_slug, request.client_order_id
+            )
+            if existing is not None:
+                self._validate_idempotency(existing, request)
+                return existing
+            raise
         return order

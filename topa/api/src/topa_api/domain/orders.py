@@ -81,6 +81,7 @@ class Order:
     items: tuple[OrderItem, ...]
     created_at: datetime
     customer_id: uuid.UUID | None = None
+    client_order_id: uuid.UUID | None = None
 
     @property
     def total_cents(self) -> int:

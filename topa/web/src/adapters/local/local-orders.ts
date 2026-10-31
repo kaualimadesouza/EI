@@ -8,6 +8,7 @@ import { browserStorage, StoredValue, type KeyValueStore } from './browser-stora
 interface StoredOrder extends OrderSummary {
   storeSlug: string
   businessDate: string
+  clientOrderId?: string
 }
 
 // with no merchant at a dashboard, the demo kitchen has a followed order ready this long after payment
@@ -25,7 +26,7 @@ export class LocalOrders implements OrdersPort {
     this.now = now
   }
 
-  async place(draft: OrderDraft): Promise<PlacedOrder> {
+  async place(draft: OrderDraft, clientOrderId?: string): Promise<PlacedOrder> {
     const products = await this.menu.load(draft.storeSlug).then(
       (menu) => menu.products,
       (error: unknown) => {
@@ -42,9 +43,16 @@ export class LocalOrders implements OrdersPort {
     const createdAt = this.now()
     const businessDate = createdAt.toLocaleDateString('sv-SE')
     const orders = this.orders.read()
+    if (clientOrderId) {
+      const existing = orders.find((o) => o.storeSlug === draft.storeSlug && o.clientOrderId === clientOrderId)
+      if (existing) {
+        return { id: existing.id, number: existing.number, totalCents: existing.totalCents, clientOrderId }
+      }
+    }
     const order: StoredOrder = {
       id: crypto.randomUUID(),
       storeSlug: draft.storeSlug,
+      clientOrderId,
       number: orders.filter((o) => o.storeSlug === draft.storeSlug && o.businessDate === businessDate).length + 1,
       businessDate,
       status: 'received',
@@ -55,7 +63,7 @@ export class LocalOrders implements OrdersPort {
       items,
     }
     this.orders.write([...orders, order])
-    return { id: order.id, number: order.number, totalCents: order.totalCents }
+    return { id: order.id, number: order.number, totalCents: order.totalCents, clientOrderId }
   }
 
   async list(businessDate: string, storeSlug: string): Promise<OrderSummary[]> {

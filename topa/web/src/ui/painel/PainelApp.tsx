@@ -70,6 +70,16 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
   const [editingProduct, setEditingProduct] = useState<Product | 'new' | null>(null)
   const [viewingTicketOrder, setViewingTicketOrder] = useState<OrderSummary | null>(null)
 
+  const [pendingSync, setPendingSync] = useState(() =>
+    adapters.orders.getPendingSyncCount ? adapters.orders.getPendingSyncCount() : 0,
+  )
+
+  useEffect(() => {
+    if (!adapters.orders.subscribeSync || !adapters.orders.getPendingSyncCount) return
+    const getCount = adapters.orders.getPendingSyncCount.bind(adapters.orders)
+    return adapters.orders.subscribeSync(() => setPendingSync(getCount()))
+  }, [adapters.orders])
+
   const today = now()
   const todayKey = businessDate(today)
 
@@ -188,6 +198,7 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
   const late = orders.filter((order) => order.status !== 'delivered' && ageMinutes(order, today) >= 10)
   const soldOut = products.filter((product) => !product.available)
   const alerts: string[] = []
+  if (pendingSync > 0) alerts.push(`${pendingSync} pedido(s) aguardando sincronização com o servidor.`)
   if (offline) alerts.push('O servidor não responde. Os números abaixo podem estar desatualizados.')
   if (late.length === 1) alerts.push(`O pedido ${displayNumber(late[0].number)} espera há ${ageMinutes(late[0], today)} min.`)
   if (late.length > 1) alerts.push(`${late.length} pedidos esperam há mais de 10 min.`)

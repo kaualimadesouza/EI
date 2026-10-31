@@ -16,6 +16,7 @@ import { LocalPrinterAdapter } from './adapters/local/local-printer'
 import { LocalRecommendations } from './adapters/local/local-recommendations'
 import { LocalStores } from './adapters/local/local-stores'
 import { SimulatorVoiceAdapter } from './adapters/local/local-voice'
+import { OfflineResilientOrders } from './adapters/resilient/offline-resilient-orders'
 import { TauriNfc } from './adapters/tauri/tauri-nfc'
 import { UnavailableBuzzer } from './adapters/unavailable/unavailable-buzzer'
 import { UnavailableNfc } from './adapters/unavailable/unavailable-nfc'
@@ -70,7 +71,9 @@ describe('createAdapters', () => {
     expect(adapters.mode).toBe('api')
     expect(adapters.connection).toBeInstanceOf(HttpConnection)
     expect(adapters.menu).toBeInstanceOf(HttpMenu)
-    expect(adapters.orders).toBeInstanceOf(HttpOrders)
+    expect(adapters.orders).toBeInstanceOf(OfflineResilientOrders)
+    const resilientOrders = adapters.orders as OfflineResilientOrders
+    expect(resilientOrders.underlying).toBeInstanceOf(HttpOrders)
     expect(adapters.auth).toBeInstanceOf(HttpAuth)
     expect(adapters.customerAuth).toBeInstanceOf(HttpCustomerAuth)
     expect(adapters.stores).toBeInstanceOf(HttpStores)
@@ -79,8 +82,8 @@ describe('createAdapters', () => {
     expect(adapters.printer).toBeInstanceOf(WebPrinterAdapter)
 
     const menuProvider = (adapters.menu as unknown as { tokenProvider: () => string | null }).tokenProvider
-    const ordersProvider = (adapters.orders as unknown as { tokenProvider: () => string | null }).tokenProvider
-    const customerProvider = (adapters.orders as unknown as { customerTokenProvider: () => string | null }).customerTokenProvider
+    const ordersProvider = (resilientOrders.underlying as unknown as { tokenProvider: () => string | null }).tokenProvider
+    const customerProvider = (resilientOrders.underlying as unknown as { customerTokenProvider: () => string | null }).customerTokenProvider
     expect(menuProvider()).toBeNull()
     expect(ordersProvider()).toBeNull()
     expect(customerProvider()).toBeNull()
@@ -92,7 +95,8 @@ describe('createAdapters', () => {
     expect(adapters.mode).toBe('demo')
     expect(adapters.connection).toBeInstanceOf(LocalConnection)
     expect(adapters.menu).toBeInstanceOf(LocalMenu)
-    expect(adapters.orders).toBeInstanceOf(LocalOrders)
+    expect(adapters.orders).toBeInstanceOf(OfflineResilientOrders)
+    expect((adapters.orders as OfflineResilientOrders).underlying).toBeInstanceOf(LocalOrders)
     expect(adapters.auth).toBeInstanceOf(LocalAuth)
     expect(adapters.customerAuth).toBeInstanceOf(LocalCustomerAuth)
     expect(adapters.stores).toBeInstanceOf(LocalStores)

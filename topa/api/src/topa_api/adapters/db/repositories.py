@@ -17,7 +17,7 @@ from topa_api.adapters.db.models import (
 from topa_api.application.ports import CustomerRecord, MerchantRecord
 from topa_api.domain.auth import Customer, Merchant
 from topa_api.domain.catalog import DEFAULT_STORE_SLUG, Product, Store
-from topa_api.domain.errors import EmailAlreadyInUseError
+from topa_api.domain.errors import DuplicateClientOrderIdError, EmailAlreadyInUseError
 from topa_api.domain.orders import Order, OrderItem, OrderStatus, PaymentMethod
 
 # namespace of the per-store-day number lock, so it never meets another advisory lock
@@ -145,6 +145,7 @@ class SqlAlchemyOrderRepository:
             total_cents=order.total_cents,
             created_at=order.created_at,
             customer_id=order.customer_id,
+            client_order_id=order.client_order_id,
             items=[
                 OrderItemRow(
                     store_slug=order.store_slug,
@@ -156,6 +157,12 @@ class SqlAlchemyOrderRepository:
             ],
         )
         self._session.add(row)
+        if order.client_order_id is not None:
+            try:
+                with self._session.begin_nested():
+                    self._session.flush()
+            except IntegrityError as err:
+                raise DuplicateClientOrderIdError from err
 
     def list_for_day(self, store_slug: str, business_date: date) -> list[Order]:
         rows = self._session.scalars(
@@ -191,6 +198,17 @@ class SqlAlchemyOrderRepository:
         )
         return [_order_of(row) for row in rows]
 
+    def get_by_client_order_id(self, store_slug: str, client_order_id: uuid.UUID) -> Order | None:
+        row = self._session.scalars(
+            select(OrderRow)
+            .where(
+                OrderRow.store_slug == store_slug,
+                OrderRow.client_order_id == client_order_id,
+            )
+            .options(WITH_ITEMS)
+        ).first()
+        return None if row is None else _order_of(row)
+
 
 def _product_of(row: ProductRow) -> Product:
     return Product(
@@ -225,6 +243,7 @@ def _order_of(row: OrderRow) -> Order:
         ),
         created_at=row.created_at,
         customer_id=row.customer_id,
+        client_order_id=row.client_order_id,
     )
 
 

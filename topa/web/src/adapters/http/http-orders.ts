@@ -60,18 +60,18 @@ export class HttpOrders implements OrdersPort {
   }
 
 
-  async place(draft: OrderDraft): Promise<PlacedOrder> {
+  async place(draft: OrderDraft, clientOrderId?: string): Promise<PlacedOrder> {
     const customerToken = this.customerTokenProvider?.() ?? null
-    const response = await this.client.post(
-      '/orders',
-      {
-        store_slug: draft.storeSlug,
-        items: draft.lines.map((line) => ({ product_id: line.productId, quantity: line.quantity })),
-        dine_in: draft.dineIn,
-        payment_method: draft.paymentMethod,
-      },
-      customerToken,
-    )
+    const payload: Record<string, unknown> = {
+      store_slug: draft.storeSlug,
+      items: draft.lines.map((line) => ({ product_id: line.productId, quantity: line.quantity })),
+      dine_in: draft.dineIn,
+      payment_method: draft.paymentMethod,
+    }
+    if (clientOrderId) {
+      payload.client_order_id = clientOrderId
+    }
+    const response = await this.client.post('/orders', payload, customerToken)
     if (
       response.status === 401 ||
       response.status === 404 ||
@@ -88,7 +88,7 @@ export class HttpOrders implements OrdersPort {
     }
     if (!response.ok) throw new Error(`POST /orders answered ${response.status}`)
     const order = (await response.json()) as OrderJson
-    return { id: order.id, number: order.number, totalCents: order.total_cents }
+    return { id: order.id, number: order.number, totalCents: order.total_cents, clientOrderId }
   }
 
   async list(businessDate: string, storeSlug: string): Promise<OrderSummary[]> {
