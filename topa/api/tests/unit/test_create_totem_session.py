@@ -13,9 +13,7 @@ def test_create_totem_session_success() -> None:
     clock = FixedClock(datetime(2026, 10, 31, 20, 0, tzinfo=UTC))
     tokens = HmacTokenService(secret_key="secret", clock=clock)
     stores = InMemoryStoreRepository([Store(slug="brasa-burgers", name="Brasa Burgers")])
-    use_case = CreateTotemSessionUseCase(
-        tokens, stores, base_url="https://topa-totem.vercel.app"
-    )
+    use_case = CreateTotemSessionUseCase(tokens, stores, base_url="https://topa-totem.vercel.app")
 
     output = use_case.execute(store_slug="brasa-burgers", duration_seconds=1800)
 

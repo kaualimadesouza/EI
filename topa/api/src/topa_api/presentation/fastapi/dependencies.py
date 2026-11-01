@@ -229,7 +229,6 @@ def get_validate_totem_session_use_case(
     return ValidateTotemSessionUseCase(tokens, clock)
 
 
-
 def get_current_customer(
     use_case: Annotated[VerifyCustomerTokenUseCase, Depends(get_verify_customer_token_use_case)],
     authorization: Annotated[str | None, Header()] = None,

@@ -197,9 +197,7 @@ class FakeTokenService:
             raise InvalidTokenError()
         return self.valid_customer_tokens[token]
 
-    def create_totem_session_token(
-        self, store_slug: str, expires_in_seconds: int = 1800
-    ) -> str:
+    def create_totem_session_token(self, store_slug: str, expires_in_seconds: int = 1800) -> str:
         token = f"token_totem_{store_slug}"
         expires_at = datetime.fromtimestamp(1893456000)
         self.valid_totem_sessions[token] = TotemSession(
@@ -211,7 +209,6 @@ class FakeTokenService:
         if token not in self.valid_totem_sessions:
             raise InvalidTokenError()
         return self.valid_totem_sessions[token]
-
 
 
 @dataclass

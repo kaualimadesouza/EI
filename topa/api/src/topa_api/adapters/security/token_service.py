@@ -70,9 +70,7 @@ class HmacTokenService:
         except (ValueError, KeyError, TypeError, AttributeError):
             raise InvalidTokenError() from None
 
-    def create_totem_session_token(
-        self, store_slug: str, expires_in_seconds: int = 1800
-    ) -> str:
+    def create_totem_session_token(self, store_slug: str, expires_in_seconds: int = 1800) -> str:
         now = int(self._clock.now().timestamp())
         payload = {
             "store_slug": store_slug,

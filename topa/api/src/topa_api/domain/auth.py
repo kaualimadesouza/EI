@@ -74,4 +74,3 @@ class TotemSession:
 
     store_slug: str
     expires_at: datetime
-

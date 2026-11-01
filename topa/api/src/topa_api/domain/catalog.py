@@ -69,8 +69,6 @@ def build_store(slug: str, name: str) -> Store:
     )
 
 
-
-
 @dataclass(frozen=True)
 class Product:
     id: str

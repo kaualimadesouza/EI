@@ -268,4 +268,3 @@ def test_totem_session_rejects_malformed_exp() -> None:
 
     with pytest.raises(InvalidTokenError):
         service.verify_totem_session_token(token)
-
