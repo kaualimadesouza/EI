@@ -89,7 +89,6 @@ export function KioskApp({
   }, [state.screen, loadMenu])
 
   const [totemSessionToken, setTotemSessionToken] = useState<string | undefined>(sessionToken)
-  const isStartScreen = state.screen === 'start'
 
   useEffect(() => {
     if (sessionToken !== undefined) {
@@ -114,7 +113,7 @@ export function KioskApp({
       active = false
       clearInterval(interval)
     }
-  }, [adapters.totemSession, isStartScreen, onCustomerPhone, sessionToken, storeSlug])
+  }, [adapters.totemSession, onCustomerPhone, sessionToken, storeSlug])
 
   const menuUrl = phoneMenuUrl(
     window.location.origin,

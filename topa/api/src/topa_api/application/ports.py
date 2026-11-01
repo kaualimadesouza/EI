@@ -166,3 +166,13 @@ class RateLimiterPort(Protocol):
 
 
 RateLimiter = RateLimiterPort
+
+
+@dataclass(frozen=True)
+class GoogleVerifiedIdentity:
+    email: str
+    name: str
+
+
+class GoogleTokenVerifierPort(Protocol):
+    def verify_id_token(self, id_token: str) -> GoogleVerifiedIdentity: ...

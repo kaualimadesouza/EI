@@ -176,8 +176,8 @@ export function StoreSelectorScreen({
     }
   }, [stores])
 
-  const loadOrders = useCallback(async () => {
-    setLoadingOrders(true)
+  const loadOrders = useCallback(async (silent = false) => {
+    if (!silent) setLoadingOrders(true)
     setOrdersError(null)
     try {
       const items = await orders.listCustomerOrders()
@@ -187,7 +187,7 @@ export function StoreSelectorScreen({
         err instanceof Error ? err.message : 'Não foi possível carregar o histórico de pedidos.'
       setOrdersError(message)
     } finally {
-      setLoadingOrders(false)
+      if (!silent) setLoadingOrders(false)
     }
   }, [orders])
 
@@ -196,10 +196,16 @@ export function StoreSelectorScreen({
   }, [loadStores])
 
   useEffect(() => {
+    if (!customer && activeTab === 'orders') {
+      setActiveTab('restaurants')
+    }
+  }, [customer, activeTab])
+
+  useEffect(() => {
     if (activeTab !== 'orders' || !customer) return
-    void loadOrders()
+    void loadOrders(false)
     const timer = setInterval(() => {
-      void loadOrders()
+      void loadOrders(true)
     }, POLL_INTERVAL_MS)
     return () => clearInterval(timer)
   }, [activeTab, customer, loadOrders])
@@ -357,6 +363,7 @@ export function StoreSelectorScreen({
             onClick={() => {
               setActiveTab('restaurants')
               setSelectedCategory('Todos')
+              setSearchQuery('')
             }}
             className={`flex items-center gap-2 cursor-pointer rounded-[12px] px-4 py-2 text-[14px] font-semibold transition-all duration-150 motion-safe:active:scale-95 ${
               activeTab === 'restaurants' ? 'bg-ink text-white shadow-sm' : 'bg-ground-2 text-muted hover:text-ink'
@@ -372,6 +379,7 @@ export function StoreSelectorScreen({
             onClick={() => {
               setActiveTab('markets')
               setSelectedCategory('Todos')
+              setSearchQuery('')
             }}
             className={`flex items-center gap-2 cursor-pointer rounded-[12px] px-4 py-2 text-[14px] font-semibold transition-all duration-150 motion-safe:active:scale-95 ${
               activeTab === 'markets' ? 'bg-ink text-white shadow-sm' : 'bg-ground-2 text-muted hover:text-ink'
@@ -385,7 +393,10 @@ export function StoreSelectorScreen({
               type="button"
               role="tab"
               aria-selected={activeTab === 'orders'}
-              onClick={() => setActiveTab('orders')}
+              onClick={() => {
+                setActiveTab('orders')
+                setSearchQuery('')
+              }}
               className={`cursor-pointer rounded-[12px] px-4 py-2 text-[14px] font-semibold transition-all duration-150 motion-safe:active:scale-95 ${
                 activeTab === 'orders' ? 'bg-ink text-white shadow-sm' : 'bg-ground-2 text-muted hover:text-ink'
               }`}

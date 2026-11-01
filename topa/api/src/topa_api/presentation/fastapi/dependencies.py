@@ -21,6 +21,7 @@ from topa_api.application.place_order import PlaceOrderUseCase
 from topa_api.application.ports import (
     Clock,
     CustomerRepositoryPort,
+    GoogleTokenVerifierPort,
     MerchantRepositoryPort,
     OrderRepository,
     PasswordHasherPort,
@@ -206,13 +207,18 @@ def get_authenticate_customer_use_case(
     return AuthenticateCustomerUseCase(customers, hasher, tokens)
 
 
+def get_google_token_verifier() -> GoogleTokenVerifierPort:
+    raise NotImplementedError
+
+
 def get_authenticate_google_customer_use_case(
     customers: Annotated[CustomerRepositoryPort, Depends(get_customer_repository)],
     hasher: Annotated[PasswordHasherPort, Depends(get_password_hasher)],
     tokens: Annotated[TokenServicePort, Depends(get_token_service)],
+    verifier: Annotated[GoogleTokenVerifierPort, Depends(get_google_token_verifier)],
     clock: Annotated[Clock, Depends(get_clock)],
 ) -> AuthenticateGoogleCustomerUseCase:
-    return AuthenticateGoogleCustomerUseCase(customers, hasher, tokens, clock)
+    return AuthenticateGoogleCustomerUseCase(customers, hasher, tokens, verifier, clock)
 
 
 def get_verify_customer_token_use_case(

@@ -91,14 +91,10 @@ def test_customer_me_requires_valid_bearer_token(client: TestClient) -> None:
 
 
 def test_customer_google_sso_flow(client: TestClient) -> None:
-    # 1. First time logging in with Google: automatically creates account
+    # 1. First time logging in with Google token: automatically creates account
     res1 = client.post(
         "/auth/customer/google",
-        json={
-            "email": "aluno.google@usp.br",
-            "name": "Aluno Google USP",
-            "id_token": "google-mock-jwt-token",
-        },
+        json={"id_token": "google-mock-jwt-token"},
     )
     assert res1.status_code == 200
     data1 = res1.json()
@@ -106,12 +102,10 @@ def test_customer_google_sso_flow(client: TestClient) -> None:
     assert data1["name"] == "Aluno Google USP"
     assert len(data1["access_token"]) > 20
 
-    # 2. Second login with same Google account returns existing user
+    # 2. Second login with same verified Google token returns existing user
     res2 = client.post(
         "/auth/customer/google",
-        json={
-            "email": "aluno.google@usp.br",
-        },
+        json={"id_token": "google-mock-jwt-token"},
     )
     assert res2.status_code == 200
     data2 = res2.json()
@@ -128,8 +122,16 @@ def test_customer_google_sso_flow(client: TestClient) -> None:
 
 
 def test_customer_google_sso_invalid_payload(client: TestClient) -> None:
+    # Missing id_token
     res = client.post(
         "/auth/customer/google",
-        json={"email": "not-an-email"},
+        json={"email": "victim@usp.br"},
     )
     assert res.status_code == 422
+
+    # Unverifiable id_token rejected
+    res_bad = client.post(
+        "/auth/customer/google",
+        json={"id_token": "bad-forged-token"},
+    )
+    assert res_bad.status_code == 422

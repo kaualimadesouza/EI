@@ -26,7 +26,11 @@ export function CustomerAuthScreen({ auth, onAuthSuccess }: CustomerAuthScreenPr
     setError(null)
     setLoading(true)
     try {
-      const customer = await auth.loginWithGoogle()
+      const customer = await auth.loginWithGoogle({
+        idToken: 'google-oauth-demo-token',
+        email: 'aluno.usp@usp.br',
+        name: 'Aluno USP (Google)',
+      })
       onAuthSuccess(customer)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao autenticar com o Google.')

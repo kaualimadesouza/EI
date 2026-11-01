@@ -327,8 +327,6 @@ describe('HttpCustomerAuth', () => {
       '/auth/customer/google',
       {
         id_token: 'custom-google-id-token',
-        name: 'Aluno Google',
-        email: 'aluno@usp.br',
       },
       null,
     )
@@ -354,9 +352,7 @@ describe('HttpCustomerAuth', () => {
     expect(fakeClient.post).toHaveBeenCalledWith(
       '/auth/customer/google',
       {
-        id_token: undefined,
-        name: undefined,
-        email: undefined,
+        id_token: 'google-oauth-demo-token',
       },
       null,
     )

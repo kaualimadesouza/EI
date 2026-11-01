@@ -52,9 +52,7 @@ class CustomerLoginRequest(BaseModel):
 
 
 class GoogleCustomerAuthRequest(BaseModel):
-    id_token: str | None = None
-    email: str | None = Field(default=None, max_length=254)
-    name: str | None = Field(default=None, max_length=120)
+    id_token: str = Field(min_length=1, max_length=4096)
 
 
 class CustomerAuthResponse(BaseModel):
@@ -157,13 +155,7 @@ def login_customer_google(
     ],
 ) -> CustomerAuthResponse:
     """Authenticates or provisions a customer using Google SSO."""
-    result = use_case.execute(
-        GoogleCustomerAuth(
-            id_token=request.id_token,
-            email=request.email,
-            name=request.name,
-        )
-    )
+    result = use_case.execute(GoogleCustomerAuth(id_token=request.id_token))
     return CustomerAuthResponse(
         access_token=result.access_token,
         token_type=result.token_type,

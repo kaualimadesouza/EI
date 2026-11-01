@@ -519,4 +519,33 @@ describe('StoreSelectorScreen', () => {
     expect(await screen.findByText(/Praça de Alimentação EACH-USP/i)).toBeInTheDocument()
     vi.unstubAllGlobals()
   })
+
+  it('resets active tab to restaurants when customer becomes null while on orders tab', async () => {
+    const user = userEvent.setup()
+    const { stores, orders } = createPorts()
+
+    const { rerender } = render(
+      <StoreSelectorScreen
+        stores={stores}
+        orders={orders}
+        customer={customer}
+        onSelectStore={vi.fn()}
+      />,
+    )
+
+    await user.click(screen.getByRole('tab', { name: 'Meus Pedidos' }))
+    expect(screen.getByRole('tab', { name: 'Meus Pedidos' })).toHaveAttribute('aria-selected', 'true')
+
+    rerender(
+      <StoreSelectorScreen
+        stores={stores}
+        orders={orders}
+        customer={null}
+        onSelectStore={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('tab', { name: 'Restaurantes' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.queryByRole('tab', { name: 'Meus Pedidos' })).not.toBeInTheDocument()
+  })
 })

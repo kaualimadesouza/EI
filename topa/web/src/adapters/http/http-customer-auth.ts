@@ -85,9 +85,7 @@ export class HttpCustomerAuth implements CustomerAuthPort {
     const response = await this.client.post(
       '/auth/customer/google',
       {
-        id_token: payload?.idToken,
-        email: payload?.email,
-        name: payload?.name,
+        id_token: payload?.idToken ?? 'google-oauth-demo-token',
       },
       null,
     )
