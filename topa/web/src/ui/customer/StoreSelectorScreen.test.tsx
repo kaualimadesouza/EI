@@ -19,6 +19,14 @@ describe('StoreSelectorScreen', () => {
     { slug: 'quiosque-novo', name: 'Quiosque Novo', category: 'Salgados' },
     { slug: 'quiosque-sem-cat', name: 'Quiosque Sem Cat' },
     {
+      slug: 'mercadinho-sem-cat',
+      name: 'Mercadinho Sem Categoria',
+      segment: 'market',
+      latitude: -23.482,
+      longitude: -46.501,
+      address: 'Prédio de Vivência',
+    },
+    {
       slug: 'emporio-campus',
       name: 'Empório Campus & Mercearia',
       category: 'Conveniência',
@@ -362,6 +370,11 @@ describe('StoreSelectorScreen', () => {
     await user.click(screen.getByRole('button', { name: 'Burgers' }))
     expect(screen.getByRole('heading', { name: 'Brasa Burgers' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Cantina Bella Nonna' })).not.toBeInTheDocument()
+
+    // Filter by Italiano
+    await user.click(screen.getByRole('button', { name: 'Italiano' }))
+    expect(screen.getByRole('heading', { name: 'Cantina Bella Nonna' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Brasa Burgers' })).not.toBeInTheDocument()
 
     // Filter by Mais Próximos
     await user.click(screen.getByRole('button', { name: 'Mais Próximos' }))

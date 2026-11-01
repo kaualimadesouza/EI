@@ -34,39 +34,6 @@ export interface StoreSelectorScreenProps {
   onLogout?: () => void
 }
 
-const STORE_METAS: Record<string, { tag: string; description: string; coords: Coordinates }> = {
-  'brasa-burgers': {
-    tag: 'Burgers & Grill',
-    description: 'Hambúrgueres artesanais grelhados na brasa e acompanhamentos crocantes.',
-    coords: { latitude: -23.4828, longitude: -46.5005 },
-  },
-  'bella-nonna': {
-    tag: 'Culinária Italiana',
-    description: 'Massas artesanais frescas, lasanhas e molhos tradicionais italianos.',
-    coords: { latitude: -23.4815, longitude: -46.502 },
-  },
-  'acai-bowls': {
-    tag: 'Saudável & Bowls',
-    description: 'Açaí puro na tigela, smoothies e opções saudáveis e refrescantes.',
-    coords: { latitude: -23.4835, longitude: -46.4998 },
-  },
-  'lanchonete-bem-te-vi': {
-    tag: 'Lanches Tradicionais',
-    description: 'Lanches rápidos, salgados assados e fritos, cafés e sobremesas da casa.',
-    coords: { latitude: -23.4823, longitude: -46.5012 },
-  },
-  'emporio-campus': {
-    tag: 'Mercado Express',
-    description: 'Bebidas geladas, energéticos, chocolates, salgadinhos e conveniência express.',
-    coords: { latitude: -23.482, longitude: -46.5008 },
-  },
-  'conveniencia-central': {
-    tag: 'Conveniência & Bebidas',
-    description: 'Refrigerantes, águas, lanches prontos, snacks e itens essenciais do dia a dia.',
-    coords: { latitude: -23.483, longitude: -46.5018 },
-  },
-}
-
 const CATEGORY_CHIPS_RESTAURANTS = ['Todos', 'Mais Próximos', 'Burgers', 'Italiano', 'Saudável', 'Lanches']
 const CATEGORY_CHIPS_MARKETS = ['Todos', 'Mais Próximos', 'Bebidas Geladas', 'Snacks & Doces', 'Mercearia Express', 'Conveniência']
 
@@ -214,19 +181,20 @@ export function StoreSelectorScreen({
   const enrichedStores = useMemo(() => {
     const coordsRef = userCoords ?? EACH_USP_COORDINATES
     const withDistance = storeList.map((store) => {
-      const meta = STORE_METAS[store.slug] ?? {
-        tag: store.category ?? 'Restaurante',
-        description: 'Cardápio completo disponível para pedidos imediatos.',
-        coords: EACH_USP_COORDINATES,
-      }
+      const tag = store.category ?? (store.segment === 'market' ? 'Mercado Express' : 'Restaurante')
+      const description =
+        store.segment === 'market'
+          ? 'Produtos de conveniência, snacks e bebidas prontos para retirada express em até 5 min.'
+          : 'Cardápio completo com opções preparadas na hora e entrega expressa no campus.'
       const storeCoords: Coordinates = {
-        latitude: store.latitude ?? meta.coords.latitude,
-        longitude: store.longitude ?? meta.coords.longitude,
+        latitude: store.latitude ?? EACH_USP_COORDINATES.latitude,
+        longitude: store.longitude ?? EACH_USP_COORDINATES.longitude,
       }
       const distanceMeters = calculateDistanceMeters(coordsRef, storeCoords)
       return {
         ...store,
-        meta,
+        tag,
+        description,
         distanceMeters,
         address: store.address ?? 'Praça de Alimentação',
       }
@@ -244,9 +212,14 @@ export function StoreSelectorScreen({
     } else if (selectedCategory !== 'Todos') {
       const searchCat = selectedCategory.toLowerCase()
       filtered = filtered.filter((s) => {
-        if (s.meta.tag.toLowerCase().includes(searchCat)) return true
-        if (s.category) return s.category.toLowerCase().includes(searchCat)
-        return false
+        const pool = `${s.name} ${s.tag} ${s.category ?? ''}`.toLowerCase()
+        if (searchCat === 'burgers') {
+          return pool.includes('burger') || pool.includes('hamburguer')
+        }
+        if (searchCat === 'italiano') {
+          return pool.includes('italian')
+        }
+        return pool.includes(searchCat)
       })
     }
 
@@ -255,8 +228,8 @@ export function StoreSelectorScreen({
       filtered = filtered.filter(
         (s) =>
           s.name.toLowerCase().includes(q) ||
-          s.meta.tag.toLowerCase().includes(q) ||
-          s.meta.description.toLowerCase().includes(q),
+          s.tag.toLowerCase().includes(q) ||
+          s.description.toLowerCase().includes(q),
       )
     }
 
@@ -601,7 +574,7 @@ export function StoreSelectorScreen({
                       <div>
                         <div className="mb-2 flex items-center justify-between gap-2">
                           <span className="rounded-full bg-cream px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted">
-                            {store.meta.tag}
+                            {store.tag}
                           </span>
 
                           <div className="flex items-center gap-1.5">
@@ -632,7 +605,7 @@ export function StoreSelectorScreen({
                         </div>
 
                         <p className="mt-3 text-[14px] leading-relaxed text-muted">
-                          {store.meta.description}
+                          {store.description}
                         </p>
                       </div>
 

@@ -4,10 +4,6 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
 from topa_api.application.authenticate_customer import AuthenticateCustomerUseCase
-from topa_api.application.authenticate_google_customer import (
-    AuthenticateGoogleCustomerUseCase,
-    GoogleCustomerAuth,
-)
 from topa_api.application.authenticate_merchant import AuthenticateMerchantUseCase
 from topa_api.application.register_customer import RegisterCustomerUseCase
 from topa_api.domain.auth import (
@@ -18,7 +14,6 @@ from topa_api.domain.auth import (
 )
 from topa_api.presentation.fastapi.dependencies import (
     get_authenticate_customer_use_case,
-    get_authenticate_google_customer_use_case,
     get_authenticate_merchant_use_case,
     get_current_customer,
     get_register_customer_use_case,
@@ -49,10 +44,6 @@ class CustomerRegisterRequest(BaseModel):
 class CustomerLoginRequest(BaseModel):
     email: str = Field(min_length=3, max_length=254)
     password: str = Field(min_length=1, max_length=128)
-
-
-class GoogleCustomerAuthRequest(BaseModel):
-    id_token: str = Field(min_length=1, max_length=4096)
 
 
 class CustomerAuthResponse(BaseModel):
@@ -134,28 +125,6 @@ def login_customer(
             password=request.password,
         )
     )
-    return CustomerAuthResponse(
-        access_token=result.access_token,
-        token_type=result.token_type,
-        name=result.name,
-        email=result.email,
-    )
-
-
-@router.post(
-    "/auth/customer/google",
-    responses={
-        422: {"model": ErrorResponse, "description": "invalid google authentication payload"},
-    },
-)
-def login_customer_google(
-    request: GoogleCustomerAuthRequest,
-    use_case: Annotated[
-        AuthenticateGoogleCustomerUseCase, Depends(get_authenticate_google_customer_use_case)
-    ],
-) -> CustomerAuthResponse:
-    """Authenticates or provisions a customer using Google SSO."""
-    result = use_case.execute(GoogleCustomerAuth(id_token=request.id_token))
     return CustomerAuthResponse(
         access_token=result.access_token,
         token_type=result.token_type,

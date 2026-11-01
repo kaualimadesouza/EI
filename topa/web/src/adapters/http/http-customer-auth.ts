@@ -5,7 +5,6 @@ import {
   type CustomerAuthPort,
   type CustomerCredentials,
   type CustomerRegistration,
-  type GoogleAuthPayload,
 } from '../../ports/customer-auth'
 import type { HttpClient } from './http-client'
 
@@ -81,38 +80,10 @@ export class HttpCustomerAuth implements CustomerAuthPort {
     return customer
   }
 
-  async loginWithGoogle(payload?: GoogleAuthPayload): Promise<AuthenticatedCustomer> {
-    const response = await this.client.post(
-      '/auth/customer/google',
-      {
-        id_token: payload?.idToken ?? 'google-oauth-demo-token',
-      },
-      null,
+  async loginWithGoogle(): Promise<AuthenticatedCustomer> {
+    throw new CustomerAuthError(
+      'Login com Google em homologação institucional USP. Por favor, acesse com seu e-mail e senha cadastrados.',
     )
-
-    if (!response.ok) {
-      let detail = 'Não foi possível autenticar com o Google.'
-      try {
-        const body = (await response.json()) as ErrorJson
-        if (typeof body?.detail === 'string') {
-          detail = body.detail
-        }
-      } catch {
-        // Fallback message kept when body is not valid JSON.
-      }
-      throw new CustomerAuthError(detail)
-    }
-
-    const data = (await response.json()) as CustomerAuthResponseJson
-    this.token = data.access_token
-    const customer: AuthenticatedCustomer = {
-      name: data.name,
-      email: data.email,
-    }
-    this.customer = customer
-
-    this.persistSession()
-    return customer
   }
 
   async register(data: CustomerRegistration): Promise<AuthenticatedCustomer> {

@@ -17,7 +17,6 @@ from topa_api.adapters.db.repositories import (
 )
 from topa_api.adapters.db.session import DatabaseReadinessProbe, get_engine
 from topa_api.adapters.rate_limiter import InMemoryRateLimiter
-from topa_api.adapters.security.google_token_verifier import GoogleTokenVerifier
 from topa_api.adapters.security.password_hasher import ScryptPasswordHasher
 from topa_api.adapters.security.token_service import HmacTokenService
 from topa_api.application.ports import (
@@ -96,7 +95,6 @@ def create_app() -> FastAPI:
     tokens = HmacTokenService(secret_key=settings.auth_secret_key)
     limiter = InMemoryRateLimiter(limit=10, window_seconds=60)
     pos_adapter = FileDropPosAdapter(Path("/tmp/topa_pos_export"))
-    google_verifier = GoogleTokenVerifier()
     app.dependency_overrides.update(
         {
             ports.get_readiness_probe: lambda: probe,
@@ -107,7 +105,6 @@ def create_app() -> FastAPI:
             ports.get_customer_repository: customer_repository,
             ports.get_password_hasher: lambda: hasher,
             ports.get_token_service: lambda: tokens,
-            ports.get_google_token_verifier: lambda: google_verifier,
             ports.get_rate_limiter: lambda: limiter,
             ports.get_clock: SystemClock,
             ports.get_pos_adapter: lambda: pos_adapter,
