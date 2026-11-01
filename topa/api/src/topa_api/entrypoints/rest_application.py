@@ -12,10 +12,12 @@ from topa_api.adapters.db.repositories import (
     SqlAlchemyCustomerRepository,
     SqlAlchemyMerchantRepository,
     SqlAlchemyOrderRepository,
+    SqlAlchemyPaymentRepository,
     SqlAlchemyProductRepository,
     SqlAlchemyStoreRepository,
 )
 from topa_api.adapters.db.session import DatabaseReadinessProbe, get_engine
+from topa_api.adapters.payment.abacatepay_gateway import AbacatePayGateway
 from topa_api.adapters.rate_limiter import InMemoryRateLimiter
 from topa_api.adapters.security.password_hasher import ScryptPasswordHasher
 from topa_api.adapters.security.token_service import HmacTokenService
@@ -23,6 +25,7 @@ from topa_api.application.ports import (
     CustomerRepositoryPort,
     MerchantRepositoryPort,
     OrderRepository,
+    PaymentRepositoryPort,
     ProductRepository,
     StoreRepository,
 )
@@ -32,6 +35,7 @@ from topa_api.presentation.fastapi.auth import router as auth_router
 from topa_api.presentation.fastapi.errors import install_error_handlers
 from topa_api.presentation.fastapi.health import router as health_router
 from topa_api.presentation.fastapi.orders import router as orders_router
+from topa_api.presentation.fastapi.payments import router as payments_router
 from topa_api.presentation.fastapi.products import router as products_router
 from topa_api.presentation.fastapi.recommendations import router as recommendations_router
 from topa_api.presentation.fastapi.stores import router as stores_router
@@ -76,6 +80,12 @@ def customer_repository(
     return SqlAlchemyCustomerRepository(session)
 
 
+def payment_repository(
+    session: Annotated[Session, Depends(get_session, scope="function")],
+) -> PaymentRepositoryPort:
+    return SqlAlchemyPaymentRepository(session)
+
+
 def create_app() -> FastAPI:
     """Composition root: the one place that picks the adapter behind each port."""
     app = FastAPI(title="TOPA API")
@@ -95,6 +105,10 @@ def create_app() -> FastAPI:
     tokens = HmacTokenService(secret_key=settings.auth_secret_key)
     limiter = InMemoryRateLimiter(limit=10, window_seconds=60)
     pos_adapter = FileDropPosAdapter(Path("/tmp/topa_pos_export"))
+    gateway = AbacatePayGateway(
+        api_key=settings.abacatepay_api_key,
+        base_url=settings.abacatepay_base_url,
+    )
     app.dependency_overrides.update(
         {
             ports.get_readiness_probe: lambda: probe,
@@ -103,6 +117,9 @@ def create_app() -> FastAPI:
             ports.get_order_repository: order_repository,
             ports.get_merchant_repository: merchant_repository,
             ports.get_customer_repository: customer_repository,
+            ports.get_payment_repository: payment_repository,
+            ports.get_payment_gateway: lambda: gateway,
+            ports.get_abacatepay_webhook_secret: lambda: settings.abacatepay_webhook_secret,
             ports.get_password_hasher: lambda: hasher,
             ports.get_token_service: lambda: tokens,
             ports.get_rate_limiter: lambda: limiter,
@@ -117,6 +134,7 @@ def create_app() -> FastAPI:
     app.include_router(orders_router)
     app.include_router(recommendations_router)
     app.include_router(totem_sessions_router)
+    app.include_router(payments_router)
     return app
 
 

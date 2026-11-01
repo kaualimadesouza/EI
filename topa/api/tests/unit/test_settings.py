@@ -65,3 +65,25 @@ def test_auth_secret_key_follows_the_topa_prefixed_variable(
     monkeypatch.setenv("TOPA_AUTH_SECRET_KEY", "custom-super-secret-key")
 
     assert Settings().auth_secret_key == "custom-super-secret-key"
+
+
+def test_abacatepay_settings_defaults_and_env_variables(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("TOPA_ABACATEPAY_API_KEY", raising=False)
+    monkeypatch.delenv("TOPA_ABACATEPAY_WEBHOOK_SECRET", raising=False)
+    monkeypatch.delenv("TOPA_ABACATEPAY_BASE_URL", raising=False)
+
+    default_settings = Settings()
+    assert default_settings.abacatepay_api_key is None
+    assert default_settings.abacatepay_webhook_secret is None
+    assert default_settings.abacatepay_base_url == "https://api.abacatepay.com"
+
+    monkeypatch.setenv("TOPA_ABACATEPAY_API_KEY", "abc_dev_123456")
+    monkeypatch.setenv("TOPA_ABACATEPAY_WEBHOOK_SECRET", "wh_sec_abcdef")
+    monkeypatch.setenv("TOPA_ABACATEPAY_BASE_URL", "https://sandbox.abacatepay.com")
+
+    configured = Settings()
+    assert configured.abacatepay_api_key == "abc_dev_123456"
+    assert configured.abacatepay_webhook_secret == "wh_sec_abcdef"
+    assert configured.abacatepay_base_url == "https://sandbox.abacatepay.com"

@@ -5,6 +5,7 @@ import { HttpConnection } from './adapters/http/http-connection'
 import { HttpCustomerAuth } from './adapters/http/http-customer-auth'
 import { HttpMenu } from './adapters/http/http-menu'
 import { HttpOrders } from './adapters/http/http-orders'
+import { HttpPayment } from './adapters/http/http-payment'
 import { HttpRecommendations } from './adapters/http/http-recommendations'
 import { HttpStores } from './adapters/http/http-stores'
 import { LocalAuth } from './adapters/local/local-auth'
@@ -12,6 +13,7 @@ import { LocalConnection } from './adapters/local/local-connection'
 import { LocalCustomerAuth } from './adapters/local/local-customer-auth'
 import { LocalMenu } from './adapters/local/local-menu'
 import { LocalOrders } from './adapters/local/local-orders'
+import { LocalPayment } from './adapters/local/local-payment'
 import { LocalPrinterAdapter } from './adapters/local/local-printer'
 import { LocalRecommendations } from './adapters/local/local-recommendations'
 import { LocalStores } from './adapters/local/local-stores'
@@ -72,6 +74,7 @@ describe('createAdapters', () => {
     expect(adapters.connection).toBeInstanceOf(HttpConnection)
     expect(adapters.menu).toBeInstanceOf(HttpMenu)
     expect(adapters.orders).toBeInstanceOf(OfflineResilientOrders)
+    expect(adapters.payment).toBeInstanceOf(HttpPayment)
     const resilientOrders = adapters.orders as OfflineResilientOrders
     expect(resilientOrders.underlying).toBeInstanceOf(HttpOrders)
     expect(adapters.auth).toBeInstanceOf(HttpAuth)
@@ -96,6 +99,7 @@ describe('createAdapters', () => {
     expect(adapters.connection).toBeInstanceOf(LocalConnection)
     expect(adapters.menu).toBeInstanceOf(LocalMenu)
     expect(adapters.orders).toBeInstanceOf(OfflineResilientOrders)
+    expect(adapters.payment).toBeInstanceOf(LocalPayment)
     expect((adapters.orders as OfflineResilientOrders).underlying).toBeInstanceOf(LocalOrders)
     expect(adapters.auth).toBeInstanceOf(LocalAuth)
     expect(adapters.customerAuth).toBeInstanceOf(LocalCustomerAuth)

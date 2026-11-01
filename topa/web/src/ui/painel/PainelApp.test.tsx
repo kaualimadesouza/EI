@@ -11,6 +11,7 @@ import { LocalAuth } from '../../adapters/local/local-auth'
 import { LocalCustomerAuth } from '../../adapters/local/local-customer-auth'
 import { LocalMenu } from '../../adapters/local/local-menu'
 import { LocalOrders } from '../../adapters/local/local-orders'
+import { LocalPayment } from '../../adapters/local/local-payment'
 import { LocalPrinterAdapter } from '../../adapters/local/local-printer'
 import { LocalRecommendations } from '../../adapters/local/local-recommendations'
 import { LocalStores } from '../../adapters/local/local-stores'
@@ -46,6 +47,7 @@ function demoStore(storeSlug: string = DEMO_STORE_SLUG) {
     connection: { isReachable: () => Promise.resolve(true) },
     menu,
     orders: ordersAt(() => NOW),
+    payment: new LocalPayment(),
     auth: new LocalAuth({
       storage,
       initialMerchant: { email: 'admin@bemtevi.topa.com', storeSlug },
@@ -299,6 +301,7 @@ describe('PainelApp', () => {
       connection: { isReachable: () => Promise.resolve(false) },
       menu: { load: () => Promise.reject(new Error('down')), setAvailability: vi.fn(), create: vi.fn(), update: vi.fn() },
       orders: { place: vi.fn(), list: () => Promise.reject(new Error('down')), setStatus: vi.fn(), statusOf: vi.fn(), listCustomerOrders: vi.fn() },
+      payment: new LocalPayment(),
       auth: {
         login: vi.fn(),
         logout: vi.fn(),
@@ -352,6 +355,7 @@ describe('PainelApp', () => {
         update: vi.fn(),
       },
       orders: { place: vi.fn(), list: () => Promise.resolve([order]), setStatus, statusOf: vi.fn(), listCustomerOrders: vi.fn() },
+      payment: new LocalPayment(),
       auth: {
         login: vi.fn(),
         logout: vi.fn(),
@@ -403,6 +407,7 @@ describe('PainelApp', () => {
       connection: { isReachable: () => Promise.resolve(true) },
       menu: { load, setAvailability, create: vi.fn(), update: vi.fn() },
       orders: { place: vi.fn(), list, setStatus: vi.fn(), statusOf: vi.fn(), listCustomerOrders: vi.fn() },
+      payment: new LocalPayment(),
       auth: {
         login: vi.fn(),
         logout: vi.fn(),

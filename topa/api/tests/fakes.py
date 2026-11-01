@@ -20,6 +20,7 @@ from topa_api.domain.errors import (
     RateLimitExceededError,
 )
 from topa_api.domain.orders import Order, OrderStatus
+from topa_api.domain.payment import PaymentStatus, PixCharge
 
 
 @dataclass
@@ -251,3 +252,72 @@ class FakeRateLimiter:
         if current >= self.limit:
             raise RateLimitExceededError(self.retry_after)
         self.calls[key] = current + 1
+
+
+@dataclass
+class FakePaymentGateway:
+    charges: dict[str, PixCharge] = field(default_factory=dict)
+    valid_signature: bool = True
+    next_status: PaymentStatus = PaymentStatus.PENDING
+
+    def create_pix_charge(
+        self,
+        order_id: uuid.UUID,
+        amount_cents: int,
+        description: str,
+        customer_email: str | None = None,
+        customer_name: str | None = None,
+    ) -> PixCharge:
+        charge_id = f"pix_fake_{order_id.hex[:8]}"
+        br_code = (
+            f"00020126580014br.gov.bcb.pix0136{order_id}"
+            f"520400005303986540{amount_cents / 100:.2f}5802BR"
+            "5904TOPA6009SAO_PAULO62070503***6304"
+        )
+        charge = PixCharge(
+            id=charge_id,
+            order_id=order_id,
+            amount_cents=amount_cents,
+            status=self.next_status,
+            br_code=br_code,
+            br_code_base64=None,
+            qr_code_url=f"https://pay.abacatepay.com/bill-fake-{charge_id}",
+            expires_at=datetime.fromtimestamp(1893456000),
+            created_at=datetime.fromtimestamp(1893452400),
+        )
+        self.charges[charge_id] = charge
+        return charge
+
+    def get_payment_status(self, payment_id: str) -> PaymentStatus:
+        if self.next_status != PaymentStatus.PENDING:
+            return self.next_status
+        if payment_id in self.charges:
+            return self.charges[payment_id].status
+        return self.next_status
+
+    def verify_webhook_signature(
+        self,
+        raw_body: bytes,
+        signature: str,
+        secret: str,
+    ) -> bool:
+        return self.valid_signature
+
+
+@dataclass
+class InMemoryPaymentRepository:
+    payments: dict[str, PixCharge] = field(default_factory=dict)
+
+    def save_payment(self, charge: PixCharge) -> None:
+        self.payments[charge.id] = charge
+
+    def get_payment(self, payment_id: str) -> PixCharge | None:
+        return self.payments.get(payment_id)
+
+    def get_payment_by_order_id(self, order_id: uuid.UUID) -> PixCharge | None:
+        return next((p for p in self.payments.values() if p.order_id == order_id), None)
+
+    def update_payment_status(self, payment_id: str, status: PaymentStatus) -> None:
+        if payment_id in self.payments:
+            curr = self.payments[payment_id]
+            self.payments[payment_id] = replace(curr, status=status)

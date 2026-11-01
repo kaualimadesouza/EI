@@ -106,3 +106,18 @@ class IdempotencyConflictError(DomainError):
 class DuplicateClientOrderIdError(DomainError):
     def __init__(self) -> None:
         super().__init__("Identificador de pedido do cliente já registrado.")
+
+
+class PaymentNotFoundError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Cobrança não encontrada.")
+
+
+class PaymentProcessingError(DomainError):
+    def __init__(self, message: str = "Falha ao processar pagamento com o gateway.") -> None:
+        super().__init__(message)
+
+
+class InvalidWebhookSignatureError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Assinatura de webhook inválida.")

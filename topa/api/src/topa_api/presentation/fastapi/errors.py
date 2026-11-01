@@ -19,7 +19,10 @@ from topa_api.domain.errors import (
     InvalidIdempotencyKeyError,
     InvalidProductDataError,
     InvalidTokenError,
+    InvalidWebhookSignatureError,
     OrderNotFoundError,
+    PaymentNotFoundError,
+    PaymentProcessingError,
     ProductNotFoundError,
     ProductUnavailableError,
     QuantityOutOfRangeError,
@@ -52,6 +55,9 @@ ERROR_STATUS: dict[type[DomainError], int] = {
     InvalidIdempotencyKeyError: 422,
     IdempotencyConflictError: 409,
     DuplicateClientOrderIdError: 409,
+    PaymentNotFoundError: 404,
+    PaymentProcessingError: 502,
+    InvalidWebhookSignatureError: 401,
 }
 
 INVALID_REQUEST = "Não foi possível processar a solicitação. Tente de novo."

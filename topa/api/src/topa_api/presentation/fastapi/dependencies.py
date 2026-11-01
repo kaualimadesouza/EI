@@ -7,8 +7,10 @@ from topa_api.application.authenticate_customer import AuthenticateCustomerUseCa
 from topa_api.application.authenticate_merchant import AuthenticateMerchantUseCase
 from topa_api.application.change_order_status import ChangeOrderStatusUseCase
 from topa_api.application.check_order_rate_limit import CheckOrderRateLimitUseCase
+from topa_api.application.create_pix_payment import CreatePixPaymentUseCase
 from topa_api.application.create_product import CreateProductUseCase
 from topa_api.application.create_totem_session import CreateTotemSessionUseCase
+from topa_api.application.get_payment_status import GetPaymentStatusUseCase
 from topa_api.application.get_recommendations import GetRecommendations
 from topa_api.application.get_store_menu import GetStoreMenuUseCase
 from topa_api.application.list_customer_orders import ListCustomerOrdersUseCase
@@ -21,12 +23,15 @@ from topa_api.application.ports import (
     MerchantRepositoryPort,
     OrderRepository,
     PasswordHasherPort,
+    PaymentGatewayPort,
+    PaymentRepositoryPort,
     ProductRepository,
     RateLimiterPort,
     ReadinessProbe,
     StoreRepository,
     TokenServicePort,
 )
+from topa_api.application.process_payment_webhook import ProcessPaymentWebhookUseCase
 from topa_api.application.read_order import ReadOrderUseCase
 from topa_api.application.register_customer import RegisterCustomerUseCase
 from topa_api.application.set_product_availability import SetProductAvailabilityUseCase
@@ -260,3 +265,37 @@ def get_recommendations_use_case(
     clock: Annotated[Clock, Depends(get_clock)],
 ) -> GetRecommendations:
     return GetRecommendations(stores, products, orders, clock)
+
+
+def get_payment_gateway() -> PaymentGatewayPort:
+    raise NotImplementedError
+
+
+def get_payment_repository() -> PaymentRepositoryPort:
+    raise NotImplementedError
+
+
+def get_abacatepay_webhook_secret() -> str | None:
+    return None
+
+
+def get_create_pix_payment_use_case(
+    orders: Annotated[OrderRepository, Depends(get_order_repository)],
+    payments: Annotated[PaymentRepositoryPort, Depends(get_payment_repository)],
+    gateway: Annotated[PaymentGatewayPort, Depends(get_payment_gateway)],
+) -> CreatePixPaymentUseCase:
+    return CreatePixPaymentUseCase(orders, payments, gateway)
+
+
+def get_payment_status_use_case(
+    payments: Annotated[PaymentRepositoryPort, Depends(get_payment_repository)],
+    gateway: Annotated[PaymentGatewayPort, Depends(get_payment_gateway)],
+) -> GetPaymentStatusUseCase:
+    return GetPaymentStatusUseCase(payments, gateway)
+
+
+def get_process_payment_webhook_use_case(
+    payments: Annotated[PaymentRepositoryPort, Depends(get_payment_repository)],
+    gateway: Annotated[PaymentGatewayPort, Depends(get_payment_gateway)],
+) -> ProcessPaymentWebhookUseCase:
+    return ProcessPaymentWebhookUseCase(payments, gateway)
