@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.6](https://github.com/kaualimadesouza/EI/compare/topa-0.1.5...topa-0.1.6) (2026-11-01)
+
+
+### Features
+
+* **totem:** temporary totem session validation and proximity store selector ([#76](https://github.com/kaualimadesouza/EI/issues/76)) ([fe2e3bc](https://github.com/kaualimadesouza/EI/commit/fe2e3bc36a533ba64134bb8d7cca248395cf14f7))
+
 ## [0.1.5](https://github.com/kaualimadesouza/EI/compare/topa-0.1.4...topa-0.1.5) (2026-10-31)
 
 
