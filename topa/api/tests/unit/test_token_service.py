@@ -6,7 +6,7 @@ import pytest
 from tests.fakes import FixedClock
 from topa_api.adapters.security.token_service import HmacTokenService
 from topa_api.domain.auth import AuthenticatedMerchant
-from topa_api.domain.errors import InvalidTokenError
+from topa_api.domain.errors import ExpiredTokenError, InvalidTokenError
 
 
 def test_creates_and_verifies_valid_token() -> None:
@@ -225,7 +225,7 @@ def test_totem_session_rejects_expired_token() -> None:
     token = service.create_totem_session_token("brasa-burgers", expires_in_seconds=60)
     clock.moment = datetime(2026, 10, 31, 20, 2, tzinfo=UTC)
 
-    with pytest.raises(InvalidTokenError):
+    with pytest.raises(ExpiredTokenError):
         service.verify_totem_session_token(token)
 
 

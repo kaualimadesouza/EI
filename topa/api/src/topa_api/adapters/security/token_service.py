@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from topa_api.adapters.clock import SystemClock
 from topa_api.application.ports import Clock
 from topa_api.domain.auth import AuthenticatedCustomer, AuthenticatedMerchant, TotemSession
-from topa_api.domain.errors import InvalidTokenError
+from topa_api.domain.errors import ExpiredTokenError, InvalidTokenError
 
 
 class HmacTokenService:
@@ -120,7 +120,7 @@ class HmacTokenService:
             if not isinstance(data, dict):
                 raise InvalidTokenError()
             if data.get("exp", 0) < int(self._clock.now().timestamp()):
-                raise InvalidTokenError()
+                raise ExpiredTokenError()
             return data
         except (ValueError, KeyError, TypeError, AttributeError, json.JSONDecodeError):
             raise InvalidTokenError() from None

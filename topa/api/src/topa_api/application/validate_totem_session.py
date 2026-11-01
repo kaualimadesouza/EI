@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from topa_api.application.ports import Clock, TokenService
-from topa_api.domain.errors import InvalidTokenError
+from topa_api.domain.errors import ExpiredTokenError, InvalidTokenError
 
 
 @dataclass(frozen=True)
@@ -40,8 +40,13 @@ class ValidateTotemSessionUseCase:
                 expires_at=session.expires_at,
                 seconds_remaining=remaining,
             )
+        except ExpiredTokenError:
+            return TotemSessionValidationResult(
+                valid=False,
+                reason="expired",
+            )
         except InvalidTokenError:
             return TotemSessionValidationResult(
                 valid=False,
-                reason="invalid_or_expired",
+                reason="invalid",
             )

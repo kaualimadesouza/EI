@@ -1033,4 +1033,17 @@ describe('KioskApp', () => {
     render(<KioskApp adapters={f.adapters} now={morning} storeSlug={DEMO_STORE_SLUG} surface="totem" />)
     expect(screen.getByRole('heading', { name: 'Peça aqui. Pague aqui.' })).toBeInTheDocument()
   })
+
+  it('renews totem session periodically on interval to prevent expiry', async () => {
+    vi.useFakeTimers()
+    const f = fakes()
+    const spy = vi.spyOn(f.adapters.totemSession, 'createSession')
+    render(<KioskApp adapters={f.adapters} now={morning} storeSlug={DEMO_STORE_SLUG} surface="totem" />)
+    expect(spy).toHaveBeenCalledTimes(1)
+    act(() => {
+      vi.advanceTimersByTime(10 * 60 * 1000)
+    })
+    expect(spy).toHaveBeenCalledTimes(2)
+    vi.useRealTimers()
+  })
 })

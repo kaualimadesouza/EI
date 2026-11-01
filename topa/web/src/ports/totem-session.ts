@@ -1,10 +1,18 @@
-export interface TotemSessionResult {
-  valid: boolean
-  storeSlug?: string
-  expiresAt?: string
-  secondsRemaining?: number
-  reason?: string
-}
+export type TotemSessionResult =
+  | {
+      valid: true
+      storeSlug: string
+      expiresAt: string
+      secondsRemaining: number
+      reason?: undefined
+    }
+  | {
+      valid: false
+      reason: string
+      storeSlug?: string
+      expiresAt?: undefined
+      secondsRemaining?: undefined
+    }
 
 export interface TotemSessionCreation {
   token: string

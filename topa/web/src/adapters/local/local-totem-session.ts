@@ -30,6 +30,7 @@ export class LocalTotemSession implements TotemSessionPort {
         return {
           valid: true,
           storeSlug: inferredSlug || 'lanchonete-bem-te-vi',
+          expiresAt: new Date(Date.now() + 1800000).toISOString(),
           secondsRemaining: 1800,
         }
       }

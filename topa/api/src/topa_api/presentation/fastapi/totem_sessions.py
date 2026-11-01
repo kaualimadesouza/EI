@@ -35,7 +35,6 @@ class TotemSessionValidationResponse(BaseModel):
 
 
 @router.post("/sessions", response_model=TotemSessionResponse)
-@router.post("/session", response_model=TotemSessionResponse, include_in_schema=False)
 def create_totem_session(
     payload: CreateTotemSessionPayload,
     use_case: Annotated[CreateTotemSessionUseCase, Depends(get_create_totem_session_use_case)],
@@ -53,11 +52,6 @@ def create_totem_session(
 
 
 @router.get("/sessions/validate", response_model=TotemSessionValidationResponse)
-@router.get(
-    "/session/validate",
-    response_model=TotemSessionValidationResponse,
-    include_in_schema=False,
-)
 def validate_totem_session(
     token: Annotated[str, Query(...)],
     use_case: Annotated[ValidateTotemSessionUseCase, Depends(get_validate_totem_session_use_case)],

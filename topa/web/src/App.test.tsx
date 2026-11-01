@@ -223,7 +223,7 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Entrar / Cadastrar' })).toBeInTheDocument()
 
     // Can order directly without logging in
-    await user.click(screen.getByRole('button', { name: 'Pedir em Brasa Burgers' }))
+    await user.click(await screen.findByRole('button', { name: 'Pedir em Brasa Burgers' }))
     expect(await screen.findByRole('button', { name: /Comer aqui/ })).toBeInTheDocument()
   })
 
@@ -241,10 +241,10 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Entrar no TOPA' }))
 
     expect(await screen.findByRole('heading', { name: 'Onde você quer pedir hoje?' })).toBeInTheDocument()
-    expect(screen.getByText('Olá, Cliente Universitário')).toBeInTheDocument()
+    expect(await screen.findByText('Olá, Cliente Universitário')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Sair da conta' }))
-    expect(screen.getByRole('button', { name: 'Entrar / Cadastrar' })).toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: 'Sair da conta' }))
+    expect(await screen.findByRole('button', { name: 'Entrar / Cadastrar' })).toBeInTheDocument()
   })
 
   it('opens restaurant directly when accessed with a valid totem session token', async () => {
@@ -270,14 +270,13 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Onde você quer pedir hoje?' })).toBeInTheDocument()
   })
 
-  it('shows notice when accessing raw loja parameter on web without totem session', async () => {
+  it('retains selected restaurant when page is refreshed with loja parameter', async () => {
     const adapters = createAdapters(undefined)
     window.history.replaceState(null, '', '/?loja=brasa-burgers')
 
     render(<App adapters={adapters} />)
 
-    expect(await screen.findByText(/Para acessar pelo totem de uma loja física/)).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Onde você quer pedir hoje?' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /Comer aqui/ })).toBeInTheDocument()
   })
 
   it('handles totem session validation network failure gracefully', async () => {
@@ -327,7 +326,7 @@ describe('App', () => {
   })
 
   it('ignores totem session resolution and rejection after component unmounts', async () => {
-    let resolveSession: (value: { valid: boolean; storeSlug?: string }) => void = () => {}
+    let resolveSession: (value: { valid: true; storeSlug: string; expiresAt: string; secondsRemaining: number }) => void = () => {}
     let rejectSession: (err: unknown) => void = () => {}
     const adapters = createAdapters(undefined)
     vi.spyOn(adapters.totemSession, 'validateSession')
@@ -337,7 +336,7 @@ describe('App', () => {
     window.history.replaceState(null, '', '/?loja=brasa-burgers&sessao=pending-tok-1')
     const view1 = render(<App adapters={adapters} />)
     view1.unmount()
-    resolveSession({ valid: true, storeSlug: 'brasa-burgers' })
+    resolveSession({ valid: true, storeSlug: 'brasa-burgers', expiresAt: '2026-10-31T22:00:00Z', secondsRemaining: 1800 })
 
     window.history.replaceState(null, '', '/?loja=brasa-burgers&sessao=pending-tok-2')
     const view2 = render(<App adapters={adapters} />)

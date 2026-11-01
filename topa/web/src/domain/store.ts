@@ -5,6 +5,10 @@ export interface Store {
   slug: string
   name: string
   cnpj?: string
+  latitude?: number
+  longitude?: number
+  address?: string
+  category?: string
 }
 
 /** One store and its whole menu in display order, sold-out products included. */

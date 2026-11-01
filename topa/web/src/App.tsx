@@ -32,7 +32,10 @@ export function App({
   const [customer, setCustomer] = useState<AuthenticatedCustomer | null>(() =>
     adapters.customerAuth.getCustomer(),
   )
-  const [selectedStore, setSelectedStore] = useState<string | null>(null)
+  const [selectedStore, setSelectedStore] = useState<string | null>(() => {
+    const loc = locationStore(window.location.href)
+    return loc.kind === 'valid' && !loc.sessionToken ? loc.slug : null
+  })
   const [showingAuth, setShowingAuth] = useState(false)
   const [sessionValidation, setSessionValidation] = useState<{
     status: 'idle' | 'checking' | 'valid' | 'invalid'
@@ -49,7 +52,10 @@ export function App({
   useEffect(() => {
     const onPopState = () => {
       const loc = locationStore(window.location.href)
-      setSelectedStore(loc.kind === 'valid' && loc.sessionToken ? loc.slug : null)
+      setSelectedStore(loc.kind === 'valid' ? loc.slug : null)
+      if (loc.kind === 'absent') {
+        setSessionValidation({ status: 'idle' })
+      }
     }
     window.addEventListener('popstate', onPopState)
     return () => window.removeEventListener('popstate', onPopState)
@@ -213,9 +219,7 @@ export function App({
   const notice =
     sessionValidation.status === 'invalid'
       ? sessionValidation.message
-      : store.kind === 'valid' && !store.sessionToken
-        ? 'Para acessar pelo totem de uma loja física, utilize o QR Code exibido na tela dele. Abaixo você pode escolher qualquer restaurante para pedir pela web.'
-        : null
+      : null
 
   return (
     <StoreSelectorScreen

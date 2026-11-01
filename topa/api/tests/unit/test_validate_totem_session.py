@@ -43,4 +43,17 @@ def test_validate_totem_session_invalid_token() -> None:
 
     assert result.valid is False
     assert result.store_slug is None
-    assert result.reason == "invalid_or_expired"
+    assert result.reason == "invalid"
+
+
+def test_validate_totem_session_expired_token() -> None:
+    clock = FixedClock(datetime(2026, 10, 31, 20, 0, tzinfo=UTC))
+    tokens = HmacTokenService(secret_key="secret", clock=clock)
+    token = tokens.create_totem_session_token("brasa-burgers", expires_in_seconds=1800)
+
+    clock.moment = datetime(2026, 10, 31, 20, 35, tzinfo=UTC)
+    use_case = ValidateTotemSessionUseCase(tokens, clock)
+    result = use_case.execute(token=token)
+
+    assert result.valid is False
+    assert result.reason == "expired"

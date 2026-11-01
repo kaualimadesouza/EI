@@ -38,7 +38,7 @@ def test_validate_totem_session_invalid_token(client: TestClient) -> None:
     assert val_res.status_code == 200
     val_data = val_res.json()
     assert val_data["valid"] is False
-    assert val_data["reason"] == "invalid_or_expired"
+    assert val_data["reason"] == "invalid"
 
 
 def test_stores_endpoint_returns_location_metadata(client: TestClient) -> None:

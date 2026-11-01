@@ -77,4 +77,39 @@ describe('HttpTotemSession', () => {
     expect(res.valid).toBe(false)
     expect(res.reason).toBe('request_failed')
   })
+
+  it('returns invalid session result when backend returns valid=false', async () => {
+    const fakeClient = {
+      get: vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          valid: false,
+          reason: 'expired',
+          store_slug: 'brasa-burgers',
+        }),
+      }),
+    } as unknown as HttpClient
+
+    const session = new HttpTotemSession(fakeClient)
+    const res = await session.validateSession('expired-tok')
+    expect(res.valid).toBe(false)
+    expect(res.reason).toBe('expired')
+    expect(res.storeSlug).toBe('brasa-burgers')
+  })
+
+  it('falls back to invalid reason when reason is missing in invalid response', async () => {
+    const fakeClient = {
+      get: vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          valid: false,
+        }),
+      }),
+    } as unknown as HttpClient
+
+    const session = new HttpTotemSession(fakeClient)
+    const res = await session.validateSession('unknown-tok')
+    expect(res.valid).toBe(false)
+    expect(res.reason).toBe('invalid')
+  })
 })

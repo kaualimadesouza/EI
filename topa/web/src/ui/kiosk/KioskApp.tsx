@@ -89,6 +89,7 @@ export function KioskApp({
   }, [state.screen, loadMenu])
 
   const [totemSessionToken, setTotemSessionToken] = useState<string | undefined>(sessionToken)
+  const isStartScreen = state.screen === 'start'
 
   useEffect(() => {
     if (sessionToken !== undefined) {
@@ -97,18 +98,23 @@ export function KioskApp({
     }
     if (onCustomerPhone) return
     let active = true
-    adapters.totemSession
-      .createSession(storeSlug)
-      .then((session) => {
-        if (active) setTotemSessionToken(session.token)
-      })
-      .catch(() => {
-        // Fallback gracefully if session backend is temporarily unavailable
-      })
+    const renewSession = () => {
+      adapters.totemSession
+        .createSession(storeSlug)
+        .then((session) => {
+          if (active) setTotemSessionToken(session.token)
+        })
+        .catch(() => {
+          // Fallback gracefully if session backend is temporarily unavailable
+        })
+    }
+    renewSession()
+    const interval = setInterval(renewSession, 10 * 60 * 1000)
     return () => {
       active = false
+      clearInterval(interval)
     }
-  }, [adapters.totemSession, onCustomerPhone, sessionToken, storeSlug])
+  }, [adapters.totemSession, isStartScreen, onCustomerPhone, sessionToken, storeSlug])
 
   const menuUrl = phoneMenuUrl(
     window.location.origin,

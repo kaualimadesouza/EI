@@ -52,12 +52,18 @@ export class HttpTotemSession implements TotemSessionPort {
       return { valid: false, reason: 'request_failed' }
     }
     const data = (await response.json()) as ValidateResponseJson
+    if (data.valid && data.store_slug && data.expires_at && data.seconds_remaining !== undefined) {
+      return {
+        valid: true,
+        storeSlug: data.store_slug,
+        expiresAt: data.expires_at,
+        secondsRemaining: data.seconds_remaining,
+      }
+    }
     return {
-      valid: data.valid,
+      valid: false,
+      reason: data.reason ?? 'invalid',
       storeSlug: data.store_slug,
-      expiresAt: data.expires_at,
-      secondsRemaining: data.seconds_remaining,
-      reason: data.reason,
     }
   }
 }

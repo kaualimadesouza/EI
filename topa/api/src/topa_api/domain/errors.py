@@ -62,6 +62,11 @@ class InvalidTokenError(DomainError):
         super().__init__(message)
 
 
+class ExpiredTokenError(InvalidTokenError):
+    def __init__(self, message: str = "Sessão expirada.") -> None:
+        super().__init__(message)
+
+
 class ForbiddenStoreAccessError(DomainError):
     def __init__(self) -> None:
         super().__init__("Acesso não permitido para esta loja.")
