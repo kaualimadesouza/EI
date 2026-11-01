@@ -8,8 +8,8 @@ describe('HttpStores', () => {
       get: vi.fn().mockResolvedValueOnce({
         ok: true,
         json: async () => [
-          { slug: 'brasa-burgers', name: 'Brasa Burgers' },
-          { slug: 'bella-nonna', name: 'Cantina Bella Nonna' },
+          { slug: 'brasa-burgers', name: 'Brasa Burgers', segment: 'restaurant' },
+          { slug: 'emporio-campus', name: 'Empório Campus', segment: 'market' },
         ],
       }),
     }
@@ -19,8 +19,8 @@ describe('HttpStores', () => {
 
     expect(fakeClient.get).toHaveBeenCalledWith('/stores', undefined, null)
     expect(result).toEqual([
-      { slug: 'brasa-burgers', name: 'Brasa Burgers' },
-      { slug: 'bella-nonna', name: 'Cantina Bella Nonna' },
+      { slug: 'brasa-burgers', name: 'Brasa Burgers', segment: 'restaurant' },
+      { slug: 'emporio-campus', name: 'Empório Campus', segment: 'market' },
     ])
   })
 

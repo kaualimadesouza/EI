@@ -7,6 +7,7 @@ import type { Product } from '../../domain/menu'
 import type { OrderDraft, OrderSummary, PlacedOrder } from '../../domain/order'
 import { DEMO_STORE_NAME, DEMO_STORE_SLUG, type StoreMenu } from '../../domain/store'
 import type { Adapters } from '../../ports/adapters'
+import { LocalTotemSession } from '../../adapters/local/local-totem-session'
 import { StoreNotFoundError } from '../../ports/menu'
 import { OrderRejectedError } from '../../ports/orders'
 import { KioskApp } from './KioskApp'
@@ -52,6 +53,7 @@ function fakes(
     },
     customerAuth: {
       login: vi.fn(),
+      loginWithGoogle: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
       getToken: () => null,
@@ -61,6 +63,7 @@ function fakes(
     stores: {
       listAll: () => Promise.resolve([]),
     },
+    totemSession: new LocalTotemSession(),
     recommendations: {
       getRecommendations: vi.fn().mockResolvedValue({ items: [], strategyUsed: 'popular_fallback', abGroup: 'control' }),
     },
@@ -80,13 +83,22 @@ function fakes(
   return { adapters, isReachable, place, load, statusOf, buzz, hold, letGo }
 }
 
-const PHONE_MENU_URL = 'https://topa-totem.vercel.app/?loja=lanchonete-bem-te-vi'
+const DEMO_SESSION_TOKEN = 'demo-totem-session-token'
+const PHONE_MENU_URL = `https://topa-totem.vercel.app/?loja=lanchonete-bem-te-vi&sessao=${DEMO_SESSION_TOKEN}`
 
 const morning = () => new Date(2026, 9, 26, 8, 0)
 
-function setup(f: Fakes = fakes(), now: () => Date = morning) {
+function setup(f: Fakes = fakes(), now: () => Date = morning, sessionToken: string | undefined = DEMO_SESSION_TOKEN) {
   const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) })
-  render(<KioskApp adapters={f.adapters} now={now} storeSlug={DEMO_STORE_SLUG} surface="totem" />)
+  render(
+    <KioskApp
+      adapters={f.adapters}
+      now={now}
+      storeSlug={DEMO_STORE_SLUG}
+      surface="totem"
+      sessionToken={sessionToken}
+    />,
+  )
   return { user, ...f }
 }
 
@@ -1005,5 +1017,34 @@ describe('KioskApp', () => {
       await user.click(screen.getByRole('button', { name: 'Não, obrigado' }))
     }
     expect(screen.getByRole('button', { name: 'Ver pedido' })).toBeEnabled()
+  })
+
+  it('creates totem session automatically when sessionToken prop is omitted', async () => {
+    const f = fakes()
+    const spy = vi.spyOn(f.adapters.totemSession, 'createSession')
+    render(<KioskApp adapters={f.adapters} now={morning} storeSlug={DEMO_STORE_SLUG} surface="totem" />)
+    await waitFor(() => {
+      expect(spy).toHaveBeenCalledWith(DEMO_STORE_SLUG)
+    })
+  })
+
+  it('handles totem session creation failure gracefully', async () => {
+    const f = fakes()
+    vi.spyOn(f.adapters.totemSession, 'createSession').mockRejectedValueOnce(new Error('Network error'))
+    render(<KioskApp adapters={f.adapters} now={morning} storeSlug={DEMO_STORE_SLUG} surface="totem" />)
+    expect(screen.getByRole('heading', { name: 'Peça aqui. Pague aqui.' })).toBeInTheDocument()
+  })
+
+  it('renews totem session periodically on interval to prevent expiry', async () => {
+    vi.useFakeTimers()
+    const f = fakes()
+    const spy = vi.spyOn(f.adapters.totemSession, 'createSession')
+    render(<KioskApp adapters={f.adapters} now={morning} storeSlug={DEMO_STORE_SLUG} surface="totem" />)
+    expect(spy).toHaveBeenCalledTimes(1)
+    act(() => {
+      vi.advanceTimersByTime(10 * 60 * 1000)
+    })
+    expect(spy).toHaveBeenCalledTimes(2)
+    vi.useRealTimers()
   })
 })

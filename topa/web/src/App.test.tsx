@@ -27,7 +27,7 @@ function demoOnAndroid(vibrate: () => boolean) {
 }
 
 async function payForAPudim(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: /Comer aqui/ }))
+  await user.click(await screen.findByRole('button', { name: /Comer aqui/ }))
   await user.click(await screen.findByRole('button', { name: 'Doces' }))
   await user.click(screen.getByRole('button', { name: 'Adicionar Pudim' }))
   await user.click(screen.getByRole('button', { name: 'Ver pedido' }))
@@ -73,10 +73,10 @@ describe('App', () => {
     await user.click(await screen.findByRole('switch', { name: 'Coxinha à venda' }))
     dashboard.unmount()
 
-    window.history.replaceState(null, '', '/?loja=lanchonete-bem-te-vi')
+    window.history.replaceState(null, '', '/?loja=lanchonete-bem-te-vi&sessao=demo-session-lanchonete-bem-te-vi-tok')
     render(<App adapters={adapters} />)
 
-    expect(screen.getByRole('heading', { name: 'Peça aqui. Pague aqui.' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Peça aqui. Pague aqui.' })).toBeInTheDocument()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'A fila está grande? Peça pelo celular' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /Comer aqui/ }))
@@ -153,7 +153,7 @@ describe('App', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     const vibrate = vi.fn(() => true)
     const adapters = demoOnAndroid(vibrate)
-    window.history.replaceState(null, '', '/?loja=lanchonete-bem-te-vi')
+    window.history.replaceState(null, '', '/?loja=lanchonete-bem-te-vi&sessao=demo-session-lanchonete-bem-te-vi-tok')
     const phone = render(<App adapters={adapters} />)
 
     await payForAPudim(user)
@@ -213,12 +213,27 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Peça pelo celular.' })).toBeInTheDocument()
   })
 
-  it('requires customer login on direct web access without QR code, then allows selecting store', async () => {
+  it('opens store selector on direct web access without requiring customer login', async () => {
     const user = userEvent.setup()
     const adapters = createAdapters(undefined)
 
     render(<App adapters={adapters} />)
 
+    expect(await screen.findByRole('heading', { name: 'Onde você quer pedir hoje?' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Entrar / Cadastrar' })).toBeInTheDocument()
+
+    // Can order directly without logging in
+    await user.click(await screen.findByRole('button', { name: 'Pedir em Brasa Burgers' }))
+    expect(await screen.findByRole('button', { name: /Comer aqui/ })).toBeInTheDocument()
+  })
+
+  it('allows logging in via Entrar / Cadastrar button and then shows customer greeting and logout', async () => {
+    const user = userEvent.setup()
+    const adapters = createAdapters(undefined)
+
+    render(<App adapters={adapters} />)
+
+    await user.click(await screen.findByRole('button', { name: 'Entrar / Cadastrar' }))
     expect(screen.getByRole('heading', { name: 'Acesse sua conta TOPA' })).toBeInTheDocument()
 
     await user.type(screen.getByLabelText('E-mail'), 'cliente@topa.com')
@@ -226,53 +241,57 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Entrar no TOPA' }))
 
     expect(await screen.findByRole('heading', { name: 'Onde você quer pedir hoje?' })).toBeInTheDocument()
-    expect(screen.getByText('Olá, Cliente Universitário')).toBeInTheDocument()
+    expect(await screen.findByText('Olá, Cliente Universitário')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Pedir em Brasa Burgers' }))
-    expect(await screen.findByRole('button', { name: /Comer aqui/ })).toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: 'Sair da conta' }))
+    expect(await screen.findByRole('button', { name: 'Entrar / Cadastrar' })).toBeInTheDocument()
   })
 
-  it('allows logging out from store selector screen', async () => {
-    const user = userEvent.setup()
+  it('opens restaurant directly when accessed with a valid totem session token', async () => {
     const adapters = createAdapters(undefined)
-    await adapters.customerAuth.login({ email: 'cliente@topa.com', password: 'topa123' })
+    window.history.replaceState(null, '', '/?loja=brasa-burgers&sessao=demo-session-brasa-burgers-123')
 
     render(<App adapters={adapters} />)
 
-    expect(await screen.findByRole('heading', { name: 'Onde você quer pedir hoje?' })).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: 'Sair da conta' }))
-    expect(await screen.findByRole('heading', { name: 'Acesse sua conta TOPA' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Peça aqui. Pague aqui.' })).toBeInTheDocument()
   })
 
-  it('bypasses mandatory login when accessing through QR code deep link', async () => {
+  it('shows notice on store selector when totem session is expired or invalid', async () => {
+    const adapters = createAdapters(undefined)
+    vi.spyOn(adapters.totemSession, 'validateSession').mockResolvedValue({
+      valid: false,
+      reason: 'expired',
+    })
+    window.history.replaceState(null, '', '/?loja=brasa-burgers&sessao=expired-token')
+
+    render(<App adapters={adapters} />)
+
+    expect(await screen.findByText(/A sessão temporária do totem expirou/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Onde você quer pedir hoje?' })).toBeInTheDocument()
+  })
+
+  it('retains selected restaurant when page is refreshed with loja parameter', async () => {
     const adapters = createAdapters(undefined)
     window.history.replaceState(null, '', '/?loja=brasa-burgers')
 
     render(<App adapters={adapters} />)
 
-    expect(screen.queryByRole('heading', { name: 'Acesse sua conta TOPA' })).not.toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Peça aqui. Pague aqui.' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /Comer aqui/ })).toBeInTheDocument()
   })
 
-  it('resets customer to login screen when session is expired on init', async () => {
+  it('handles totem session validation network failure gracefully', async () => {
     const adapters = createAdapters(undefined)
-    vi.spyOn(adapters.customerAuth, 'getCustomer').mockReturnValue({
-      id: 'old',
-      name: 'Expirado',
-      email: 'exp@topa.com',
-    })
-    vi.spyOn(adapters.customerAuth, 'init').mockResolvedValue(null)
+    vi.spyOn(adapters.totemSession, 'validateSession').mockRejectedValue(new Error('Network offline'))
+    window.history.replaceState(null, '', '/?loja=brasa-burgers&sessao=some-tok')
 
     render(<App adapters={adapters} />)
 
-    expect(await screen.findByRole('heading', { name: 'Acesse sua conta TOPA' })).toBeInTheDocument()
+    expect(await screen.findByText(/Não foi possível validar a sessão do totem/)).toBeInTheDocument()
   })
 
   it('updates selected store on popstate event', async () => {
     const user = userEvent.setup()
     const adapters = createAdapters(undefined)
-    await adapters.customerAuth.login({ email: 'cliente@topa.com', password: 'topa123' })
 
     render(<App adapters={adapters} />)
 
@@ -286,10 +305,42 @@ describe('App', () => {
 
     expect(await screen.findByRole('heading', { name: 'Onde você quer pedir hoje?' })).toBeInTheDocument()
 
-    window.history.replaceState(null, '', '/?loja=brasa-burgers')
+    window.history.replaceState(null, '', '/?loja=brasa-burgers&sessao=demo-session-brasa-burgers-999')
     act(() => {
       window.dispatchEvent(new PopStateEvent('popstate'))
     })
     expect(await screen.findByRole('button', { name: /Comer aqui/ })).toBeInTheDocument()
+  })
+
+  it('shows invalid session message when session is invalid or has store mismatch', async () => {
+    const adapters = createAdapters(undefined)
+    vi.spyOn(adapters.totemSession, 'validateSession').mockResolvedValue({
+      valid: false,
+      reason: 'store_mismatch',
+    })
+    window.history.replaceState(null, '', '/?loja=brasa-burgers&sessao=mismatched-token')
+
+    render(<App adapters={adapters} />)
+
+    expect(await screen.findByText(/Sessão do totem inválida ou expirada/)).toBeInTheDocument()
+  })
+
+  it('ignores totem session resolution and rejection after component unmounts', async () => {
+    let resolveSession: (value: { valid: true; storeSlug: string; expiresAt: string; secondsRemaining: number }) => void = () => {}
+    let rejectSession: (err: unknown) => void = () => {}
+    const adapters = createAdapters(undefined)
+    vi.spyOn(adapters.totemSession, 'validateSession')
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveSession = resolve }))
+      .mockImplementationOnce(() => new Promise((_, reject) => { rejectSession = reject }))
+
+    window.history.replaceState(null, '', '/?loja=brasa-burgers&sessao=pending-tok-1')
+    const view1 = render(<App adapters={adapters} />)
+    view1.unmount()
+    resolveSession({ valid: true, storeSlug: 'brasa-burgers', expiresAt: '2026-10-31T22:00:00Z', secondsRemaining: 1800 })
+
+    window.history.replaceState(null, '', '/?loja=brasa-burgers&sessao=pending-tok-2')
+    const view2 = render(<App adapters={adapters} />)
+    view2.unmount()
+    rejectSession(new Error('Network drop'))
   })
 })

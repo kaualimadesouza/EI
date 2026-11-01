@@ -5,6 +5,7 @@ import {
   type CustomerAuthPort,
   type CustomerCredentials,
   type CustomerRegistration,
+  type GoogleAuthPayload,
 } from '../../ports/customer-auth'
 
 const DEMO_STORAGE_KEY = 'topa_demo_customer_session'
@@ -64,6 +65,32 @@ export class LocalCustomerAuth implements CustomerAuthPort {
       id: account.id,
       name: account.name,
       email: account.email,
+    }
+
+    this.persistSession()
+    return this.customer
+  }
+
+  async loginWithGoogle(payload?: GoogleAuthPayload): Promise<AuthenticatedCustomer> {
+    const email = payload?.email ?? 'aluno.usp@usp.br'
+    const name = payload?.name ?? 'Aluno USP (Google)'
+    const existing = this.accounts.find((item) => item.email === email)
+    const id = existing?.id ?? `google-cust-${this.accounts.length + 1}`
+
+    if (!existing) {
+      this.accounts.push({
+        id,
+        name,
+        email,
+        password: 'sso-google-nopassword',
+      })
+    }
+
+    this.token = `demo-google-token-${id}`
+    this.customer = {
+      id,
+      name: existing?.name ?? name,
+      email,
     }
 
     this.persistSession()

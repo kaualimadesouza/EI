@@ -4,6 +4,11 @@ import type { HttpClient } from './http-client'
 interface StoreJson {
   slug: string
   name: string
+  latitude?: number
+  longitude?: number
+  address?: string
+  category?: string
+  segment?: 'restaurant' | 'market'
 }
 
 /** HTTP implementation of stores port. */
@@ -23,6 +28,11 @@ export class HttpStores implements StoresPort {
     return data.map((item) => ({
       slug: item.slug,
       name: item.name,
+      latitude: item.latitude,
+      longitude: item.longitude,
+      address: item.address,
+      category: item.category,
+      segment: item.segment,
     }))
   }
 }

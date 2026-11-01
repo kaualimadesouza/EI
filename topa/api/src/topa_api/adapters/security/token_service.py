@@ -3,11 +3,12 @@ import hashlib
 import hmac
 import json
 import uuid
+from datetime import UTC, datetime
 
 from topa_api.adapters.clock import SystemClock
 from topa_api.application.ports import Clock
-from topa_api.domain.auth import AuthenticatedCustomer, AuthenticatedMerchant
-from topa_api.domain.errors import InvalidTokenError
+from topa_api.domain.auth import AuthenticatedCustomer, AuthenticatedMerchant, TotemSession
+from topa_api.domain.errors import ExpiredTokenError, InvalidTokenError
 
 
 class HmacTokenService:
@@ -69,6 +70,28 @@ class HmacTokenService:
         except (ValueError, KeyError, TypeError, AttributeError):
             raise InvalidTokenError() from None
 
+    def create_totem_session_token(self, store_slug: str, expires_in_seconds: int = 1800) -> str:
+        now = int(self._clock.now().timestamp())
+        payload = {
+            "store_slug": store_slug,
+            "role": "totem_session",
+            "iat": now,
+            "exp": now + expires_in_seconds,
+            "nonce": uuid.uuid4().hex[:12],
+        }
+        return self._sign_payload(payload)
+
+    def verify_totem_session_token(self, token: str) -> TotemSession:
+        data = self._decode_payload(token)
+        if data.get("role") != "totem_session" or "store_slug" not in data:
+            raise InvalidTokenError()
+        exp_val = data.get("exp")
+        exp_timestamp = float(exp_val) if isinstance(exp_val, (int, float, str)) else 0.0
+        return TotemSession(
+            store_slug=str(data["store_slug"]),
+            expires_at=datetime.fromtimestamp(exp_timestamp, tz=UTC),
+        )
+
     def _sign_payload(self, payload: dict[str, object]) -> str:
         payload_bytes = json.dumps(payload, separators=(",", ":")).encode("utf-8")
         payload_b64 = base64.urlsafe_b64encode(payload_bytes).decode("ascii").rstrip("=")
@@ -97,7 +120,7 @@ class HmacTokenService:
             if not isinstance(data, dict):
                 raise InvalidTokenError()
             if data.get("exp", 0) < int(self._clock.now().timestamp()):
-                raise InvalidTokenError()
+                raise ExpiredTokenError()
             return data
         except (ValueError, KeyError, TypeError, AttributeError, json.JSONDecodeError):
             raise InvalidTokenError() from None

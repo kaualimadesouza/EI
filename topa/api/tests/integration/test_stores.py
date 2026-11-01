@@ -25,3 +25,11 @@ def test_list_stores_endpoint_returns_all_stores(client: TestClient) -> None:
     assert "brasa-burgers" in slugs
     assert "bella-nonna" in slugs
     assert "acai-bowls" in slugs
+    bemtevi = next(s for s in stores if s["slug"] == "lanchonete-bem-te-vi")
+    assert bemtevi["segment"] == "restaurant"
+
+    # Filter by segment
+    resp_restaurants = client.get("/stores?segment=restaurant")
+    assert resp_restaurants.status_code == 200
+    for s in resp_restaurants.json():
+        assert s["segment"] == "restaurant"

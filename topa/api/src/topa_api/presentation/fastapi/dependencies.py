@@ -8,6 +8,7 @@ from topa_api.application.authenticate_merchant import AuthenticateMerchantUseCa
 from topa_api.application.change_order_status import ChangeOrderStatusUseCase
 from topa_api.application.check_order_rate_limit import CheckOrderRateLimitUseCase
 from topa_api.application.create_product import CreateProductUseCase
+from topa_api.application.create_totem_session import CreateTotemSessionUseCase
 from topa_api.application.get_recommendations import GetRecommendations
 from topa_api.application.get_store_menu import GetStoreMenuUseCase
 from topa_api.application.list_customer_orders import ListCustomerOrdersUseCase
@@ -30,6 +31,7 @@ from topa_api.application.read_order import ReadOrderUseCase
 from topa_api.application.register_customer import RegisterCustomerUseCase
 from topa_api.application.set_product_availability import SetProductAvailabilityUseCase
 from topa_api.application.update_product import UpdateProductUseCase
+from topa_api.application.validate_totem_session import ValidateTotemSessionUseCase
 from topa_api.application.verify_customer_token import VerifyCustomerTokenUseCase
 from topa_api.application.verify_merchant_token import VerifyMerchantTokenUseCase
 from topa_api.domain.auth import AuthenticatedCustomer, AuthenticatedMerchant
@@ -211,6 +213,20 @@ def get_list_customer_orders_use_case(
     orders: Annotated[OrderRepository, Depends(get_order_repository)],
 ) -> ListCustomerOrdersUseCase:
     return ListCustomerOrdersUseCase(orders)
+
+
+def get_create_totem_session_use_case(
+    tokens: Annotated[TokenServicePort, Depends(get_token_service)],
+    stores: Annotated[StoreRepository, Depends(get_store_repository)],
+) -> CreateTotemSessionUseCase:
+    return CreateTotemSessionUseCase(tokens, stores)
+
+
+def get_validate_totem_session_use_case(
+    tokens: Annotated[TokenServicePort, Depends(get_token_service)],
+    clock: Annotated[Clock, Depends(get_clock)],
+) -> ValidateTotemSessionUseCase:
+    return ValidateTotemSessionUseCase(tokens, clock)
 
 
 def get_current_customer(

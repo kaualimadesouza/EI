@@ -8,6 +8,7 @@ import { HttpMenu } from './adapters/http/http-menu'
 import { HttpOrders } from './adapters/http/http-orders'
 import { HttpRecommendations } from './adapters/http/http-recommendations'
 import { HttpStores } from './adapters/http/http-stores'
+import { HttpTotemSession } from './adapters/http/http-totem-session'
 import { browserStorage, StoredValue } from './adapters/local/browser-storage'
 import { LocalAuth } from './adapters/local/local-auth'
 import { LocalConnection } from './adapters/local/local-connection'
@@ -17,6 +18,7 @@ import { LocalOrders } from './adapters/local/local-orders'
 import { LocalPrinterAdapter } from './adapters/local/local-printer'
 import { LocalRecommendations } from './adapters/local/local-recommendations'
 import { LocalStores } from './adapters/local/local-stores'
+import { LocalTotemSession } from './adapters/local/local-totem-session'
 import { SimulatorVoiceAdapter } from './adapters/local/local-voice'
 import { OfflineResilientOrders } from './adapters/resilient/offline-resilient-orders'
 import { TauriNfc } from './adapters/tauri/tauri-nfc'
@@ -124,6 +126,7 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
     const auth = new HttpAuth(client)
     const customerAuth = new HttpCustomerAuth(client)
     const stores = new HttpStores(client)
+    const totemSession = new HttpTotemSession(client)
     const orders = new OfflineResilientOrders({
       underlying: new HttpOrders(client, () => auth.getToken(), () => customerAuth.getToken()),
     })
@@ -136,6 +139,7 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
       auth,
       customerAuth,
       stores,
+      totemSession,
       recommendations: new HttpRecommendations(client),
       voice: new WebSpeechVoiceAdapter(),
       printer: new WebPrinterAdapter(),
@@ -148,6 +152,7 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
   const auth = new LocalAuth()
   const customerAuth = new LocalCustomerAuth()
   const stores = new LocalStores()
+  const totemSession = new LocalTotemSession()
   const menu = new LocalMenu()
   const orders = new OfflineResilientOrders({
     underlying: new LocalOrders(menu),
@@ -161,6 +166,7 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
     auth,
     customerAuth,
     stores,
+    totemSession,
     recommendations: new LocalRecommendations(menu),
     voice: new SimulatorVoiceAdapter(),
     printer: new LocalPrinterAdapter(),

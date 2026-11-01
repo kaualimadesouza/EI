@@ -304,4 +304,11 @@ describe('HttpCustomerAuth', () => {
     auth2.logout()
     expect(auth2.getToken()).toBeNull()
   })
+
+  it('throws CustomerAuthError explaining google sso status in http mode', async () => {
+    const auth = new HttpCustomerAuth(fakeClient as unknown as HttpClient, store)
+    await expect(auth.loginWithGoogle()).rejects.toThrow(
+      'Login com Google em homologação institucional USP. Por favor, acesse com seu e-mail e senha cadastrados.',
+    )
+  })
 })

@@ -171,4 +171,33 @@ describe('LocalCustomerAuth', () => {
     const customer = await auth.login({ email: 'custom@user.com', password: 'custompassword' })
     expect(customer.name).toBe('Custom User')
   })
+
+  it('authenticates with google sso creating new customer when not found', async () => {
+    const auth = new LocalCustomerAuth({ storage: store })
+    const customer = await auth.loginWithGoogle({
+      name: 'Novo Google User',
+      email: 'novo.google@usp.br',
+    })
+
+    expect(customer.name).toBe('Novo Google User')
+    expect(customer.email).toBe('novo.google@usp.br')
+    expect(auth.getToken()).toContain('demo-google-token-google-cust-')
+    expect(store.getItem('topa_demo_customer_session')).toContain('novo.google@usp.br')
+  })
+
+  it('authenticates with google sso reusing existing account and defaults', async () => {
+    const auth = new LocalCustomerAuth({ storage: store })
+    // first call with defaults
+    const cust1 = await auth.loginWithGoogle()
+    expect(cust1.email).toBe('aluno.usp@usp.br')
+    expect(cust1.name).toBe('Aluno USP (Google)')
+
+    auth.logout()
+
+    // second call with same email matches existing account
+    const cust2 = await auth.loginWithGoogle({
+      email: 'aluno.usp@usp.br',
+    })
+    expect(cust2.id).toBe(cust1.id)
+  })
 })

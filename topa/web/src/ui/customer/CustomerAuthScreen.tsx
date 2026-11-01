@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 
 import type { AuthenticatedCustomer, CustomerAuthPort } from '../../ports/customer-auth'
-import { AlertIcon, StoreMark } from '../icons'
+import { AlertIcon, GoogleIcon, StoreMark } from '../icons'
 
 export interface CustomerAuthScreenProps {
   auth: CustomerAuthPort
@@ -20,6 +20,23 @@ export function CustomerAuthScreen({ auth, onAuthSuccess }: CustomerAuthScreenPr
   const handleTabChange = (nextTab: 'login' | 'register') => {
     setTab(nextTab)
     setError(null)
+  }
+
+  const handleGoogleLogin = async () => {
+    setError(null)
+    setLoading(true)
+    try {
+      const customer = await auth.loginWithGoogle({
+        idToken: 'google-oauth-demo-token',
+        email: 'aluno.usp@usp.br',
+        name: 'Aluno USP (Google)',
+      })
+      onAuthSuccess(customer)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falha ao autenticar com o Google.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -93,6 +110,27 @@ export function CustomerAuthScreen({ auth, onAuthSuccess }: CustomerAuthScreenPr
             <span>{error}</span>
           </div>
         )}
+
+        <div className="mb-6">
+          <button
+            type="button"
+            onClick={() => void handleGoogleLogin()}
+            disabled={loading}
+            className="flex h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-[12px] border border-line bg-white text-[15px] font-semibold text-ink shadow-xs transition hover:bg-ground-2 hover:border-ink/40 motion-safe:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <GoogleIcon size={20} />
+            <span>Continuar com o Google</span>
+          </button>
+
+          <div className="relative my-4 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-line" />
+            </div>
+            <span className="relative bg-surface px-3 text-[12px] font-medium text-muted">
+              ou com e-mail e senha
+            </span>
+          </div>
+        </div>
 
         <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-4">
           {tab === 'register' && (

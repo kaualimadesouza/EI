@@ -25,6 +25,7 @@ import { VoiceOrderModal } from './VoiceOrderModal'
 interface KioskAppProps {
   adapters: Adapters
   storeSlug: string
+  sessionToken?: string
   surface?: 'totem' | 'phone'
   now?: () => Date
   /** The staff gesture on the TOPA mark; only the Android app has a role to switch. */
@@ -34,7 +35,14 @@ interface KioskAppProps {
 const IDLE_SECONDS = 45
 const IDLE_WARNING_SECONDS = 15
 
-export function KioskApp({ adapters, storeSlug, surface = 'totem', now = () => new Date(), onSwitchRole }: KioskAppProps) {
+export function KioskApp({
+  adapters,
+  storeSlug,
+  sessionToken,
+  surface = 'totem',
+  now = () => new Date(),
+  onSwitchRole,
+}: KioskAppProps) {
   const onCustomerPhone = surface === 'phone'
   const [state, setState] = useState<flow.KioskState>({
     ...flow.START,
@@ -80,7 +88,39 @@ export function KioskApp({ adapters, storeSlug, surface = 'totem', now = () => n
     if (state.screen === 'start') loadMenu()
   }, [state.screen, loadMenu])
 
-  const menuUrl = phoneMenuUrl(window.location.origin, import.meta.env.BASE_URL, storeSlug)
+  const [totemSessionToken, setTotemSessionToken] = useState<string | undefined>(sessionToken)
+
+  useEffect(() => {
+    if (sessionToken !== undefined) {
+      setTotemSessionToken(sessionToken)
+      return
+    }
+    if (onCustomerPhone) return
+    let active = true
+    const renewSession = () => {
+      adapters.totemSession
+        .createSession(storeSlug)
+        .then((session) => {
+          if (active) setTotemSessionToken(session.token)
+        })
+        .catch(() => {
+          // Fallback gracefully if session backend is temporarily unavailable
+        })
+    }
+    renewSession()
+    const interval = setInterval(renewSession, 10 * 60 * 1000)
+    return () => {
+      active = false
+      clearInterval(interval)
+    }
+  }, [adapters.totemSession, onCustomerPhone, sessionToken, storeSlug])
+
+  const menuUrl = phoneMenuUrl(
+    window.location.origin,
+    import.meta.env.BASE_URL,
+    storeSlug,
+    totemSessionToken,
+  )
   // only where a phone is invited to tap: from the menu on, that spot takes the payment card
   const servesTag = !onCustomerPhone && menuState !== 'not-found' && (state.screen === 'start' || state.screen === 'queue')
   useEffect(() => {

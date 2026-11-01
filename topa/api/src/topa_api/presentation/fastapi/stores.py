@@ -12,12 +12,31 @@ router = APIRouter(tags=["stores"])
 class StoreResponse(BaseModel):
     slug: str
     name: str
+    latitude: float | None = None
+    longitude: float | None = None
+    address: str | None = None
+    category: str | None = None
+    segment: str = "restaurant"
 
 
 @router.get("/stores")
 def list_stores(
     use_case: Annotated[ListStoresUseCase, Depends(get_list_stores_use_case)],
+    segment: str | None = None,
 ) -> list[StoreResponse]:
     """Lists all registered stores for selection in the browser."""
     stores = use_case.execute()
-    return [StoreResponse(slug=store.slug, name=store.name) for store in stores]
+    if segment:
+        stores = [s for s in stores if s.segment == segment]
+    return [
+        StoreResponse(
+            slug=store.slug,
+            name=store.name,
+            latitude=store.latitude,
+            longitude=store.longitude,
+            address=store.address,
+            category=store.category,
+            segment=store.segment,
+        )
+        for store in stores
+    ]

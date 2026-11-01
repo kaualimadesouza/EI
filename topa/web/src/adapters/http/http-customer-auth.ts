@@ -80,6 +80,12 @@ export class HttpCustomerAuth implements CustomerAuthPort {
     return customer
   }
 
+  async loginWithGoogle(): Promise<AuthenticatedCustomer> {
+    throw new CustomerAuthError(
+      'Login com Google em homologação institucional USP. Por favor, acesse com seu e-mail e senha cadastrados.',
+    )
+  }
+
   async register(data: CustomerRegistration): Promise<AuthenticatedCustomer> {
     const response = await this.client.post(
       '/auth/customer/register',
