@@ -1,11 +1,12 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { formatBRL } from '../../domain/menu'
-import type { KioskState } from './flow'
+import type { PaymentPort, PixChargeInfo } from '../../ports/payment'
 import { ArrowDownIcon, CardIcon, CheckIcon, ContactlessIcon, PixIcon } from '../icons'
+import type { KioskState } from './flow'
 import { PRIMARY_ACTION, SECONDARY_ACTION } from './parts'
-import { useCountdown } from './use-countdown'
 import { Qr } from './Qr'
+import { useCountdown } from './use-countdown'
 
 interface PaymentScreenProps {
   totalCents: number
@@ -13,6 +14,9 @@ interface PaymentScreenProps {
   payment: KioskState['payment']
   error: string | null
   surface?: 'totem' | 'phone'
+  paymentPort?: PaymentPort
+  orderId?: string
+  isDemo?: boolean
   onMethod: (method: KioskState['paymentMethod']) => void
   onApprove: () => void
   onDecline: () => void
@@ -22,7 +26,20 @@ interface PaymentScreenProps {
 export const PIX_SECONDS = 300
 
 export function PaymentScreen(props: PaymentScreenProps) {
-  const { totalCents, method, payment, error, surface = 'totem', onMethod, onApprove, onDecline, onBackToBag } = props
+  const {
+    totalCents,
+    method,
+    payment,
+    error,
+    surface = 'totem',
+    paymentPort,
+    orderId,
+    isDemo = true,
+    onMethod,
+    onApprove,
+    onDecline,
+    onBackToBag,
+  } = props
   const busy = payment === 'processing'
   const allowCard = surface === 'totem'
 
@@ -71,10 +88,16 @@ export function PaymentScreen(props: PaymentScreenProps) {
             (allowCard && method === 'card' ? (
               <CardInstructions />
             ) : (
-              <PixInstructions totalCents={totalCents} onPhone={!allowCard} />
+              <PixInstructions
+                totalCents={totalCents}
+                onPhone={!allowCard}
+                paymentPort={paymentPort}
+                orderId={orderId}
+                onApproved={onApprove}
+              />
             ))}
         </section>
-        {payment === 'choosing' && (
+        {payment === 'choosing' && isDemo && (
           <div className="flex flex-wrap justify-center gap-x-8 phone:gap-y-2 lg:landscape:col-start-1">
             <button type="button" onClick={onApprove} className="min-h-16 text-caption font-medium text-muted underline underline-offset-4">
               Simular aprovação (demo)
@@ -135,23 +158,92 @@ function CardInstructions() {
   )
 }
 
-function PixInstructions({ totalCents, onPhone }: { totalCents: number; onPhone: boolean }) {
+interface PixInstructionsProps {
+  totalCents: number
+  onPhone: boolean
+  paymentPort?: PaymentPort
+  orderId?: string
+  onApproved?: () => void
+}
+
+function PixInstructions({ totalCents, onPhone, paymentPort, orderId, onApproved }: PixInstructionsProps) {
   const [round, setRound] = useState(0)
+  const [charge, setCharge] = useState<PixChargeInfo | null>(null)
   const [copyState, setCopyState] = useState<{ round: number; status: 'copied' | 'failed' } | null>(null)
   const left = useCountdown(PIX_SECONDS, () => {}, round)
   const clock = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`
-  const code = `TOPA-PIX-DEMO-${totalCents}-${round}`
+  const isExpired = left === 0
+  const onApprovedRef = useRef(onApproved)
+  onApprovedRef.current = onApproved
 
-  const copyCode = () => {
-    if (!navigator.clipboard) {
-      setCopyState({ round, status: 'failed' })
+  useEffect(() => {
+    let active = true
+    if (paymentPort) {
+      paymentPort
+        .createPixCharge(orderId || `demo-order-${round}`, totalCents, 'Pedido TOPA')
+        .then((created) => {
+          if (active) {
+            setCharge(created)
+          }
+        })
+        .catch(() => {
+          // Keep fallback on network error
+        })
+    }
+    return () => {
+      active = false
+    }
+  }, [paymentPort, orderId, totalCents, round])
+
+  useEffect(() => {
+    if (!paymentPort || !charge || charge.status === 'PAID' || isExpired) {
       return
     }
-    navigator.clipboard.writeText(code).then(
-      () => setCopyState({ round, status: 'copied' }),
-      () => setCopyState({ round, status: 'failed' }),
-    )
+
+    const interval = setInterval(async () => {
+      try {
+        const updated = await paymentPort.getPaymentStatus(charge.id)
+        if (updated.status === 'PAID') {
+          clearInterval(interval)
+          onApprovedRef.current?.()
+        }
+      } catch {
+        // Polling retry
+      }
+    }, 2000)
+
+    return () => clearInterval(interval)
+  }, [paymentPort, charge, isExpired])
+
+  const code = charge?.brCode || `TOPA-PIX-DEMO-${totalCents}-${round}`
+
+  const copyCode = () => {
+    try {
+      if (!navigator.clipboard?.writeText) {
+        setCopyState({ round, status: 'failed' })
+        return
+      }
+      navigator.clipboard
+        .writeText(code)
+        .then(() => setCopyState({ round, status: 'copied' }))
+        .catch(() => setCopyState({ round, status: 'failed' }))
+    } catch {
+      setCopyState({ round, status: 'failed' })
+    }
   }
+
+  const qrElement = useMemo(() => {
+    if (charge?.brCodeBase64) {
+      return (
+        <img
+          src={charge.brCodeBase64}
+          alt="QR Code Pix"
+          className="size-[260px] rounded-control border border-line bg-white p-3 phone:size-[220px]"
+        />
+      )
+    }
+    return <Qr value={code} size={onPhone ? 220 : 260} label="Código Pix de demonstração" />
+  }, [charge?.brCodeBase64, code, onPhone])
 
   if (left === 0) {
     return (
@@ -168,7 +260,7 @@ function PixInstructions({ totalCents, onPhone }: { totalCents: number; onPhone:
       <p className="text-lead font-semibold phone:leading-snug">
         {onPhone ? 'Copie o código Pix e pague no app do seu banco.' : 'Abra o app do seu banco e leia o código.'}
       </p>
-      <Qr value={code} size={onPhone ? 220 : 260} label="Código Pix de demonstração" />
+      {qrElement}
       {onPhone && (
         <button
           type="button"

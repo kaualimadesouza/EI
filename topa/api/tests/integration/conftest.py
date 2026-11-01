@@ -10,7 +10,14 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, NullPool, create_engine, delete, make_url, text, update
 
 from tests.fakes import FixedClock
-from topa_api.adapters.db.models import CustomerRow, MerchantRow, OrderRow, ProductRow, StoreRow
+from topa_api.adapters.db.models import (
+    CustomerRow,
+    MerchantRow,
+    OrderRow,
+    PaymentRow,
+    ProductRow,
+    StoreRow,
+)
 from topa_api.adapters.db.session import get_engine
 from topa_api.domain.catalog import DEFAULT_STORE_SLUG
 from topa_api.entrypoints.rest_application import create_app
@@ -112,6 +119,7 @@ def reset_database(db_engine: Engine) -> Iterator[None]:
     """The seeded store and menu stay, all back on sale; extra stores and orders go."""
     yield
     with db_engine.begin() as connection:
+        connection.execute(delete(PaymentRow))
         connection.execute(delete(OrderRow))
         connection.execute(delete(CustomerRow))
         for store_slug, product_ids in SEEDED_STORES.items():

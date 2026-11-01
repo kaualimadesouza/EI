@@ -6,6 +6,7 @@ import { HttpConnection } from './adapters/http/http-connection'
 import { HttpCustomerAuth } from './adapters/http/http-customer-auth'
 import { HttpMenu } from './adapters/http/http-menu'
 import { HttpOrders } from './adapters/http/http-orders'
+import { HttpPayment } from './adapters/http/http-payment'
 import { HttpRecommendations } from './adapters/http/http-recommendations'
 import { HttpStores } from './adapters/http/http-stores'
 import { HttpTotemSession } from './adapters/http/http-totem-session'
@@ -15,6 +16,7 @@ import { LocalConnection } from './adapters/local/local-connection'
 import { LocalCustomerAuth } from './adapters/local/local-customer-auth'
 import { LocalMenu } from './adapters/local/local-menu'
 import { LocalOrders } from './adapters/local/local-orders'
+import { LocalPayment } from './adapters/local/local-payment'
 import { LocalPrinterAdapter } from './adapters/local/local-printer'
 import { LocalRecommendations } from './adapters/local/local-recommendations'
 import { LocalStores } from './adapters/local/local-stores'
@@ -136,6 +138,7 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
       connection: new HttpConnection(client),
       menu: new HttpMenu(client, () => auth.getToken()),
       orders,
+      payment: new HttpPayment(client),
       auth,
       customerAuth,
       stores,
@@ -163,6 +166,7 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
     connection: new LocalConnection(),
     menu,
     orders,
+    payment: new LocalPayment(),
     auth,
     customerAuth,
     stores,

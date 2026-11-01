@@ -16,6 +16,7 @@ erDiagram
     customers ||--o{ orders : "realiza"
     products ||--o{ order_items : "aparece em"
     orders ||--o{ order_items : "contém"
+    orders ||--o{ payments : "possui"
 
     stores {
         text slug PK "identificador, como lanchonete-bem-te-vi"
@@ -70,6 +71,19 @@ erDiagram
         text product_id PK, FK
         integer quantity "1 ou mais"
         integer unit_price_cents "preço pago, 0 ou mais"
+    }
+
+    payments {
+        text id PK "id gerado pelo gateway ou api (bill_... / pix_...)"
+        uuid order_id FK "pedido associado"
+        integer amount_cents "valor cobrado em centavos"
+        text status "PENDING, PAID, FAILED ou EXPIRED"
+        text method "pix"
+        text br_code "código Pix Copia e Cola"
+        text br_code_base64 "imagem QR code em base64 (nullable)"
+        text qr_code_url "link de checkout do gateway (nullable)"
+        timestamptz expires_at "data de expiração (nullable)"
+        timestamptz created_at "data de criação"
     }
 ```
 

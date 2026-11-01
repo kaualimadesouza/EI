@@ -167,6 +167,10 @@ export function KioskApp({
   }, [state.screen, state.lines, adapters.recommendations, storeSlug])
 
   const pay = async () => {
+    if (state.placed) {
+      setState((s) => flow.paid(s, state.placed!))
+      return
+    }
     setState(flow.startPaying)
     try {
       const placed = await adapters.orders.place({
@@ -183,6 +187,46 @@ export function KioskApp({
       setState((s) => flow.failed(s, message))
     }
   }
+
+  useEffect(() => {
+    let active = true
+    if (
+      adapters.mode === 'api' &&
+      state.screen === 'payment' &&
+      state.paymentMethod === 'pix' &&
+      !state.placed &&
+      state.payment === 'choosing'
+    ) {
+      adapters.orders
+        .place({
+          storeSlug,
+          lines: state.lines,
+          dineIn: state.dineIn,
+          paymentMethod: 'pix',
+        })
+        .then((placed) => {
+          if (active) {
+            setState((s) => ({ ...s, placed }))
+          }
+        })
+        .catch(() => {
+          // Silently fall back to demo mode on placement error
+        })
+    }
+    return () => {
+      active = false
+    }
+  }, [
+    adapters.mode,
+    adapters.orders,
+    state.screen,
+    state.paymentMethod,
+    state.placed,
+    state.payment,
+    state.lines,
+    state.dineIn,
+    storeSlug,
+  ])
 
   if (menuState === 'not-found') {
     if (!onCustomerPhone) {
@@ -317,10 +361,12 @@ export function KioskApp({
           payment={state.payment}
           error={state.error}
           surface={surface}
+          paymentPort={adapters.payment}
+          isDemo={adapters.mode === 'demo'}
           onMethod={(method) => setState((s) => flow.choosePayment(s, method))}
           onApprove={() => void pay()}
           onDecline={() => setState(flow.declined)}
-          onBackToBag={() => setState((s) => flow.show(s, 'bag'))}
+          onBackToBag={() => setState((s) => ({ ...flow.show(s, 'bag'), placed: null }))}
         />
       )}
       {state.upsell && (

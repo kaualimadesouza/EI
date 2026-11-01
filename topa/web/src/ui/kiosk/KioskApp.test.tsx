@@ -45,6 +45,26 @@ function fakes(
     connection: { isReachable },
     menu: { load, setAvailability: vi.fn(), create: vi.fn(), update: vi.fn() },
     orders: { place, list: vi.fn(), setStatus: vi.fn(), statusOf, listCustomerOrders: vi.fn() },
+    payment: {
+      createPixCharge: vi.fn().mockImplementation((orderId: string, amountCents = 2000) =>
+        Promise.resolve({
+          id: 'pix_mock_1',
+          orderId,
+          amountCents,
+          status: 'PENDING',
+          brCode: `TOPA-PIX-DEMO-${amountCents}-0`,
+          brCodeBase64: null,
+          qrCodeUrl: null,
+        }),
+      ),
+      getPaymentStatus: vi.fn().mockResolvedValue({
+        id: 'pix_mock_1',
+        orderId: 'o47',
+        amountCents: 2000,
+        status: 'PENDING',
+        brCode: '000201...',
+      }),
+    },
     auth: {
       login: vi.fn(),
       logout: vi.fn(),
@@ -870,6 +890,103 @@ describe('KioskApp', () => {
       expect(screen.getByText('TOPA-PIX-DEMO-1290-0')).toBeInTheDocument()
     } finally {
       Reflect.deleteProperty(navigator, 'clipboard')
+    }
+  })
+
+  it('pre-places order in api mode when reaching pix payment and approves immediately', async () => {
+    const f = fakes()
+    f.adapters.mode = 'api'
+    const placedOrder: PlacedOrder = { id: 'order-api-123', number: 123, totalCents: 1290 }
+    f.place.mockResolvedValueOnce(placedOrder)
+    f.adapters.payment.getPaymentStatus = vi.fn().mockResolvedValue({
+      id: 'pix_mock_1',
+      orderId: 'order-api-123',
+      amountCents: 1290,
+      status: 'PAID',
+      brCode: '000201...',
+    })
+
+    const { user } = setupPhone(f)
+    await startOrder(user)
+    await user.click(button(COMBO_BANNER))
+    await user.click(button('Ver pedido'))
+    await user.click(button('Pagar'))
+
+    await waitFor(() => {
+      expect(f.place).toHaveBeenCalledWith({
+        storeSlug: 'cantina-central',
+        lines: [{ productId: 'combo-cafe', quantity: 1 }],
+        dineIn: true,
+        paymentMethod: 'pix',
+      })
+    })
+
+    await act(async () => {
+      vi.advanceTimersByTime(2000)
+    })
+
+    expect(await screen.findByText('123')).toBeInTheDocument()
+    expect(f.place).toHaveBeenCalledTimes(1)
+  })
+
+  it('silently handles error when pre-placing order in api mode fails', async () => {
+    const f = fakes()
+    f.adapters.mode = 'api'
+    f.place.mockRejectedValueOnce(new Error('Pre-place network fail'))
+    f.adapters.payment.getPaymentStatus = vi.fn().mockResolvedValue({
+      id: 'pix_mock_1',
+      orderId: 'fallback',
+      amountCents: 1290,
+      status: 'PAID',
+      brCode: '000201...',
+    })
+
+    const { user } = setupPhone(f)
+    await startOrder(user)
+    await user.click(button(COMBO_BANNER))
+    await user.click(button('Ver pedido'))
+    await user.click(button('Pagar'))
+
+    await waitFor(() => {
+      expect(f.place).toHaveBeenCalledTimes(1)
+    })
+
+    f.place.mockResolvedValueOnce({ id: 'order-fallback-123', number: 456, totalCents: 1290 })
+    await act(async () => {
+      vi.advanceTimersByTime(2000)
+    })
+    expect(await screen.findByText('456')).toBeInTheDocument()
+    expect(f.place).toHaveBeenCalledTimes(2)
+  })
+
+  it('ignores pre-placed order resolution if component unmounted before completion', async () => {
+    const f = fakes()
+    f.adapters.mode = 'api'
+    let resolveOrder: ((o: PlacedOrder) => void) | null = null
+    f.place.mockReturnValueOnce(
+      new Promise<PlacedOrder>((resolve) => {
+        resolveOrder = resolve
+      }),
+    )
+
+    const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) })
+    const { unmount } = render(<KioskApp adapters={f.adapters} now={morning} storeSlug="cantina-central" surface="phone" />)
+
+    await startOrder(user)
+    await user.click(button(COMBO_BANNER))
+    await user.click(button('Ver pedido'))
+    await user.click(button('Pagar'))
+
+    await waitFor(() => {
+      expect(f.place).toHaveBeenCalled()
+    })
+
+    unmount()
+
+    if (resolveOrder) {
+      await act(async () => {
+        resolveOrder!({ id: 'late-order', number: 999, totalCents: 1290 })
+      })
     }
   })
 

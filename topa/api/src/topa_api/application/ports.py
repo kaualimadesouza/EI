@@ -13,6 +13,7 @@ from topa_api.domain.auth import (
 )
 from topa_api.domain.catalog import Product, Store
 from topa_api.domain.orders import Order, OrderStatus
+from topa_api.domain.payment import PaymentStatus, PixCharge
 
 
 class ReadinessProbe(Protocol):
@@ -166,3 +167,43 @@ class RateLimiterPort(Protocol):
 
 
 RateLimiter = RateLimiterPort
+
+
+class PaymentGatewayPort(Protocol):
+    """Port for communicating with external payment gateways such as Abacate Pay."""
+
+    def create_pix_charge(
+        self,
+        order_id: uuid.UUID,
+        amount_cents: int,
+        description: str,
+        customer_email: str | None = None,
+        customer_name: str | None = None,
+    ) -> PixCharge: ...
+
+    def get_payment_status(self, payment_id: str) -> PaymentStatus: ...
+
+    def verify_webhook_signature(
+        self,
+        raw_body: bytes,
+        signature: str,
+        secret: str,
+    ) -> bool: ...
+
+
+PaymentGateway = PaymentGatewayPort
+
+
+class PaymentRepositoryPort(Protocol):
+    """Port for persisting and retrieving Pix payment charge records."""
+
+    def save_payment(self, charge: PixCharge) -> None: ...
+
+    def get_payment(self, payment_id: str) -> PixCharge | None: ...
+
+    def get_payment_by_order_id(self, order_id: uuid.UUID) -> PixCharge | None: ...
+
+    def update_payment_status(self, payment_id: str, status: PaymentStatus) -> None: ...
+
+
+PaymentRepository = PaymentRepositoryPort

@@ -5,6 +5,7 @@ import type { CustomerAuthPort } from './customer-auth'
 import type { MenuPort } from './menu'
 import type { NfcPort } from './nfc'
 import type { OrdersPort } from './orders'
+import type { PaymentPort } from './payment'
 import type { PrinterPort } from './printer'
 import type { RecommendationsPort } from './recommendations'
 import type { StoresPort } from './stores'
@@ -19,6 +20,7 @@ export interface Adapters {
   connection: ConnectionPort
   menu: MenuPort
   orders: OrdersPort
+  payment: PaymentPort
   nfc: NfcPort
   tag: TagPort
   buzzer: BuzzerPort

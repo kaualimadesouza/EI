@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     cors_origins: list[str] = []
     cors_origin_regex: str | None = None
     auth_secret_key: str = "dev-insecure-secret-change-in-production"
+    abacatepay_api_key: str | None = None
+    abacatepay_webhook_secret: str | None = None
+    abacatepay_base_url: str = "https://api.abacatepay.com"
 
     @field_validator("database_url")
     @classmethod

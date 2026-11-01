@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Collection
-from datetime import date
+from datetime import UTC, date, datetime
 
 from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
@@ -11,14 +11,16 @@ from topa_api.adapters.db.models import (
     MerchantRow,
     OrderItemRow,
     OrderRow,
+    PaymentRow,
     ProductRow,
     StoreRow,
 )
-from topa_api.application.ports import CustomerRecord, MerchantRecord
+from topa_api.application.ports import CustomerRecord, MerchantRecord, PaymentRepositoryPort
 from topa_api.domain.auth import Customer, Merchant
 from topa_api.domain.catalog import DEFAULT_STORE_SLUG, Product, Store, build_store
 from topa_api.domain.errors import DuplicateClientOrderIdError, EmailAlreadyInUseError
 from topa_api.domain.orders import Order, OrderItem, OrderStatus, PaymentMethod
+from topa_api.domain.payment import PaymentStatus, PixCharge
 
 # namespace of the per-store-day number lock, so it never meets another advisory lock
 ORDER_NUMBER_LOCK = 1
@@ -321,3 +323,60 @@ class SqlAlchemyCustomerRepository:
             self._session.flush()
         except IntegrityError:
             raise EmailAlreadyInUseError() from None
+
+
+def _to_charge(row: PaymentRow) -> PixCharge:
+    return PixCharge(
+        id=row.id,
+        order_id=row.order_id,
+        amount_cents=row.amount_cents,
+        status=PaymentStatus(row.status),
+        br_code=row.br_code,
+        br_code_base64=row.br_code_base64,
+        qr_code_url=row.qr_code_url,
+        expires_at=row.expires_at,
+        created_at=row.created_at,
+    )
+
+
+class SqlAlchemyPaymentRepository(PaymentRepositoryPort):
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def save_payment(self, charge: PixCharge) -> None:
+        self._session.add(
+            PaymentRow(
+                id=charge.id,
+                order_id=charge.order_id,
+                amount_cents=charge.amount_cents,
+                status=charge.status.value,
+                br_code=charge.br_code,
+                br_code_base64=charge.br_code_base64,
+                qr_code_url=charge.qr_code_url,
+                expires_at=charge.expires_at,
+                created_at=charge.created_at or datetime.now(UTC),
+            )
+        )
+        self._session.flush()
+
+    def get_payment(self, payment_id: str) -> PixCharge | None:
+        row = self._session.get(PaymentRow, payment_id)
+        if row is None:
+            return None
+        return _to_charge(row)
+
+    def get_payment_by_order_id(self, order_id: uuid.UUID) -> PixCharge | None:
+        row = self._session.scalars(
+            select(PaymentRow)
+            .where(PaymentRow.order_id == order_id)
+            .order_by(PaymentRow.created_at.desc())
+        ).first()
+        if row is None:
+            return None
+        return _to_charge(row)
+
+    def update_payment_status(self, payment_id: str, status: PaymentStatus) -> None:
+        row = self._session.get(PaymentRow, payment_id)
+        if row is not None:
+            row.status = status.value
+            self._session.flush()

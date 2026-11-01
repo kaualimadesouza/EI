@@ -19,6 +19,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from topa_api.adapters.db.base import Base
 from topa_api.domain.catalog import DEFAULT_STORE_SLUG
 from topa_api.domain.orders import OrderStatus, PaymentMethod
+from topa_api.domain.payment import PaymentStatus
 
 
 def _one_of(column: str, values: type[StrEnum]) -> CheckConstraint:
@@ -142,4 +143,22 @@ class CustomerRow(Base):
     name: Mapped[str] = mapped_column(Text)
     email: Mapped[str] = mapped_column(Text, unique=True)
     password_hash: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class PaymentRow(Base):
+    __tablename__ = "payments"
+    __table_args__ = (_one_of("status", PaymentStatus),)
+
+    id: Mapped[str] = mapped_column(Text, primary_key=True)
+    order_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("orders.id", ondelete="CASCADE"), index=True
+    )
+    amount_cents: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(Text)
+    method: Mapped[str] = mapped_column(Text, server_default="pix")
+    br_code: Mapped[str] = mapped_column(Text)
+    br_code_base64: Mapped[str | None] = mapped_column(Text, nullable=True)
+    qr_code_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
