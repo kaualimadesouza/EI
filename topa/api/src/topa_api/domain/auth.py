@@ -66,3 +66,12 @@ class CustomerAuthToken:
     token_type: str
     name: str
     email: str
+
+
+@dataclass(frozen=True)
+class TotemSession:
+    """Temporary backend-validated session for a customer to order from a totem."""
+
+    store_slug: str
+    expires_at: datetime
+

@@ -11,6 +11,7 @@ from topa_api.domain.auth import (
     AuthenticatedMerchant,
     Customer,
     Merchant,
+    TotemSession,
 )
 from topa_api.domain.catalog import Product, Store
 from topa_api.domain.errors import (
@@ -172,6 +173,7 @@ class FakePasswordHasher:
 class FakeTokenService:
     valid_tokens: dict[str, AuthenticatedMerchant] = field(default_factory=dict)
     valid_customer_tokens: dict[str, AuthenticatedCustomer] = field(default_factory=dict)
+    valid_totem_sessions: dict[str, TotemSession] = field(default_factory=dict)
 
     def create_token(self, merchant: AuthenticatedMerchant, expires_in_seconds: int = 86400) -> str:
         token = f"token_for_{merchant.id}"
@@ -194,6 +196,22 @@ class FakeTokenService:
         if token not in self.valid_customer_tokens:
             raise InvalidTokenError()
         return self.valid_customer_tokens[token]
+
+    def create_totem_session_token(
+        self, store_slug: str, expires_in_seconds: int = 1800
+    ) -> str:
+        token = f"token_totem_{store_slug}"
+        expires_at = datetime.fromtimestamp(1893456000)
+        self.valid_totem_sessions[token] = TotemSession(
+            store_slug=store_slug, expires_at=expires_at
+        )
+        return token
+
+    def verify_totem_session_token(self, token: str) -> TotemSession:
+        if token not in self.valid_totem_sessions:
+            raise InvalidTokenError()
+        return self.valid_totem_sessions[token]
+
 
 
 @dataclass

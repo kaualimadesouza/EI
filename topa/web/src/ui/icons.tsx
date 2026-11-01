@@ -92,3 +92,12 @@ export const MicIcon = (props: IconProps) => (
     {...props}
   />
 )
+export const PinIcon = (props: IconProps) => (
+  <Stroke
+    d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zM12 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"
+    {...props}
+  />
+)
+export const SearchIcon = (props: IconProps) => (
+  <Stroke d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35" {...props} />
+)

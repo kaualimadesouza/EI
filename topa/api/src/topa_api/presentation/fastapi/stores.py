@@ -12,6 +12,10 @@ router = APIRouter(tags=["stores"])
 class StoreResponse(BaseModel):
     slug: str
     name: str
+    latitude: float | None = None
+    longitude: float | None = None
+    address: str | None = None
+    category: str | None = None
 
 
 @router.get("/stores")
@@ -20,4 +24,14 @@ def list_stores(
 ) -> list[StoreResponse]:
     """Lists all registered stores for selection in the browser."""
     stores = use_case.execute()
-    return [StoreResponse(slug=store.slug, name=store.name) for store in stores]
+    return [
+        StoreResponse(
+            slug=store.slug,
+            name=store.name,
+            latitude=store.latitude,
+            longitude=store.longitude,
+            address=store.address,
+            category=store.category,
+        )
+        for store in stores
+    ]

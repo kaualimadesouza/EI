@@ -11,11 +11,13 @@ describe('StoreSelectorScreen', () => {
   const customer = { id: 'c1', name: 'Larissa Lima', email: 'larissa@email.com' }
 
   const sampleStores = [
-    { slug: 'brasa-burgers', name: 'Brasa Burgers' },
-    { slug: 'bella-nonna', name: 'Cantina Bella Nonna' },
-    { slug: 'acai-bowls', name: 'Açaí & Bowls Universitário' },
+    { slug: 'brasa-burgers', name: 'Brasa Burgers', category: 'Hamburgueria' },
+    { slug: 'bella-nonna', name: 'Cantina Bella Nonna', category: 'Italiana' },
+    { slug: 'acai-bowls', name: 'Açaí & Bowls Universitário', category: 'Saudável' },
     { slug: 'lanchonete-bem-te-vi', name: 'Lanchonete Bem-te-vi' },
-    { slug: 'custom-cafe', name: 'Café do Campus' },
+    { slug: 'custom-cafe', name: 'Café do Campus', category: 'Café' },
+    { slug: 'quiosque-novo', name: 'Quiosque Novo', category: 'Salgados' },
+    { slug: 'quiosque-sem-cat', name: 'Quiosque Sem Cat' },
   ]
 
   const sampleOrders: OrderSummary[] = [
@@ -300,5 +302,164 @@ describe('StoreSelectorScreen', () => {
     expect(orders.listCustomerOrders).toHaveBeenCalledTimes(3)
 
     vi.useRealTimers()
+  })
+
+  it('filters stores via search query and clears search', async () => {
+    const user = userEvent.setup()
+    const { stores, orders } = createPorts()
+
+    render(
+      <StoreSelectorScreen
+        stores={stores}
+        orders={orders}
+        customer={customer}
+        onSelectStore={vi.fn()}
+      />,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Brasa Burgers' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Cantina Bella Nonna' })).toBeInTheDocument()
+
+    const searchInput = screen.getByPlaceholderText(/Buscar por nome/i)
+    await user.type(searchInput, 'Brasa')
+
+    expect(screen.getByRole('heading', { name: 'Brasa Burgers' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Cantina Bella Nonna' })).not.toBeInTheDocument()
+
+    // Clear search
+    await user.click(screen.getByRole('button', { name: 'Limpar busca' }))
+    expect(screen.getByRole('heading', { name: 'Cantina Bella Nonna' })).toBeInTheDocument()
+  })
+
+  it('filters stores by category chip and handles empty filter results', async () => {
+    const user = userEvent.setup()
+    const { stores, orders } = createPorts()
+
+    render(
+      <StoreSelectorScreen
+        stores={stores}
+        orders={orders}
+        customer={customer}
+        onSelectStore={vi.fn()}
+      />,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Brasa Burgers' })).toBeInTheDocument()
+
+    // Filter by Burgers
+    await user.click(screen.getByRole('button', { name: 'Burgers' }))
+    expect(screen.getByRole('heading', { name: 'Brasa Burgers' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Cantina Bella Nonna' })).not.toBeInTheDocument()
+
+    // Filter by Mais Próximos
+    await user.click(screen.getByRole('button', { name: 'Mais Próximos' }))
+    expect(screen.getByRole('heading', { name: 'Brasa Burgers' })).toBeInTheDocument()
+
+    // Search with non-matching term to test empty state and reset
+    const searchInput = screen.getByPlaceholderText(/Buscar por nome/i)
+    await user.type(searchInput, 'inexistente')
+    expect(await screen.findByText('Nenhum restaurante encontrado')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Limpar filtros' }))
+    expect(await screen.findByRole('heading', { name: 'Brasa Burgers' })).toBeInTheDocument()
+  })
+
+  it('renders guest mode for unauthenticated customer and triggers onLoginRequest', async () => {
+    const user = userEvent.setup()
+    const onLoginRequest = vi.fn()
+    const { stores, orders } = createPorts()
+
+    render(
+      <StoreSelectorScreen
+        stores={stores}
+        orders={orders}
+        customer={null}
+        onSelectStore={vi.fn()}
+        onLoginRequest={onLoginRequest}
+      />,
+    )
+
+    expect(await screen.findByText('Praça de Alimentação')).toBeInTheDocument()
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Entrar / Cadastrar' }))
+    expect(onLoginRequest).toHaveBeenCalledOnce()
+  })
+
+  it('displays session notice banner and allows dismissing it', async () => {
+    const user = userEvent.setup()
+    const { stores, orders } = createPorts()
+
+    render(
+      <StoreSelectorScreen
+        stores={stores}
+        orders={orders}
+        customer={customer}
+        sessionNotice="Sessão temporária expirada."
+        onSelectStore={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Sessão temporária expirada.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Fechar aviso' }))
+    expect(screen.queryByText('Sessão temporária expirada.')).not.toBeInTheDocument()
+  })
+
+  it('handles user location prompt and button click', async () => {
+    const mockGeolocation = {
+      getCurrentPosition: vi.fn().mockImplementation((success) => {
+        success({
+          coords: {
+            latitude: -23.4828,
+            longitude: -46.5005,
+          },
+        })
+      }),
+    }
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      geolocation: mockGeolocation,
+    })
+
+    const { stores, orders } = createPorts()
+
+    render(
+      <StoreSelectorScreen
+        stores={stores}
+        orders={orders}
+        customer={customer}
+        onSelectStore={vi.fn()}
+      />,
+    )
+
+    expect(await screen.findByText(/Localização ativa/i)).toBeInTheDocument()
+    vi.unstubAllGlobals()
+  })
+
+  it('falls back to default campus coordinates when location permission is denied', async () => {
+    const mockGeolocation = {
+      getCurrentPosition: vi.fn().mockImplementation((_success, error) => {
+        error(new Error('User denied Geolocation'))
+      }),
+    }
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      geolocation: mockGeolocation,
+    })
+
+    const { stores, orders } = createPorts()
+
+    render(
+      <StoreSelectorScreen
+        stores={stores}
+        orders={orders}
+        customer={customer}
+        onSelectStore={vi.fn()}
+      />,
+    )
+
+    expect(await screen.findByText(/Praça de Alimentação EACH-USP/i)).toBeInTheDocument()
+    vi.unstubAllGlobals()
   })
 })

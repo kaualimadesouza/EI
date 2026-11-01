@@ -9,6 +9,7 @@ from topa_api.domain.auth import (
     AuthenticatedMerchant,
     Customer,
     Merchant,
+    TotemSession,
 )
 from topa_api.domain.catalog import Product, Store
 from topa_api.domain.orders import Order, OrderStatus
@@ -149,6 +150,12 @@ class TokenServicePort(Protocol):
     ) -> str: ...
 
     def verify_customer_token(self, token: str) -> AuthenticatedCustomer: ...
+
+    def create_totem_session_token(
+        self, store_slug: str, expires_in_seconds: int = 1800
+    ) -> str: ...
+
+    def verify_totem_session_token(self, token: str) -> TotemSession: ...
 
 
 TokenService = TokenServicePort

@@ -35,6 +35,7 @@ from topa_api.presentation.fastapi.orders import router as orders_router
 from topa_api.presentation.fastapi.products import router as products_router
 from topa_api.presentation.fastapi.recommendations import router as recommendations_router
 from topa_api.presentation.fastapi.stores import router as stores_router
+from topa_api.presentation.fastapi.totem_sessions import router as totem_sessions_router
 from topa_api.settings import Settings
 
 
@@ -115,6 +116,7 @@ def create_app() -> FastAPI:
     app.include_router(products_router)
     app.include_router(orders_router)
     app.include_router(recommendations_router)
+    app.include_router(totem_sessions_router)
     return app
 
 

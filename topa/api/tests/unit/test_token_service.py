@@ -203,3 +203,69 @@ def test_customer_service_rejects_corrupted_customer_payload() -> None:
 
     with pytest.raises(InvalidTokenError):
         service.verify_customer_token(token)
+
+
+def test_creates_and_verifies_valid_totem_session_token() -> None:
+    now = datetime(2026, 10, 31, 20, 0, tzinfo=UTC)
+    clock = FixedClock(now)
+    service = HmacTokenService(secret_key="test-secret-key", clock=clock)
+
+    token = service.create_totem_session_token("brasa-burgers", expires_in_seconds=1800)
+    session = service.verify_totem_session_token(token)
+
+    assert session.store_slug == "brasa-burgers"
+    assert session.expires_at == datetime(2026, 10, 31, 20, 30, tzinfo=UTC)
+
+
+def test_totem_session_rejects_expired_token() -> None:
+    now = datetime(2026, 10, 31, 20, 0, tzinfo=UTC)
+    clock = FixedClock(now)
+    service = HmacTokenService(secret_key="test-secret-key", clock=clock)
+
+    token = service.create_totem_session_token("brasa-burgers", expires_in_seconds=60)
+    clock.moment = datetime(2026, 10, 31, 20, 2, tzinfo=UTC)
+
+    with pytest.raises(InvalidTokenError):
+        service.verify_totem_session_token(token)
+
+
+def test_totem_session_rejects_wrong_role_or_missing_slug() -> None:
+    import base64
+    import hashlib
+    import hmac
+
+    service = HmacTokenService(secret_key="test-secret-key")
+    raw = b'{"role": "merchant", "store_slug": "s", "exp": 9999999999}'
+    bad_payload = base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
+    sig = hmac.new(b"test-secret-key", bad_payload.encode("ascii"), hashlib.sha256).digest()
+    sig_b64 = base64.urlsafe_b64encode(sig).decode("ascii").rstrip("=")
+    token = f"{bad_payload}.{sig_b64}"
+
+    with pytest.raises(InvalidTokenError):
+        service.verify_totem_session_token(token)
+
+    raw_no_slug = b'{"role": "totem_session", "exp": 9999999999}'
+    bad_payload_2 = base64.urlsafe_b64encode(raw_no_slug).decode("ascii").rstrip("=")
+    sig_2 = hmac.new(b"test-secret-key", bad_payload_2.encode("ascii"), hashlib.sha256).digest()
+    sig_b64_2 = base64.urlsafe_b64encode(sig_2).decode("ascii").rstrip("=")
+    token_2 = f"{bad_payload_2}.{sig_b64_2}"
+
+    with pytest.raises(InvalidTokenError):
+        service.verify_totem_session_token(token_2)
+
+
+def test_totem_session_rejects_malformed_exp() -> None:
+    import base64
+    import hashlib
+    import hmac
+
+    service = HmacTokenService(secret_key="test-secret-key")
+    raw = b'{"role": "totem_session", "store_slug": "s", "exp": "not-an-int"}'
+    bad_payload = base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
+    sig = hmac.new(b"test-secret-key", bad_payload.encode("ascii"), hashlib.sha256).digest()
+    sig_b64 = base64.urlsafe_b64encode(sig).decode("ascii").rstrip("=")
+    token = f"{bad_payload}.{sig_b64}"
+
+    with pytest.raises(InvalidTokenError):
+        service.verify_totem_session_token(token)
+

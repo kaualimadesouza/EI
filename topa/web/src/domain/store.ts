@@ -20,7 +20,10 @@ export interface StoreRef {
 }
 
 /** The store this page was opened for: none, a well-formed slug, or a `loja` that can never exist. */
-export type LocationStore = { kind: 'absent' } | { kind: 'valid'; slug: string } | { kind: 'invalid' }
+export type LocationStore =
+  | { kind: 'absent' }
+  | { kind: 'valid'; slug: string; sessionToken?: string }
+  | { kind: 'invalid' }
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 // the API refuses longer slugs with 422, so a longer one is never a store
@@ -49,9 +52,17 @@ export function storeFromUrl(text: string): StoreRef | null {
 
 /** A typo in `loja` must not fall back to the demo store, so it is kept apart from no `loja` at all. */
 export function locationStore(href: string): LocationStore {
-  const slug = new URL(href).searchParams.get('loja')
+  let url: URL
+  try {
+    url = new URL(href)
+  } catch {
+    return { kind: 'invalid' }
+  }
+  const slug = url.searchParams.get('loja')
   if (slug === null) return { kind: 'absent' }
-  return isStoreSlug(slug) ? { kind: 'valid', slug } : { kind: 'invalid' }
+  if (!isStoreSlug(slug)) return { kind: 'invalid' }
+  const sessionToken = url.searchParams.get('sessao') || url.searchParams.get('token') || undefined
+  return { kind: 'valid', slug, sessionToken }
 }
 
 function isReachableFromPhone(url: URL): boolean {
@@ -68,7 +79,12 @@ function isReachableFromPhone(url: URL): boolean {
 }
 
 /** A phone scanning the queue QR cannot reach the totem's own loopback, so local runs point to the hosted site. */
-export function phoneMenuUrl(origin: string, basePath = '/', storeSlug = DEMO_STORE_SLUG): string {
+export function phoneMenuUrl(
+  origin: string,
+  basePath = '/',
+  storeSlug = DEMO_STORE_SLUG,
+  sessionToken?: string,
+): string {
   let url: URL
   try {
     const candidate = new URL(basePath, origin)
@@ -77,5 +93,8 @@ export function phoneMenuUrl(origin: string, basePath = '/', storeSlug = DEMO_ST
     url = new URL(PUBLIC_ORIGIN)
   }
   url.searchParams.set('loja', storeSlug)
+  if (sessionToken) {
+    url.searchParams.set('sessao', sessionToken)
+  }
   return url.href
 }

@@ -18,6 +18,57 @@ class Category(StrEnum):
 class Store:
     slug: str
     name: str
+    latitude: float | None = None
+    longitude: float | None = None
+    address: str | None = None
+    category: str | None = None
+
+
+STORE_METADATA: dict[str, dict[str, object]] = {
+    "lanchonete-bem-te-vi": {
+        "latitude": -23.4823,
+        "longitude": -46.5012,
+        "address": "Praça Central - Bloco A",
+        "category": "Lanches Tradicionais",
+    },
+    "brasa-burgers": {
+        "latitude": -23.4828,
+        "longitude": -46.5005,
+        "address": "Praça de Alimentação - Quiosque 4",
+        "category": "Burgers & Grill",
+    },
+    "bella-nonna": {
+        "latitude": -23.4815,
+        "longitude": -46.5020,
+        "address": "Boulevard Acadêmico - Bloco B",
+        "category": "Culinária Italiana",
+    },
+    "acai-bowls": {
+        "latitude": -23.4835,
+        "longitude": -46.4998,
+        "address": "Centro de Convivência Esportiva",
+        "category": "Saudável & Bowls",
+    },
+}
+
+
+def build_store(slug: str, name: str) -> Store:
+    """Enriches store with known campus coordinates and category."""
+    meta = STORE_METADATA.get(slug, {})
+    lat = meta.get("latitude")
+    lng = meta.get("longitude")
+    addr = meta.get("address")
+    cat = meta.get("category")
+    return Store(
+        slug=slug,
+        name=name,
+        latitude=float(lat) if isinstance(lat, (int, float)) else None,
+        longitude=float(lng) if isinstance(lng, (int, float)) else None,
+        address=str(addr) if isinstance(addr, str) else None,
+        category=str(cat) if isinstance(cat, str) else None,
+    )
+
+
 
 
 @dataclass(frozen=True)

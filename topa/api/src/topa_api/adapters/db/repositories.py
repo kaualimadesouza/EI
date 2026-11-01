@@ -16,7 +16,7 @@ from topa_api.adapters.db.models import (
 )
 from topa_api.application.ports import CustomerRecord, MerchantRecord
 from topa_api.domain.auth import Customer, Merchant
-from topa_api.domain.catalog import DEFAULT_STORE_SLUG, Product, Store
+from topa_api.domain.catalog import DEFAULT_STORE_SLUG, Product, Store, build_store
 from topa_api.domain.errors import DuplicateClientOrderIdError, EmailAlreadyInUseError
 from topa_api.domain.orders import Order, OrderItem, OrderStatus, PaymentMethod
 
@@ -33,11 +33,11 @@ class SqlAlchemyStoreRepository:
 
     def get(self, slug: str) -> Store | None:
         row = self._session.get(StoreRow, slug)
-        return None if row is None else Store(slug=row.slug, name=row.name)
+        return None if row is None else build_store(row.slug, row.name)
 
     def list_all(self) -> list[Store]:
         rows = self._session.scalars(select(StoreRow).order_by(StoreRow.name))
-        return [Store(slug=row.slug, name=row.name) for row in rows]
+        return [build_store(row.slug, row.name) for row in rows]
 
 
 class SqlAlchemyProductRepository:

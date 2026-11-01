@@ -14,6 +14,7 @@ import { LocalOrders } from '../../adapters/local/local-orders'
 import { LocalPrinterAdapter } from '../../adapters/local/local-printer'
 import { LocalRecommendations } from '../../adapters/local/local-recommendations'
 import { LocalStores } from '../../adapters/local/local-stores'
+import { LocalTotemSession } from '../../adapters/local/local-totem-session'
 import { UnavailableBuzzer } from '../../adapters/unavailable/unavailable-buzzer'
 import { UnavailableTag } from '../../adapters/unavailable/unavailable-tag'
 import { UnavailableWakeLock } from '../../adapters/unavailable/unavailable-wake-lock'
@@ -52,6 +53,7 @@ function demoStore(storeSlug: string = DEMO_STORE_SLUG) {
     }),
     customerAuth: new LocalCustomerAuth({ storage }),
     stores: new LocalStores(),
+    totemSession: new LocalTotemSession(),
     recommendations: new LocalRecommendations(menu),
     voice: { isSupported: () => true, startListening: vi.fn().mockReturnValue(() => {}) },
     printer: new LocalPrinterAdapter(),
@@ -305,6 +307,7 @@ describe('PainelApp', () => {
       },
       customerAuth: new LocalCustomerAuth({ storage: null }),
       stores: new LocalStores(),
+    totemSession: new LocalTotemSession(),
       recommendations: { getRecommendations: vi.fn() },
       voice: { isSupported: () => true, startListening: vi.fn().mockReturnValue(() => {}) },
       printer: new LocalPrinterAdapter(),
@@ -357,6 +360,7 @@ describe('PainelApp', () => {
       },
       customerAuth: new LocalCustomerAuth({ storage: null }),
       stores: new LocalStores(),
+    totemSession: new LocalTotemSession(),
       recommendations: { getRecommendations: vi.fn() },
       voice: { isSupported: () => true, startListening: vi.fn().mockReturnValue(() => {}) },
       printer: new LocalPrinterAdapter(),
@@ -407,6 +411,7 @@ describe('PainelApp', () => {
       },
       customerAuth: new LocalCustomerAuth({ storage: null }),
       stores: new LocalStores(),
+    totemSession: new LocalTotemSession(),
       recommendations: { getRecommendations: vi.fn() },
       voice: { isSupported: () => true, startListening: vi.fn().mockReturnValue(() => {}) },
       printer: new LocalPrinterAdapter(),

@@ -8,7 +8,16 @@ describe('locationStore', () => {
     expect(locationStore('https://topa-totem.vercel.app/?loja=cantina-central')).toEqual({
       kind: 'valid',
       slug: 'cantina-central',
+      sessionToken: undefined,
     })
+    expect(
+      locationStore('https://topa-totem.vercel.app/?loja=cantina-central&sessao=session-token-123'),
+    ).toEqual({
+      kind: 'valid',
+      slug: 'cantina-central',
+      sessionToken: 'session-token-123',
+    })
+    expect(locationStore('not-a-valid-url')).toEqual({ kind: 'invalid' })
     for (const broken of ['?loja=', '?loja=Cantina', '?loja=cantina_central', `?loja=${'a'.repeat(65)}`]) {
       expect(locationStore(`https://topa-totem.vercel.app/painel${broken}`)).toEqual({ kind: 'invalid' })
     }
@@ -97,5 +106,8 @@ describe('phoneMenuUrl', () => {
     expect(phoneMenuUrl('https://topa-totem.vercel.app', '/', 'cantina-central')).toBe(
       'https://topa-totem.vercel.app/?loja=cantina-central',
     )
+    expect(
+      phoneMenuUrl('https://topa-totem.vercel.app', '/', 'cantina-central', 'test-session-tok'),
+    ).toBe('https://topa-totem.vercel.app/?loja=cantina-central&sessao=test-session-tok')
   })
 })

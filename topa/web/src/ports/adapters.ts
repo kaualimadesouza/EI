@@ -9,6 +9,7 @@ import type { PrinterPort } from './printer'
 import type { RecommendationsPort } from './recommendations'
 import type { StoresPort } from './stores'
 import type { TagPort } from './tag'
+import type { TotemSessionPort } from './totem-session'
 import type { VoiceRecognitionPort } from './voice'
 import type { WakeLockPort } from './wake-lock'
 
@@ -25,6 +26,7 @@ export interface Adapters {
   auth: AuthPort
   customerAuth: CustomerAuthPort
   stores: StoresPort
+  totemSession: TotemSessionPort
   recommendations: RecommendationsPort
   voice: VoiceRecognitionPort
   printer: PrinterPort
