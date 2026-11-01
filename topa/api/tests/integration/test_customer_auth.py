@@ -88,3 +88,48 @@ def test_customer_me_requires_valid_bearer_token(client: TestClient) -> None:
     res3 = client.get("/auth/customer/me", headers={"Authorization": "Bearer invalid.token"})
     assert res3.status_code == 401
     assert res3.json()["detail"] == "Sessão inválida ou expirada."
+
+
+def test_customer_google_sso_flow(client: TestClient) -> None:
+    # 1. First time logging in with Google: automatically creates account
+    res1 = client.post(
+        "/auth/customer/google",
+        json={
+            "email": "aluno.google@usp.br",
+            "name": "Aluno Google USP",
+            "id_token": "google-mock-jwt-token",
+        },
+    )
+    assert res1.status_code == 200
+    data1 = res1.json()
+    assert data1["email"] == "aluno.google@usp.br"
+    assert data1["name"] == "Aluno Google USP"
+    assert len(data1["access_token"]) > 20
+
+    # 2. Second login with same Google account returns existing user
+    res2 = client.post(
+        "/auth/customer/google",
+        json={
+            "email": "aluno.google@usp.br",
+        },
+    )
+    assert res2.status_code == 200
+    data2 = res2.json()
+    assert data2["email"] == "aluno.google@usp.br"
+    assert data2["name"] == "Aluno Google USP"
+
+    # 3. Can access /auth/customer/me with returned access token
+    me_res = client.get(
+        "/auth/customer/me",
+        headers={"Authorization": f"Bearer {data2['access_token']}"},
+    )
+    assert me_res.status_code == 200
+    assert me_res.json()["email"] == "aluno.google@usp.br"
+
+
+def test_customer_google_sso_invalid_payload(client: TestClient) -> None:
+    res = client.post(
+        "/auth/customer/google",
+        json={"email": "not-an-email"},
+    )
+    assert res.status_code == 422

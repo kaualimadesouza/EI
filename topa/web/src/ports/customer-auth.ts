@@ -15,8 +15,15 @@ export interface CustomerRegistration {
   password: string
 }
 
+export interface GoogleAuthPayload {
+  idToken?: string
+  email?: string
+  name?: string
+}
+
 export interface CustomerAuthPort {
   login(credentials: CustomerCredentials): Promise<AuthenticatedCustomer>
+  loginWithGoogle(payload?: GoogleAuthPayload): Promise<AuthenticatedCustomer>
   register(data: CustomerRegistration): Promise<AuthenticatedCustomer>
   logout(): Promise<void> | void
   getToken(): string | null

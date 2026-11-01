@@ -8,6 +8,7 @@ interface StoreJson {
   longitude?: number
   address?: string
   category?: string
+  segment?: 'restaurant' | 'market'
 }
 
 /** HTTP implementation of stores port. */
@@ -31,6 +32,7 @@ export class HttpStores implements StoresPort {
       longitude: item.longitude,
       address: item.address,
       category: item.category,
+      segment: item.segment,
     }))
   }
 }

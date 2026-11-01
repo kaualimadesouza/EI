@@ -18,6 +18,18 @@ describe('StoreSelectorScreen', () => {
     { slug: 'custom-cafe', name: 'Café do Campus', category: 'Café' },
     { slug: 'quiosque-novo', name: 'Quiosque Novo', category: 'Salgados' },
     { slug: 'quiosque-sem-cat', name: 'Quiosque Sem Cat' },
+    {
+      slug: 'emporio-campus',
+      name: 'Empório Campus & Mercearia',
+      category: 'Conveniência',
+      segment: 'market',
+    },
+    {
+      slug: 'conveniencia-central',
+      name: 'Conveniência Central',
+      category: 'Snacks & Bebidas',
+      segment: 'market',
+    },
   ]
 
   const sampleOrders: OrderSummary[] = [
@@ -380,10 +392,55 @@ describe('StoreSelectorScreen', () => {
     )
 
     expect(await screen.findByText('Praça de Alimentação')).toBeInTheDocument()
-    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
+    expect(screen.getByRole('tablist')).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'Meus Pedidos' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Entrar / Cadastrar' }))
-    expect(onLoginRequest).toHaveBeenCalledOnce()
+    expect(onLoginRequest).toHaveBeenCalledTimes(1)
+
+    await user.click(screen.getByRole('button', { name: 'Login com Google' }))
+    expect(onLoginRequest).toHaveBeenCalledTimes(2)
+  })
+
+  it('switches to markets tab, filters market stores, and handles category chips', async () => {
+    const user = userEvent.setup()
+    const onSelectStore = vi.fn()
+    const { stores, orders } = createPorts()
+
+    render(
+      <StoreSelectorScreen
+        stores={stores}
+        orders={orders}
+        customer={customer}
+        onSelectStore={onSelectStore}
+      />,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Brasa Burgers' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Empório Campus & Mercearia' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: 'TOPA Mercados' }))
+
+    expect(await screen.findByRole('heading', { name: 'Empório Campus & Mercearia' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Conveniência Central' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Brasa Burgers' })).not.toBeInTheDocument()
+
+    // Test market chips
+    await user.click(screen.getByRole('button', { name: 'Conveniência' }))
+    expect(screen.getByRole('heading', { name: 'Empório Campus & Mercearia' })).toBeInTheDocument()
+
+    // Test empty search in markets tab
+    const searchInput = screen.getByPlaceholderText(/Buscar no mercado/i)
+    await user.type(searchInput, 'inexistente')
+    expect(await screen.findByText('Nenhum mercado encontrado')).toBeInTheDocument()
+    expect(screen.getByText(/produtos de conveniência/i)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Limpar filtros' }))
+    expect(await screen.findByRole('heading', { name: 'Empório Campus & Mercearia' })).toBeInTheDocument()
+
+    // Clicking store in markets calls onSelectStore
+    await user.click(screen.getByRole('button', { name: 'Pedir em Empório Campus & Mercearia' }))
+    expect(onSelectStore).toHaveBeenCalledWith('emporio-campus')
   })
 
   it('displays session notice banner and allows dismissing it', async () => {

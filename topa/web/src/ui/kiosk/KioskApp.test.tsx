@@ -53,6 +53,7 @@ function fakes(
     },
     customerAuth: {
       login: vi.fn(),
+      loginWithGoogle: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
       getToken: () => null,

@@ -13,7 +13,16 @@ import { STATUS_LABEL } from '../../domain/status'
 import type { AuthenticatedCustomer } from '../../ports/customer-auth'
 import type { OrdersPort } from '../../ports/orders'
 import type { StoresPort, StoreSummary } from '../../ports/stores'
-import { AlertIcon, CloseIcon, LogoutIcon, PinIcon, SearchIcon, StoreMark } from '../icons'
+import {
+  AlertIcon,
+  CloseIcon,
+  GoogleIcon,
+  LogoutIcon,
+  MarketIcon,
+  PinIcon,
+  SearchIcon,
+  StoreMark,
+} from '../icons'
 
 export interface StoreSelectorScreenProps {
   stores: StoresPort
@@ -46,9 +55,20 @@ const STORE_METAS: Record<string, { tag: string; description: string; coords: Co
     description: 'Lanches rápidos, salgados assados e fritos, cafés e sobremesas da casa.',
     coords: { latitude: -23.4823, longitude: -46.5012 },
   },
+  'emporio-campus': {
+    tag: 'Mercado Express',
+    description: 'Bebidas geladas, energéticos, chocolates, salgadinhos e conveniência express.',
+    coords: { latitude: -23.482, longitude: -46.5008 },
+  },
+  'conveniencia-central': {
+    tag: 'Conveniência & Bebidas',
+    description: 'Refrigerantes, águas, lanches prontos, snacks e itens essenciais do dia a dia.',
+    coords: { latitude: -23.483, longitude: -46.5018 },
+  },
 }
 
-const CATEGORY_CHIPS = ['Todos', 'Mais Próximos', 'Burgers', 'Italiano', 'Saudável', 'Lanches']
+const CATEGORY_CHIPS_RESTAURANTS = ['Todos', 'Mais Próximos', 'Burgers', 'Italiano', 'Saudável', 'Lanches']
+const CATEGORY_CHIPS_MARKETS = ['Todos', 'Mais Próximos', 'Bebidas Geladas', 'Snacks & Doces', 'Mercearia Express', 'Conveniência']
 
 const POLL_INTERVAL_MS = 5000
 
@@ -101,7 +121,7 @@ export function StoreSelectorScreen({
   onLoginRequest,
   onLogout,
 }: StoreSelectorScreenProps) {
-  const [activeTab, setActiveTab] = useState<'stores' | 'orders'>('stores')
+  const [activeTab, setActiveTab] = useState<'restaurants' | 'markets' | 'orders'>('restaurants')
   const [storeList, setStoreList] = useState<StoreSummary[]>([])
   const [loadingStores, setLoadingStores] = useState(true)
   const [storesError, setStoresError] = useState<string | null>(null)
@@ -207,6 +227,12 @@ export function StoreSelectorScreen({
     })
 
     let filtered = withDistance
+    if (activeTab === 'restaurants') {
+      filtered = filtered.filter((s) => s.segment !== 'market')
+    } else if (activeTab === 'markets') {
+      filtered = filtered.filter((s) => s.segment === 'market')
+    }
+
     if (selectedCategory === 'Mais Próximos') {
       filtered = [...filtered].sort((a, b) => a.distanceMeters - b.distanceMeters)
     } else if (selectedCategory !== 'Todos') {
@@ -229,7 +255,10 @@ export function StoreSelectorScreen({
     }
 
     return filtered
-  }, [storeList, userCoords, selectedCategory, searchQuery])
+  }, [storeList, userCoords, activeTab, selectedCategory, searchQuery])
+
+  const categoryChips =
+    activeTab === 'markets' ? CATEGORY_CHIPS_MARKETS : CATEGORY_CHIPS_RESTAURANTS
 
   const closestSlug = useMemo(() => {
     if (enrichedStores.length === 0) return null
@@ -301,32 +330,57 @@ export function StoreSelectorScreen({
 
         <div className="mb-4">
           <h1 className="text-[26px] font-bold tracking-tight">
-            {activeTab === 'stores' ? 'Onde você quer pedir hoje?' : 'Meus Pedidos'}
+            {activeTab === 'markets'
+              ? 'TOPA Mercados: Conveniência & Express'
+              : activeTab === 'orders'
+                ? 'Meus Pedidos'
+                : 'Onde você quer pedir hoje?'}
           </h1>
           <p className="mt-1 text-[15px] text-muted">
-            {activeTab === 'stores'
-              ? 'Escolha um restaurante da praça para abrir o cardápio e fazer seu pedido pelo celular.'
-              : 'Acompanhe o status e histórico dos seus pedidos em todos os restaurantes.'}
+            {activeTab === 'markets'
+              ? 'Bebidas geladas, snacks rápidos, laticínios e conveniência do campus prontos para retirada rápida.'
+              : activeTab === 'orders'
+                ? 'Acompanhe o status e histórico dos seus pedidos em todos os restaurantes.'
+                : 'Escolha um restaurante da praça para abrir o cardápio e fazer seu pedido pelo celular.'}
           </p>
         </div>
 
-        {customer && (
-          <div
-            role="tablist"
-            aria-label="Navegação do cliente"
-            className="mb-6 flex gap-2 border-b border-line pb-3"
+        <div
+          role="tablist"
+          aria-label="Navegação do cliente"
+          className="mb-6 flex flex-wrap gap-2 border-b border-line pb-3"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'restaurants'}
+            onClick={() => {
+              setActiveTab('restaurants')
+              setSelectedCategory('Todos')
+            }}
+            className={`flex items-center gap-2 cursor-pointer rounded-[12px] px-4 py-2 text-[14px] font-semibold transition-all duration-150 motion-safe:active:scale-95 ${
+              activeTab === 'restaurants' ? 'bg-ink text-white shadow-sm' : 'bg-ground-2 text-muted hover:text-ink'
+            }`}
           >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === 'stores'}
-              onClick={() => setActiveTab('stores')}
-              className={`cursor-pointer rounded-[12px] px-4 py-2 text-[14px] font-semibold transition-all duration-150 motion-safe:active:scale-95 ${
-                activeTab === 'stores' ? 'bg-ink text-white shadow-sm' : 'bg-ground-2 text-muted hover:text-ink'
-              }`}
-            >
-              Restaurantes
-            </button>
+            <StoreMark size={16} />
+            <span>Restaurantes</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'markets'}
+            onClick={() => {
+              setActiveTab('markets')
+              setSelectedCategory('Todos')
+            }}
+            className={`flex items-center gap-2 cursor-pointer rounded-[12px] px-4 py-2 text-[14px] font-semibold transition-all duration-150 motion-safe:active:scale-95 ${
+              activeTab === 'markets' ? 'bg-ink text-white shadow-sm' : 'bg-ground-2 text-muted hover:text-ink'
+            }`}
+          >
+            <MarketIcon size={16} />
+            <span>TOPA Mercados</span>
+          </button>
+          {customer && (
             <button
               type="button"
               role="tab"
@@ -338,10 +392,49 @@ export function StoreSelectorScreen({
             >
               Meus Pedidos
             </button>
+          )}
+        </div>
+
+        {!customer && onLoginRequest && (
+          <aside className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-[18px] border border-line bg-surface p-4 shadow-xs motion-safe:animate-slide-up">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-ground-2 shadow-inner">
+                <GoogleIcon size={22} />
+              </div>
+              <div>
+                <p className="text-[14px] font-bold text-ink">Entrar com sua conta Google</p>
+                <p className="text-[12px] text-muted">Acesse em 1 clique para salvar seu histórico e pedir mais rápido.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onLoginRequest}
+              className="flex cursor-pointer items-center gap-2 rounded-[10px] bg-ink px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-ink/90 motion-safe:active:scale-95"
+            >
+              <GoogleIcon size={16} />
+              <span>Login com Google</span>
+            </button>
+          </aside>
+        )}
+
+        {activeTab === 'markets' && (
+          <div className="mb-6 flex items-center justify-between rounded-[16px] border border-teal/20 bg-teal/5 p-4 text-teal shadow-xs motion-safe:animate-slide-up">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal text-white shadow-xs">
+                <MarketIcon size={20} />
+              </div>
+              <div>
+                <p className="text-[14px] font-bold text-teal">TOPA Mercados: Retirada Express</p>
+                <p className="text-[12px] text-teal/80">Snacks, bebidas geladas e produtos essenciais do campus sem filas.</p>
+              </div>
+            </div>
+            <span className="rounded-full bg-teal/10 px-3 py-1 text-[11px] font-bold text-teal">
+              ⚡ 5 min
+            </span>
           </div>
         )}
 
-        {activeTab === 'stores' && (
+        {activeTab !== 'orders' && (
           <>
             {/* Location & Proximity Bar */}
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-line bg-surface p-3.5 shadow-xs">
@@ -386,7 +479,11 @@ export function StoreSelectorScreen({
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Buscar por nome do restaurante ou tipo de comida..."
+                  placeholder={
+                    activeTab === 'markets'
+                      ? 'Buscar no mercado por bebidas, snacks, chocolates...'
+                      : 'Buscar por nome do restaurante ou tipo de comida...'
+                  }
                   className="h-11 w-full rounded-[14px] border border-line bg-white pl-10 pr-10 text-[14px] text-ink shadow-xs outline-none transition focus:border-ink focus:ring-1 focus:ring-ink"
                 />
                 {searchQuery && (
@@ -406,7 +503,7 @@ export function StoreSelectorScreen({
                 aria-label="Filtrar categorias"
                 className="flex flex-wrap gap-2 pt-1"
               >
-                {CATEGORY_CHIPS.map((cat) => (
+                {categoryChips.map((cat) => (
                   <button
                     key={cat}
                     type="button"
@@ -457,9 +554,15 @@ export function StoreSelectorScreen({
 
             {!loadingStores && !storesError && enrichedStores.length === 0 && (
               <div className="flex flex-col items-center justify-center gap-3 rounded-[20px] border border-line bg-surface py-16 px-6 text-center shadow-xs">
-                <p className="text-[17px] font-bold text-ink">Nenhum restaurante encontrado</p>
+                <p className="text-[17px] font-bold text-ink">
+                  {activeTab === 'markets'
+                    ? 'Nenhum mercado encontrado'
+                    : 'Nenhum restaurante encontrado'}
+                </p>
                 <p className="max-w-[36ch] text-[14px] text-muted">
-                  Tente ajustar a busca ou escolher outra categoria para encontrar seu pedido.
+                  {activeTab === 'markets'
+                    ? 'Tente ajustar a busca para encontrar produtos de conveniência.'
+                    : 'Tente ajustar a busca ou escolher outra categoria para encontrar seu pedido.'}
                 </p>
                 <button
                   type="button"
@@ -569,7 +672,7 @@ export function StoreSelectorScreen({
                 </p>
                 <button
                   type="button"
-                  onClick={() => setActiveTab('stores')}
+                  onClick={() => setActiveTab('restaurants')}
                   className="cursor-pointer rounded-[12px] bg-ink px-4 py-2.5 text-[14px] font-semibold text-white transition hover:bg-ink/90 motion-safe:active:scale-95"
                 >
                   Ver restaurantes

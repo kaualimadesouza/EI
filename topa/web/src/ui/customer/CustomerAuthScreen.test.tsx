@@ -11,6 +11,7 @@ describe('CustomerAuthScreen', () => {
     const onAuthSuccess = vi.fn()
     const fakeAuth: CustomerAuthPort = {
       login: vi.fn().mockResolvedValue({ id: 'c1', name: 'Maria', email: 'maria@email.com' }),
+      loginWithGoogle: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
       getToken: vi.fn(),
@@ -37,6 +38,7 @@ describe('CustomerAuthScreen', () => {
     const onAuthSuccess = vi.fn()
     const fakeAuth: CustomerAuthPort = {
       login: vi.fn(),
+      loginWithGoogle: vi.fn(),
       register: vi.fn().mockResolvedValue({ id: 'c2', name: 'Pedro Santos', email: 'pedro@email.com' }),
       logout: vi.fn(),
       getToken: vi.fn(),
@@ -67,6 +69,7 @@ describe('CustomerAuthScreen', () => {
     const user = userEvent.setup()
     const fakeAuth: CustomerAuthPort = {
       login: vi.fn(),
+      loginWithGoogle: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
       getToken: vi.fn(),
@@ -90,6 +93,7 @@ describe('CustomerAuthScreen', () => {
     const user = userEvent.setup()
     const fakeAuth: CustomerAuthPort = {
       login: vi.fn().mockRejectedValue(new Error('Credenciais inválidas.')),
+      loginWithGoogle: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
       getToken: vi.fn(),
@@ -118,6 +122,7 @@ describe('CustomerAuthScreen', () => {
     const user = userEvent.setup()
     const fakeAuth: CustomerAuthPort = {
       login: vi.fn().mockRejectedValue('String error'),
+      loginWithGoogle: vi.fn(),
       register: vi.fn(),
       logout: vi.fn(),
       getToken: vi.fn(),
@@ -131,5 +136,64 @@ describe('CustomerAuthScreen', () => {
     await user.click(screen.getByRole('button', { name: 'Entrar no TOPA' }))
 
     expect(screen.getByRole('alert')).toHaveTextContent('Falha na autenticação.')
+  })
+
+  it('authenticates customer via Google SSO button', async () => {
+    const user = userEvent.setup()
+    const onAuthSuccess = vi.fn()
+    const fakeAuth: CustomerAuthPort = {
+      login: vi.fn(),
+      loginWithGoogle: vi.fn().mockResolvedValue({ id: 'c-google', name: 'Google User', email: 'user@gmail.com' }),
+      register: vi.fn(),
+      logout: vi.fn(),
+      getToken: vi.fn(),
+      getCustomer: vi.fn(),
+      init: vi.fn(),
+    }
+
+    render(<CustomerAuthScreen auth={fakeAuth} onAuthSuccess={onAuthSuccess} />)
+
+    await user.click(screen.getByRole('button', { name: 'Continuar com o Google' }))
+
+    expect(fakeAuth.loginWithGoogle).toHaveBeenCalled()
+    expect(onAuthSuccess).toHaveBeenCalledWith({ id: 'c-google', name: 'Google User', email: 'user@gmail.com' })
+  })
+
+  it('displays error when Google SSO fails', async () => {
+    const user = userEvent.setup()
+    const fakeAuth: CustomerAuthPort = {
+      login: vi.fn(),
+      loginWithGoogle: vi.fn().mockRejectedValue(new Error('Google SSO indisponível.')),
+      register: vi.fn(),
+      logout: vi.fn(),
+      getToken: vi.fn(),
+      getCustomer: vi.fn(),
+      init: vi.fn(),
+    }
+
+    render(<CustomerAuthScreen auth={fakeAuth} onAuthSuccess={vi.fn()} />)
+
+    await user.click(screen.getByRole('button', { name: 'Continuar com o Google' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Google SSO indisponível.')
+  })
+
+  it('displays fallback error message when Google SSO rejects with non-Error object', async () => {
+    const user = userEvent.setup()
+    const fakeAuth: CustomerAuthPort = {
+      login: vi.fn(),
+      loginWithGoogle: vi.fn().mockRejectedValue('SSO unexpected failure'),
+      register: vi.fn(),
+      logout: vi.fn(),
+      getToken: vi.fn(),
+      getCustomer: vi.fn(),
+      init: vi.fn(),
+    }
+
+    render(<CustomerAuthScreen auth={fakeAuth} onAuthSuccess={vi.fn()} />)
+
+    await user.click(screen.getByRole('button', { name: 'Continuar com o Google' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Falha ao autenticar com o Google.')
   })
 })

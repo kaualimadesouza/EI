@@ -5,9 +5,13 @@ import {
   CategoryIcon,
   CloseIcon,
   DineInIcon,
+  GoogleIcon,
+  MarketIcon,
   MicIcon,
   MinusIcon,
+  PinIcon,
   PlusIcon,
+  SearchIcon,
   TakeAwayIcon,
 } from './icons'
 
@@ -41,5 +45,17 @@ describe('icons', () => {
 
     const { container: mic } = render(<MicIcon />)
     expect(mic.querySelector('svg')).toBeInTheDocument()
+
+    const { container: pin } = render(<PinIcon />)
+    expect(pin.querySelector('svg')).toBeInTheDocument()
+
+    const { container: search } = render(<SearchIcon />)
+    expect(search.querySelector('svg')).toBeInTheDocument()
+
+    const { container: google } = render(<GoogleIcon />)
+    expect(google.querySelector('svg')).toBeInTheDocument()
+
+    const { container: market } = render(<MarketIcon />)
+    expect(market.querySelector('svg')).toBeInTheDocument()
   })
 })

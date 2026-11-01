@@ -8,6 +8,7 @@ export const DEFAULT_STORES: StoreSummary[] = [
     longitude: -46.5012,
     address: 'Praça Central - Bloco A',
     category: 'Lanches Tradicionais',
+    segment: 'restaurant',
   },
   {
     slug: 'brasa-burgers',
@@ -16,6 +17,7 @@ export const DEFAULT_STORES: StoreSummary[] = [
     longitude: -46.5005,
     address: 'Praça de Alimentação - Quiosque 4',
     category: 'Burgers & Grill',
+    segment: 'restaurant',
   },
   {
     slug: 'bella-nonna',
@@ -24,6 +26,7 @@ export const DEFAULT_STORES: StoreSummary[] = [
     longitude: -46.502,
     address: 'Boulevard Acadêmico - Bloco B',
     category: 'Culinária Italiana',
+    segment: 'restaurant',
   },
   {
     slug: 'acai-bowls',
@@ -32,6 +35,25 @@ export const DEFAULT_STORES: StoreSummary[] = [
     longitude: -46.4998,
     address: 'Centro de Convivência Esportiva',
     category: 'Saudável & Bowls',
+    segment: 'restaurant',
+  },
+  {
+    slug: 'emporio-campus',
+    name: 'Empório do Campus Express',
+    latitude: -23.482,
+    longitude: -46.5008,
+    address: 'Vivência Central - Bloco C',
+    category: 'Mercado Express',
+    segment: 'market',
+  },
+  {
+    slug: 'conveniencia-central',
+    name: 'Conveniência & Bebidas 24h',
+    latitude: -23.483,
+    longitude: -46.5018,
+    address: 'Acesso Portaria Principal',
+    category: 'Conveniência & Bebidas',
+    segment: 'market',
   },
 ]
 

@@ -5,6 +5,7 @@ export interface StoreSummary {
   longitude?: number
   address?: string
   category?: string
+  segment?: 'restaurant' | 'market'
 }
 
 export interface StoresPort {

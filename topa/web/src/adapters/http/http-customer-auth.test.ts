@@ -304,4 +304,94 @@ describe('HttpCustomerAuth', () => {
     auth2.logout()
     expect(auth2.getToken()).toBeNull()
   })
+
+  it('authenticates customer via Google SSO and saves session', async () => {
+    fakeClient.post.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        access_token: 'google-jwt-123',
+        token_type: 'bearer',
+        name: 'Aluno Google',
+        email: 'aluno@usp.br',
+      }),
+    })
+
+    const auth = new HttpCustomerAuth(fakeClient as unknown as HttpClient, store)
+    const customer = await auth.loginWithGoogle({
+      idToken: 'custom-google-id-token',
+      name: 'Aluno Google',
+      email: 'aluno@usp.br',
+    })
+
+    expect(fakeClient.post).toHaveBeenCalledWith(
+      '/auth/customer/google',
+      {
+        id_token: 'custom-google-id-token',
+        name: 'Aluno Google',
+        email: 'aluno@usp.br',
+      },
+      null,
+    )
+    expect(customer).toEqual({ name: 'Aluno Google', email: 'aluno@usp.br' })
+    expect(auth.getToken()).toBe('google-jwt-123')
+    expect(store.getItem('topa_customer_session')).toContain('google-jwt-123')
+  })
+
+  it('authenticates customer via Google SSO with default payload', async () => {
+    fakeClient.post.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        access_token: 'google-default-token',
+        token_type: 'bearer',
+        name: 'Default Name',
+        email: 'default@email.com',
+      }),
+    })
+
+    const auth = new HttpCustomerAuth(fakeClient as unknown as HttpClient, store)
+    const customer = await auth.loginWithGoogle()
+
+    expect(fakeClient.post).toHaveBeenCalledWith(
+      '/auth/customer/google',
+      {
+        id_token: undefined,
+        name: undefined,
+        email: undefined,
+      },
+      null,
+    )
+    expect(customer.name).toBe('Default Name')
+  })
+
+  it('throws CustomerAuthError with detail on Google SSO failure', async () => {
+    fakeClient.post.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ detail: 'Token do Google inválido ou expirado.' }),
+    })
+
+    const auth = new HttpCustomerAuth(fakeClient as unknown as HttpClient, store)
+    await expect(auth.loginWithGoogle()).rejects.toThrow('Token do Google inválido ou expirado.')
+  })
+
+  it('throws CustomerAuthError with fallback detail when Google SSO response cannot be parsed', async () => {
+    fakeClient.post.mockResolvedValueOnce({
+      ok: false,
+      json: async () => {
+        throw new Error('Malformed JSON')
+      },
+    })
+
+    const auth = new HttpCustomerAuth(fakeClient as unknown as HttpClient, store)
+    await expect(auth.loginWithGoogle()).rejects.toThrow('Não foi possível autenticar com o Google.')
+  })
+
+  it('throws CustomerAuthError with fallback detail when Google SSO body has no string detail', async () => {
+    fakeClient.post.mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({}),
+    })
+
+    const auth = new HttpCustomerAuth(fakeClient as unknown as HttpClient, store)
+    await expect(auth.loginWithGoogle()).rejects.toThrow('Não foi possível autenticar com o Google.')
+  })
 })

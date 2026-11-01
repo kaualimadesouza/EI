@@ -16,14 +16,18 @@ class StoreResponse(BaseModel):
     longitude: float | None = None
     address: str | None = None
     category: str | None = None
+    segment: str = "restaurant"
 
 
 @router.get("/stores")
 def list_stores(
     use_case: Annotated[ListStoresUseCase, Depends(get_list_stores_use_case)],
+    segment: str | None = None,
 ) -> list[StoreResponse]:
     """Lists all registered stores for selection in the browser."""
     stores = use_case.execute()
+    if segment:
+        stores = [s for s in stores if s.segment == segment]
     return [
         StoreResponse(
             slug=store.slug,
@@ -32,6 +36,7 @@ def list_stores(
             longitude=store.longitude,
             address=store.address,
             category=store.category,
+            segment=store.segment,
         )
         for store in stores
     ]

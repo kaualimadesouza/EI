@@ -9,6 +9,7 @@ export interface Store {
   longitude?: number
   address?: string
   category?: string
+  segment?: 'restaurant' | 'market'
 }
 
 /** One store and its whole menu in display order, sold-out products included. */
