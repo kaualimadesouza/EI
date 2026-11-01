@@ -1,6 +1,6 @@
 [package]
 name = "topa"
-version = "0.1.6"
+version = "0.1.7"
 description = "TOPA self-service ordering, as a desktop and Android app"
 edition = "2024"
 rust-version = "1.90"

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7](https://github.com/kaualimadesouza/EI/compare/topa-0.1.6...topa-0.1.7) (2026-11-01)
+
+
+### Features
+
+* **payments:** integrate Abacate Pay Pix gateway with polling and webhooks ([#78](https://github.com/kaualimadesouza/EI/issues/78)) ([816b855](https://github.com/kaualimadesouza/EI/commit/816b855ea0c86b0384b4ede81e6fc63440b944b8))
+
 ## [0.1.6](https://github.com/kaualimadesouza/EI/compare/topa-0.1.5...topa-0.1.6) (2026-11-01)
 
 
