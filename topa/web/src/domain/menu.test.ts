@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { DEMO_CATALOG } from './demo-catalog'
-import { CATEGORIES, findProduct, formatBRL } from './menu'
+import { CATEGORIES, findProduct, formatBRL, parseBRL } from './menu'
 import { displayNumber } from './order'
 
 describe('menu', () => {
@@ -25,5 +25,16 @@ describe('menu', () => {
   it('pads order numbers to three digits', () => {
     expect(displayNumber(47)).toBe('047')
     expect(displayNumber(1234)).toBe('1234')
+  })
+
+  it('parses formatted Brazilian Real inputs into integer cents', () => {
+    expect(parseBRL('12,90')).toBe(1290)
+    expect(parseBRL('1.234,56')).toBe(123456)
+    expect(parseBRL('1234.56')).toBe(123456)
+    expect(parseBRL('0,00')).toBe(0)
+    expect(parseBRL('  45  ')).toBe(4500)
+    expect(parseBRL('1.234')).toBeNull()
+    expect(parseBRL('abc')).toBeNull()
+    expect(parseBRL('99999999999999999999')).toBeNull()
   })
 })

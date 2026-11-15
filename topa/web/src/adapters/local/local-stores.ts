@@ -1,5 +1,6 @@
-import type { StoreSummary, StoresPort } from '../../ports/stores'
+import type { MenuPort } from '../../ports/menu'
 import { StoreNotFoundError } from '../../ports/menu'
+import type { StoreSummary, StoresPort } from '../../ports/stores'
 import { browserStorage, StoredValue, type KeyValueStore } from './browser-storage'
 import { LocalMenu } from './local-menu'
 
@@ -63,6 +64,7 @@ export const DEFAULT_STORES: StoreSummary[] = [
 export interface LocalStoresOptions {
   stores?: StoreSummary[]
   storage?: KeyValueStore | null
+  menu?: MenuPort
 }
 
 /** Local demo implementation of stores port. */
@@ -70,11 +72,13 @@ export class LocalStores implements StoresPort {
   private readonly stores: StoreSummary[]
   private readonly storage: KeyValueStore | null
   private readonly ordering: StoredValue<Record<string, boolean>>
+  private readonly menu: MenuPort
 
   constructor(options: LocalStoresOptions = {}) {
     this.stores = options.stores ?? DEFAULT_STORES
     this.storage = options.storage === undefined ? browserStorage() : options.storage
     this.ordering = new StoredValue(this.storage, 'topa.store-ordering', {})
+    this.menu = options.menu ?? new LocalMenu(this.storage)
   }
 
   async listAll(): Promise<StoreSummary[]> {
@@ -84,7 +88,7 @@ export class LocalStores implements StoresPort {
 
   async setAcceptingOrders(storeSlug: string, accepting: boolean): Promise<boolean> {
     if (!this.stores.some((store) => store.slug === storeSlug)) throw new StoreNotFoundError()
-    const menu = await new LocalMenu(this.storage).load(storeSlug)
+    const menu = await this.menu.load(storeSlug)
     if (accepting && !menu.products.some((product) => product.available)) {
       throw new Error('Cadastre pelo menos um produto à venda antes de abrir a loja.')
     }

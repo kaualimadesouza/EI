@@ -213,6 +213,9 @@ export function PainelApp({ adapters, storeSlug: requestedStoreSlug, now = () =>
   if (!merchant) {
     return <LoginScreen auth={adapters.auth} storeSlug={storeSlug} onLoginSuccess={(owner) => {
       setShowRegistration(false)
+      if (typeof window !== 'undefined' && window.location.search.includes('cadastro=')) {
+        window.history.replaceState(null, '', window.location.pathname)
+      }
       setMerchant(owner)
     }} startWithRegistration={showRegistration} />
   }

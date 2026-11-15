@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { CATEGORIES, type Product } from '../../domain/menu'
+import { CATEGORIES, parseBRL, type Product } from '../../domain/menu'
 import type { ProductDraft } from '../../ports/menu'
 import { CloseIcon } from '../icons'
 
@@ -51,11 +51,8 @@ export function ProductModal({ product, isOpen, onClose, onSave }: ProductModalP
       setError('Informe a categoria.')
       return
     }
-    const cleanPrice = price.trim()
-    const validPrice = /^(?:\d+(?:[,.]\d{1,2})?|\d{1,3}(?:\.\d{3})+,\d{1,2})$/.test(cleanPrice)
-    const parsedPrice = Number(cleanPrice.includes(',') ? cleanPrice.replaceAll('.', '').replace(',', '.') : cleanPrice)
-    const priceCents = Math.round(parsedPrice * 100)
-    if (!validPrice || !Number.isSafeInteger(priceCents)) {
+    const priceCents = parseBRL(price)
+    if (priceCents === null) {
       setError('Informe um preço válido.')
       return
     }
