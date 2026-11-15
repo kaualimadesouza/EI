@@ -44,11 +44,13 @@ export function KioskApp({
   onSwitchRole,
 }: KioskAppProps) {
   const onCustomerPhone = surface === 'phone'
+  const defaultPayment = onCustomerPhone || adapters.mode === 'api' ? 'pix' : 'card'
   const [state, setState] = useState<flow.KioskState>({
     ...flow.START,
-    paymentMethod: onCustomerPhone ? 'pix' : 'card',
+    paymentMethod: defaultPayment,
   })
   const [storeName, setStoreName] = useState<string | null>(null)
+  const [acceptingOrders, setAcceptingOrders] = useState(true)
   const [products, setProducts] = useState<Product[]>([])
   const [menuState, setMenuState] = useState<'loading' | 'ready' | 'not-found' | 'error'>('loading')
   const [recommendations, setRecommendations] = useState<readonly RecommendationItem[]>([])
@@ -63,6 +65,7 @@ export function KioskApp({
 
   const applyMenu = useCallback((menu: StoreMenu) => {
     setStoreName(menu.store.name)
+    setAcceptingOrders(menu.store.acceptingOrders !== false)
     setProducts(menu.products)
     setState((s) => flow.pruneUnavailable(s, menu.products))
   }, [])
@@ -141,7 +144,7 @@ export function KioskApp({
     return () => clearTimeout(timer)
   }, [idleWatch, idleSeconds, idleReset, state.screen])
 
-  const reset = () => setState({ ...flow.START, paymentMethod: onCustomerPhone ? 'pix' : 'card' })
+  const reset = () => setState({ ...flow.START, paymentMethod: defaultPayment })
 
   const refreshMenu = useCallback(() => {
     const id = ++requestId.current
@@ -209,8 +212,8 @@ export function KioskApp({
             setState((s) => ({ ...s, placed }))
           }
         })
-        .catch(() => {
-          // Silently fall back to demo mode on placement error
+        .catch((error: unknown) => {
+          if (active) setState((s) => flow.failed(s, error instanceof OrderRejectedError ? error.message : 'Não foi possível iniciar o pagamento. Volte ao pedido e tente de novo.'))
         })
     }
     return () => {
@@ -255,6 +258,17 @@ export function KioskApp({
 
   const count = itemCount(state.lines)
 
+  if (menuState === 'ready' && !acceptingOrders && state.screen === 'start') {
+    return (
+      <section className="flex flex-1 flex-col items-center justify-center gap-5 bg-cream px-6 py-12 text-center text-ink">
+        <h1 className="text-heading font-bold">Loja fechada para pedidos</h1>
+        <p className="max-w-[36ch] text-body text-muted">A loja pausou os pedidos pelo TOPA. Aguarde a reabertura ou fale com a equipe no balcão.</p>
+        <button type="button" onClick={loadMenu} className={`${PRIMARY_ACTION} min-h-16 px-6 text-label`}>Atualizar cardápio</button>
+        <BrandMark label="por TOPA" className="mt-4 text-caption font-medium" onStaffTaps={onSwitchRole} />
+      </section>
+    )
+  }
+
   return (
     <div
       className="flex min-h-0 flex-1 flex-col bg-cream text-ink"
@@ -265,7 +279,7 @@ export function KioskApp({
           storeName={storeName}
           surface={surface}
           serverStatus={onCustomerPhone ? undefined : { mode: adapters.mode, connection: adapters.connection }}
-          onBegin={(dineIn) => setState(flow.begin(dineIn, onCustomerPhone ? 'pix' : 'card'))}
+          onBegin={(dineIn) => setState(flow.begin(dineIn, defaultPayment))}
           onQueue={onCustomerPhone ? undefined : () => setState(flow.openQueue())}
           onSwitchRole={onSwitchRole}
         />
@@ -356,12 +370,13 @@ export function KioskApp({
       )}
       {state.screen === 'payment' && (
         <PaymentScreen
-          totalCents={totalCents(state.lines, products)}
+          totalCents={state.placed?.totalCents ?? totalCents(state.lines, products)}
           method={state.paymentMethod}
           payment={state.payment}
           error={state.error}
           surface={surface}
           paymentPort={adapters.payment}
+          orderId={state.placed?.id}
           isDemo={adapters.mode === 'demo'}
           onMethod={(method) => setState((s) => flow.choosePayment(s, method))}
           onApprove={() => void pay()}

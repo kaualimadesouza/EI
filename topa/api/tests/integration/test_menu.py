@@ -50,6 +50,7 @@ def test_menu_returns_the_seeded_store_and_its_products(client: TestClient) -> N
     assert body["store"] == {
         "slug": "lanchonete-bem-te-vi",
         "name": "Lanchonete Bem-te-vi",
+        "accepting_orders": True,
     }
     assert len(body["products"]) == 18
     assert body["products"][0]["id"] == "combo-cafe"
@@ -75,7 +76,7 @@ def test_each_store_serves_its_own_menu_and_availability(
     bem_te_vi = client.get("/menu", params={"loja": "lanchonete-bem-te-vi"}).json()
 
     assert cantina == {
-        "store": {"slug": "cantina-central", "name": "Cantina Central"},
+        "store": {"slug": "cantina-central", "name": "Cantina Central", "accepting_orders": True},
         "products": [
             {
                 "id": "coxinha",

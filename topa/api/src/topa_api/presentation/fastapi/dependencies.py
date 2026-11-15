@@ -34,7 +34,9 @@ from topa_api.application.ports import (
 from topa_api.application.process_payment_webhook import ProcessPaymentWebhookUseCase
 from topa_api.application.read_order import ReadOrderUseCase
 from topa_api.application.register_customer import RegisterCustomerUseCase
+from topa_api.application.register_merchant import RegisterMerchantUseCase
 from topa_api.application.set_product_availability import SetProductAvailabilityUseCase
+from topa_api.application.set_store_ordering import SetStoreOrderingUseCase
 from topa_api.application.update_product import UpdateProductUseCase
 from topa_api.application.validate_totem_session import ValidateTotemSessionUseCase
 from topa_api.application.verify_customer_token import VerifyCustomerTokenUseCase
@@ -72,6 +74,10 @@ def get_order_repository() -> OrderRepository:
     raise NotImplementedError
 
 
+def get_payment_repository() -> PaymentRepositoryPort:
+    raise NotImplementedError
+
+
 def get_clock() -> Clock:
     raise NotImplementedError
 
@@ -96,8 +102,9 @@ def get_list_orders_use_case(
     stores: Annotated[StoreRepository, Depends(get_store_repository)],
     orders: Annotated[OrderRepository, Depends(get_order_repository)],
     clock: Annotated[Clock, Depends(get_clock)],
+    payments: Annotated[PaymentRepositoryPort, Depends(get_payment_repository)],
 ) -> ListOrdersUseCase:
-    return ListOrdersUseCase(stores, orders, clock)
+    return ListOrdersUseCase(stores, orders, clock, payments)
 
 
 def get_read_order_use_case(
@@ -108,8 +115,9 @@ def get_read_order_use_case(
 
 def get_change_order_status_use_case(
     orders: Annotated[OrderRepository, Depends(get_order_repository)],
+    payments: Annotated[PaymentRepositoryPort, Depends(get_payment_repository)],
 ) -> ChangeOrderStatusUseCase:
-    return ChangeOrderStatusUseCase(orders)
+    return ChangeOrderStatusUseCase(orders, payments)
 
 
 def get_set_product_availability_use_case(
@@ -185,6 +193,23 @@ def get_list_stores_use_case(
     stores: Annotated[StoreRepository, Depends(get_store_repository)],
 ) -> ListStoresUseCase:
     return ListStoresUseCase(stores)
+
+
+def get_register_merchant_use_case(
+    stores: Annotated[StoreRepository, Depends(get_store_repository)],
+    merchants: Annotated[MerchantRepositoryPort, Depends(get_merchant_repository)],
+    hasher: Annotated[PasswordHasherPort, Depends(get_password_hasher)],
+    tokens: Annotated[TokenServicePort, Depends(get_token_service)],
+    clock: Annotated[Clock, Depends(get_clock)],
+) -> RegisterMerchantUseCase:
+    return RegisterMerchantUseCase(stores, merchants, hasher, tokens, clock)
+
+
+def get_set_store_ordering_use_case(
+    stores: Annotated[StoreRepository, Depends(get_store_repository)],
+    products: Annotated[ProductRepository, Depends(get_product_repository)],
+) -> SetStoreOrderingUseCase:
+    return SetStoreOrderingUseCase(stores, products)
 
 
 def get_customer_repository() -> CustomerRepositoryPort:
@@ -268,10 +293,6 @@ def get_recommendations_use_case(
 
 
 def get_payment_gateway() -> PaymentGatewayPort:
-    raise NotImplementedError
-
-
-def get_payment_repository() -> PaymentRepositoryPort:
     raise NotImplementedError
 
 

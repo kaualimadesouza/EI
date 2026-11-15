@@ -41,7 +41,7 @@ export function PaymentScreen(props: PaymentScreenProps) {
     onBackToBag,
   } = props
   const busy = payment === 'processing'
-  const allowCard = surface === 'totem'
+  const allowCard = surface === 'totem' && isDemo
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-12 py-8 [scrollbar-width:none] short:py-6 max-sm:p-4">
@@ -93,6 +93,7 @@ export function PaymentScreen(props: PaymentScreenProps) {
                 onPhone={!allowCard}
                 paymentPort={paymentPort}
                 orderId={orderId}
+                isDemo={isDemo}
                 onApproved={onApprove}
               />
             ))}
@@ -164,11 +165,13 @@ interface PixInstructionsProps {
   paymentPort?: PaymentPort
   orderId?: string
   onApproved?: () => void
+  isDemo: boolean
 }
 
-function PixInstructions({ totalCents, onPhone, paymentPort, orderId, onApproved }: PixInstructionsProps) {
+function PixInstructions({ totalCents, onPhone, paymentPort, orderId, onApproved, isDemo }: PixInstructionsProps) {
   const [round, setRound] = useState(0)
   const [charge, setCharge] = useState<PixChargeInfo | null>(null)
+  const [chargeError, setChargeError] = useState(false)
   const [copyState, setCopyState] = useState<{ round: number; status: 'copied' | 'failed' } | null>(null)
   const left = useCountdown(PIX_SECONDS, () => {}, round)
   const clock = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`
@@ -178,6 +181,8 @@ function PixInstructions({ totalCents, onPhone, paymentPort, orderId, onApproved
 
   useEffect(() => {
     let active = true
+    if (!isDemo && !orderId) return
+    setChargeError(false)
     if (paymentPort) {
       paymentPort
         .createPixCharge(orderId || `demo-order-${round}`, totalCents, 'Pedido TOPA')
@@ -187,13 +192,13 @@ function PixInstructions({ totalCents, onPhone, paymentPort, orderId, onApproved
           }
         })
         .catch(() => {
-          // Keep fallback on network error
+          if (active) setChargeError(true)
         })
     }
     return () => {
       active = false
     }
-  }, [paymentPort, orderId, totalCents, round])
+  }, [paymentPort, orderId, totalCents, round, isDemo])
 
   useEffect(() => {
     if (!paymentPort || !charge || charge.status === 'PAID' || isExpired) {
@@ -244,6 +249,14 @@ function PixInstructions({ totalCents, onPhone, paymentPort, orderId, onApproved
     }
     return <Qr value={code} size={onPhone ? 220 : 260} label="Código Pix de demonstração" />
   }, [charge?.brCodeBase64, code, onPhone])
+
+  if (!isDemo && chargeError) {
+    return <Problem message="Não foi possível gerar o Pix. Nenhum pagamento foi confirmado. Tente de novo ou fale com a equipe no balcão."
+      primary="Tentar gerar Pix novamente" onPrimary={() => setRound((value) => value + 1)} />
+  }
+  if (!isDemo && !charge) {
+    return <p role="status" className="my-auto text-body text-muted">Preparando seu pagamento...</p>
+  }
 
   if (left === 0) {
     return (

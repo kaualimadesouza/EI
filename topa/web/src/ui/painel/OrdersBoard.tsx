@@ -32,7 +32,7 @@ export function OrdersBoard({ orders, now, locked, onAdvance, onViewTicket }: Or
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-[repeat(3,minmax(240px,1fr))] gap-4 overflow-x-auto pb-1">
+      <div className="grid grid-cols-3 gap-4 pb-1 max-lg:grid-cols-1">
         {COLUMNS.map((column) => {
           const inColumn = orders.filter((order) => order.status === column.status)
           return (

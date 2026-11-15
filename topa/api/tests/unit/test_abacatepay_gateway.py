@@ -30,8 +30,8 @@ class DummyResponse:
         pass
 
 
-def test_abacatepay_gateway_mock_mode_when_no_api_key() -> None:
-    gateway = AbacatePayGateway(api_key=None)
+def test_abacatepay_gateway_mock_mode_requires_an_explicit_mock_key() -> None:
+    gateway = AbacatePayGateway(api_key="mock:local-test")
     order_id = uuid.uuid4()
     charge = gateway.create_pix_charge(
         order_id=order_id,
@@ -45,6 +45,14 @@ def test_abacatepay_gateway_mock_mode_when_no_api_key() -> None:
     assert charge.br_code.startswith("000201")
     assert "TOPA" in charge.br_code
     assert gateway.get_payment_status(charge.id) == PaymentStatus.PENDING
+
+
+def test_missing_payment_configuration_never_invents_a_payable_pix_code() -> None:
+    gateway = AbacatePayGateway(api_key=None)
+    with pytest.raises(PaymentProcessingError, match="não está configurado"):
+        gateway.create_pix_charge(uuid.uuid4(), 3290, "Prato feito")
+    with pytest.raises(PaymentProcessingError, match="não está configurado"):
+        gateway.get_payment_status("unknown")
 
 
 def test_abacatepay_gateway_live_call_success(monkeypatch: pytest.MonkeyPatch) -> None:

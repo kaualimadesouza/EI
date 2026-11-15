@@ -19,7 +19,7 @@ interface ProductJson {
 }
 
 interface StoreMenuJson {
-  store: { slug: string; name: string }
+  store: { slug: string; name: string; accepting_orders?: boolean }
   products: ProductJson[]
 }
 
@@ -57,7 +57,7 @@ export class HttpMenu implements MenuPort {
     if (!response.ok) throw new Error(`GET /menu answered ${response.status}`)
     const body = (await response.json()) as StoreMenuJson
     return {
-      store: { slug: body.store.slug, name: body.store.name },
+      store: { slug: body.store.slug, name: body.store.name, acceptingOrders: body.store.accepting_orders },
       products: body.products.map(toProduct),
     }
   }

@@ -23,6 +23,7 @@ class Store:
     address: str | None = None
     category: str | None = None
     segment: str = "restaurant"
+    accepting_orders: bool = True
 
 
 STORE_METADATA: dict[str, dict[str, object]] = {
@@ -71,7 +72,7 @@ STORE_METADATA: dict[str, dict[str, object]] = {
 }
 
 
-def build_store(slug: str, name: str) -> Store:
+def build_store(slug: str, name: str, accepting_orders: bool = True) -> Store:
     """Enriches store with known campus coordinates and category."""
     meta = STORE_METADATA.get(slug, {})
     lat = meta.get("latitude")
@@ -87,6 +88,7 @@ def build_store(slug: str, name: str) -> Store:
         address=str(addr) if isinstance(addr, str) else None,
         category=str(cat) if isinstance(cat, str) else None,
         segment=str(segment),
+        accepting_orders=accepting_orders,
     )
 
 

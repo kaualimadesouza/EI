@@ -127,7 +127,7 @@ export function createAdapters(apiUrl: string | undefined, runtime: Runtime = de
     const client = new HttpClient(apiUrl)
     const auth = new HttpAuth(client)
     const customerAuth = new HttpCustomerAuth(client)
-    const stores = new HttpStores(client)
+    const stores = new HttpStores(client, () => auth.getToken())
     const totemSession = new HttpTotemSession(client)
     const orders = new OfflineResilientOrders({
       underlying: new HttpOrders(client, () => auth.getToken(), () => customerAuth.getToken()),

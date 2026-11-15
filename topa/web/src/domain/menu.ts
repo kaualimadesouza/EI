@@ -31,3 +31,13 @@ const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' 
 export function formatBRL(cents: number): string {
   return brl.format(cents / 100)
 }
+
+/** Parses Brazilian Real input ("12,90", "1.234,56", "1234.56") into integer cents. */
+export function parseBRL(raw: string): number | null {
+  const clean = raw.trim()
+  const valid = /^(?:\d+(?:[,.]\d{1,2})?|\d{1,3}(?:\.\d{3})+,\d{1,2})$/.test(clean)
+  if (!valid) return null
+  const parsed = Number(clean.includes(',') ? clean.replaceAll('.', '').replace(',', '.') : clean)
+  const cents = Math.round(parsed * 100)
+  return Number.isSafeInteger(cents) ? cents : null
+}

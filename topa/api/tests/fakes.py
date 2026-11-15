@@ -41,6 +41,17 @@ class InMemoryStoreRepository:
     def list_all(self) -> list[Store]:
         return list(self.stores)
 
+    def add(self, store: Store) -> None:
+        self.stores.append(store)
+
+    def set_accepting_orders(self, slug: str, accepting: bool) -> Store | None:
+        store = self.get(slug)
+        if store is None:
+            return None
+        updated = replace(store, accepting_orders=accepting)
+        self.stores = [updated if item.slug == slug else item for item in self.stores]
+        return updated
+
 
 @dataclass
 class InMemoryProductRepository:

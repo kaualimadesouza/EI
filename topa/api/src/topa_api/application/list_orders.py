@@ -1,15 +1,28 @@
 from datetime import date
 
-from topa_api.application.ports import Clock, OrderRepository, StoreRepository
+from topa_api.application.payment_confirmation import payment_is_confirmed
+from topa_api.application.ports import (
+    Clock,
+    OrderRepository,
+    PaymentRepositoryPort,
+    StoreRepository,
+)
 from topa_api.domain.errors import StoreNotFoundError
 from topa_api.domain.orders import Order, business_date_of
 
 
 class ListOrdersUseCase:
-    def __init__(self, stores: StoreRepository, orders: OrderRepository, clock: Clock) -> None:
+    def __init__(
+        self,
+        stores: StoreRepository,
+        orders: OrderRepository,
+        clock: Clock,
+        payments: PaymentRepositoryPort,
+    ) -> None:
         self._stores = stores
         self._orders = orders
         self._clock = clock
+        self._payments = payments
 
     def execute(self, store_slug: str, business_date: date | None) -> list[Order]:
         """Today unless another day is asked for; today is the shop's, not the server's."""
@@ -17,4 +30,8 @@ class ListOrdersUseCase:
             raise StoreNotFoundError
         if business_date is None:
             business_date = business_date_of(self._clock.now())
-        return self._orders.list_for_day(store_slug, business_date)
+        return [
+            order
+            for order in self._orders.list_for_day(store_slug, business_date)
+            if payment_is_confirmed(order, self._payments)
+        ]

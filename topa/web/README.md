@@ -19,6 +19,9 @@ npm run lint && npm run typecheck
 
 Open `/` for the TOPA presentation, proposed plans, interactive product overview, FAQ, and
 the v2 film. Customers choose a store and order at `/pedir`; merchants use `/painel`.
+New merchants register at `/painel?cadastro=1`; the account opens its own empty store, initially
+paused. The dashboard guides the first product, opening, sharing the menu and pausing at closing.
+`/totem?loja=<slug>` opens a dedicated totem for that store.
 Existing QR/NFC links at `/?loja=...` (including temporary sessions) still open the store directly,
 and `/conheca` remains an alias for the landing. Native apps keep their ordering/dashboard entry.
 All paths respect `BASE_PATH`, such as `/EI/` and `/EI/pedir`.
@@ -28,8 +31,13 @@ R$ 249 per terminal/month comes from the draft in `pipe/pipe_EI_2026.tex`, where
 working hypothesis. Digital and Redes remain under consultation.
 
 Set the public `VITE_COMMERCIAL_CONTACT_URL` to a real WhatsApp or `mailto:` URL to turn the plan
-buttons into proposal requests. With no value configured, they link to the product demonstration.
-The page does not collect leads or start a subscription checkout.
+buttons into proposal requests. With no value configured, they link to merchant registration.
+Registration creates an account and a store; it does not start a subscription checkout or configure
+a receiving bank account. Real payment collection requires the pilot's payment setup.
+
+The [first-shift validation](../../docs/validacao/2026-11-15/README.md) records the simulated
+merchant review, references, before/after evidence, remaining gaps and the reproducible local
+browser test. That test uses a disposable database and a controlled payment provider, never real money.
 
 Images and video are optimized copies in `public/landing/`; the original v2 films remain in
 `video/`. Videos load only when a visitor opens the native dialog. Phones receive the vertical

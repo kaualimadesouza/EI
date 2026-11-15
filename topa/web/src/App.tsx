@@ -148,12 +148,13 @@ function OrderingApp({
         </section>
       )
     }
-    const storeSlug = store.kind === 'valid' ? store.slug : DEMO_STORE_SLUG
+    const storeSlug = store.kind === 'valid' ? store.slug : undefined
     return (
       <PainelApp
         key={storeSlug}
         adapters={adapters}
         storeSlug={storeSlug}
+        startWithRegistration={new URLSearchParams(window.location.search).get('cadastro') === '1'}
         onSwitchToTotem={onSwitchRole}
       />
     )
@@ -176,13 +177,14 @@ function OrderingApp({
   }
 
   // Dedicated store totem device
-  if (totem) {
+  if (totem || path.startsWith(`${import.meta.env.BASE_URL}totem`)) {
+    const totemStoreSlug = storeSlug ?? adapters.auth.getMerchant()?.storeSlug ?? DEMO_STORE_SLUG
     return (
       <main className="flex h-dvh flex-col overflow-hidden">
         <KioskApp
-          key={DEMO_STORE_SLUG}
+          key={totemStoreSlug}
           adapters={adapters}
-          storeSlug={DEMO_STORE_SLUG}
+          storeSlug={totemStoreSlug}
           surface="totem"
           onSwitchRole={onSwitchRole}
         />

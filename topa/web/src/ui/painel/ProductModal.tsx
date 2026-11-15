@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { CATEGORIES, type Product } from '../../domain/menu'
+import { CATEGORIES, parseBRL, type Product } from '../../domain/menu'
 import type { ProductDraft } from '../../ports/menu'
 import { CloseIcon } from '../icons'
 
@@ -51,12 +51,11 @@ export function ProductModal({ product, isOpen, onClose, onSave }: ProductModalP
       setError('Informe a categoria.')
       return
     }
-    const parsedPrice = parseFloat(price.replace(',', '.'))
-    if (isNaN(parsedPrice) || parsedPrice < 0) {
+    const priceCents = parseBRL(price)
+    if (priceCents === null) {
       setError('Informe um preço válido.')
       return
     }
-    const priceCents = Math.round(parsedPrice * 100)
     const cleanPhoto = photoUrl.trim()
     if (
       cleanPhoto &&
@@ -156,6 +155,7 @@ export function ProductModal({ product, isOpen, onClose, onSave }: ProductModalP
             <input
               id="product-price"
               type="text"
+              inputMode="decimal"
               required
               value={price}
               onChange={(e) => setPrice(e.target.value)}

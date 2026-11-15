@@ -32,6 +32,15 @@ class StoreNotFoundError(DomainError):
         super().__init__("Loja não encontrada.")
 
 
+class StoreClosedError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("A loja pausou os pedidos. Tente novamente mais tarde.")
+
+
+class InvalidMerchantDataError(DomainError):
+    pass
+
+
 class OrderNotFoundError(DomainError):
     def __init__(self) -> None:
         super().__init__("Pedido não encontrado.")
@@ -111,6 +120,11 @@ class DuplicateClientOrderIdError(DomainError):
 class PaymentNotFoundError(DomainError):
     def __init__(self) -> None:
         super().__init__("Cobrança não encontrada.")
+
+
+class PaymentNotConfirmedError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Aguarde a confirmação do pagamento antes de preparar o pedido.")
 
 
 class PaymentProcessingError(DomainError):

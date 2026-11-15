@@ -13,6 +13,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     Uuid,
+    true,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -32,6 +33,7 @@ class StoreRow(Base):
 
     slug: Mapped[str] = mapped_column(Text, primary_key=True)
     name: Mapped[str] = mapped_column(Text)
+    accepting_orders: Mapped[bool] = mapped_column(Boolean, server_default=true())
 
 
 class ProductRow(Base):

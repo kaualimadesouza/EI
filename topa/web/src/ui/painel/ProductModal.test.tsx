@@ -18,6 +18,28 @@ const SAMPLE_PRODUCT: Product = {
 }
 
 describe('ProductModal', () => {
+  it.each(['1.234,56', '1234,56', '1234.56'])(
+    'preserves the full amount when a merchant enters %s', async (price) => {
+      const onSave = vi.fn().mockResolvedValue(undefined)
+      render(<ProductModal product={null} isOpen onClose={vi.fn()} onSave={onSave} />)
+      await userEvent.type(screen.getByLabelText('Nome'), 'Travessa da casa')
+      await userEvent.type(screen.getByLabelText('Preço (R$)'), price)
+      await userEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+      expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ priceCents: 123456 }))
+    },
+  )
+
+  it.each(['12,90abc', '1,2,3', '1.234', '1e3', '-1', 'Infinity', '0,001'])(
+    'refuses ambiguous or malformed prices instead of selling at a truncated value: %s', async (price) => {
+      const onSave = vi.fn()
+      render(<ProductModal product={null} isOpen onClose={vi.fn()} onSave={onSave} />)
+      await userEvent.type(screen.getByLabelText('Nome'), 'Travessa da casa')
+      await userEvent.type(screen.getByLabelText('Preço (R$)'), price)
+      await userEvent.click(screen.getByRole('button', { name: 'Salvar' }))
+      expect(screen.getByRole('alert')).toHaveTextContent('Informe um preço válido.')
+      expect(onSave).not.toHaveBeenCalled()
+    },
+  )
   it('renders nothing when isOpen is false', () => {
     const { container } = render(
       <ProductModal product={null} isOpen={false} onClose={vi.fn()} onSave={vi.fn()} />,

@@ -41,6 +41,24 @@ async function kitchenColumnOfOrder001() {
 }
 
 describe('App', () => {
+  it('guides a new owner to the first product and returns to login after signing out', async () => {
+    window.history.replaceState(null, '', '/painel?cadastro=1')
+    const user = userEvent.setup()
+    const adapters = createAdapters(undefined)
+    vi.spyOn(adapters.auth, 'register').mockResolvedValue({ email: 'dono@example.com', storeSlug: 'brasa-burgers' })
+    vi.spyOn(adapters.menu, 'load').mockResolvedValue({ store: { slug: 'brasa-burgers', name: 'Brasa Burgers', acceptingOrders: false }, products: [] })
+    render(<App adapters={adapters} />)
+    await user.type(screen.getByLabelText('Nome da loja'), 'Brasa Burgers')
+    await user.type(screen.getByLabelText('E-mail'), 'dono@example.com')
+    await user.type(screen.getByLabelText('Senha'), 'senha1234')
+    await user.type(screen.getByLabelText('Confirme a senha'), 'senha1234')
+    await user.click(screen.getByRole('button', { name: 'Criar loja e acessar painel' }))
+    await user.click(await screen.findByRole('button', { name: 'Cadastrar primeiro produto' }))
+    expect(screen.getByRole('dialog', { name: 'Novo produto' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Fechar' }))
+    await user.click(screen.getAllByRole('button', { name: 'Sair' })[0])
+    expect(await screen.findByRole('button', { name: 'Entrar' })).toBeInTheDocument()
+  })
   afterEach(() => {
     window.history.replaceState(null, '', '/')
     vi.useRealTimers()
@@ -99,6 +117,34 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: /Comer aqui/ })).not.toBeInTheDocument()
   })
 
+  it('opens merchant registration from the landing CTA', () => {
+    window.history.replaceState(null, '', '/painel?cadastro=1')
+    render(<App adapters={createAdapters(undefined)} />)
+    expect(screen.getByRole('heading', { name: 'Crie sua loja no TOPA' })).toBeInTheDocument()
+  })
+
+  it.each(['/painel', '/painel?cadastro=1'])('opens the signed-in owner at %s and returns to login after logout', async (url) => {
+    window.history.replaceState(null, '', url)
+    const adapters = createAdapters(undefined)
+    adapters.auth = new LocalAuth({ storage: null, initialMerchant: { email: 'dono@example.com', storeSlug: 'brasa-burgers' } })
+    const load = vi.spyOn(adapters.menu, 'load')
+    render(<App adapters={adapters} path="/painel" />)
+    expect(await screen.findByRole('heading', { name: 'Brasa Burgers' })).toBeInTheDocument()
+    expect(load).toHaveBeenCalledWith('brasa-burgers')
+    expect(screen.queryByText('Acesso não autorizado')).not.toBeInTheDocument()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Sair' })[0])
+    expect(await screen.findByRole('button', { name: 'Entrar' })).toBeInTheDocument()
+  })
+
+  it('opens a store-specific totem instead of the landing or the customer phone', async () => {
+    window.history.replaceState(null, '', '/totem?loja=brasa-burgers')
+    const adapters = createAdapters(undefined)
+    const load = vi.spyOn(adapters.menu, 'load')
+    render(<App adapters={adapters} />)
+    expect(await screen.findByRole('button', { name: 'A fila está grande? Peça pelo celular' })).toBeInTheDocument()
+    expect(load).toHaveBeenCalledWith('brasa-burgers')
+  })
+
   it('treats a store link opened from the totem as the customer phone: shows sold-out items from the dashboard and no server pill', async () => {
     const user = userEvent.setup()
     const adapters = createAdapters(undefined)
@@ -140,7 +186,7 @@ describe('App', () => {
       />,
     )
 
-    expect(await screen.findByText('Cantina Central')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Cantina Central' })).toBeInTheDocument()
     expect(load).toHaveBeenCalledWith('cantina-central')
     expect(list).toHaveBeenCalledWith(expect.any(String), 'cantina-central')
   })

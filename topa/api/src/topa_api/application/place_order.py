@@ -5,6 +5,7 @@ from topa_api.application.ports import Clock, OrderRepository, ProductRepository
 from topa_api.domain.errors import (
     DuplicateClientOrderIdError,
     IdempotencyConflictError,
+    StoreClosedError,
     StoreNotFoundError,
 )
 from topa_api.domain.orders import (
@@ -61,8 +62,11 @@ class PlaceOrderUseCase:
                 self._validate_idempotency(existing, request)
                 return existing
         lines = merge_lines(request.lines)
-        if self._stores.get(request.store_slug) is None:
+        store = self._stores.get(request.store_slug)
+        if store is None:
             raise StoreNotFoundError
+        if not store.accepting_orders:
+            raise StoreClosedError
         catalog = self._products.find(request.store_slug, [line.product_id for line in lines])
         items = price_lines(lines, catalog)
         created_at = self._clock.now()

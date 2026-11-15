@@ -35,11 +35,25 @@ class SqlAlchemyStoreRepository:
 
     def get(self, slug: str) -> Store | None:
         row = self._session.get(StoreRow, slug)
-        return None if row is None else build_store(row.slug, row.name)
+        return None if row is None else build_store(row.slug, row.name, row.accepting_orders)
 
     def list_all(self) -> list[Store]:
         rows = self._session.scalars(select(StoreRow).order_by(StoreRow.name))
-        return [build_store(row.slug, row.name) for row in rows]
+        return [build_store(row.slug, row.name, row.accepting_orders) for row in rows]
+
+    def add(self, store: Store) -> None:
+        self._session.add(
+            StoreRow(slug=store.slug, name=store.name, accepting_orders=store.accepting_orders)
+        )
+        self._session.flush()
+
+    def set_accepting_orders(self, slug: str, accepting: bool) -> Store | None:
+        row = self._session.get(StoreRow, slug)
+        if row is None:
+            return None
+        row.accepting_orders = accepting
+        self._session.flush()
+        return build_store(row.slug, row.name, row.accepting_orders)
 
 
 class SqlAlchemyProductRepository:
@@ -277,6 +291,10 @@ class SqlAlchemyMerchantRepository:
                 created_at=merchant.created_at,
             )
         )
+        try:
+            self._session.flush()
+        except IntegrityError:
+            raise EmailAlreadyInUseError() from None
 
 
 class SqlAlchemyCustomerRepository:

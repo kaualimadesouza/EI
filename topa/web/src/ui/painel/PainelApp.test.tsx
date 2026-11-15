@@ -303,6 +303,7 @@ describe('PainelApp', () => {
       orders: { place: vi.fn(), list: () => Promise.reject(new Error('down')), setStatus: vi.fn(), statusOf: vi.fn(), listCustomerOrders: vi.fn() },
       payment: new LocalPayment(),
       auth: {
+        register: vi.fn(),
         login: vi.fn(),
         logout: vi.fn(),
         getToken: () => 'token',
@@ -357,6 +358,7 @@ describe('PainelApp', () => {
       orders: { place: vi.fn(), list: () => Promise.resolve([order]), setStatus, statusOf: vi.fn(), listCustomerOrders: vi.fn() },
       payment: new LocalPayment(),
       auth: {
+        register: vi.fn(),
         login: vi.fn(),
         logout: vi.fn(),
         getToken: () => 'token',
@@ -409,6 +411,7 @@ describe('PainelApp', () => {
       orders: { place: vi.fn(), list, setStatus: vi.fn(), statusOf: vi.fn(), listCustomerOrders: vi.fn() },
       payment: new LocalPayment(),
       auth: {
+        register: vi.fn(),
         login: vi.fn(),
         logout: vi.fn(),
         getToken: () => 'token',
@@ -428,7 +431,7 @@ describe('PainelApp', () => {
 
     render(<PainelApp adapters={adapters} storeSlug="cantina-central" now={() => NOW} />)
 
-    expect(await screen.findByText('Cantina Central')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Cantina Central' })).toBeInTheDocument()
     expect(screen.queryByText('Lanchonete Bem-te-vi')).not.toBeInTheDocument()
     expect(load).toHaveBeenCalledWith('cantina-central')
     expect(list).toHaveBeenCalledWith('2026-10-26', 'cantina-central')

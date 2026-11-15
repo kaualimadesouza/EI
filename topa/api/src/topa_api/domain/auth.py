@@ -18,6 +18,13 @@ class Credentials:
 
 
 @dataclass(frozen=True)
+class MerchantRegistration:
+    store_name: str
+    email: str
+    password: str
+
+
+@dataclass(frozen=True)
 class AuthenticatedMerchant:
     id: uuid.UUID
     email: str

@@ -17,6 +17,9 @@ class MemoryStorage implements KeyValueStore {
 }
 
 describe('LocalAuth', () => {
+  it('explains that local demo mode cannot register a real merchant', async () => {
+    await expect(new LocalAuth({ storage: null }).register()).rejects.toThrow('O cadastro de lojas precisa do servidor.')
+  })
   it('initializes empty by default when storage is null', () => {
     const auth = new LocalAuth({ storage: null })
 
