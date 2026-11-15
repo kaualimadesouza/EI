@@ -1,0 +1,60 @@
+[
+  {
+    "file": "topa-horizontal.mp4",
+    "size": [
+      1920,
+      1080
+    ],
+    "duration": 30,
+    "fps": 30,
+    "frames": 900,
+    "video": "H.264 / yuv420p",
+    "audio": "AAC stereo / 48 kHz",
+    "bytes": 2953388,
+    "qr_samples": [
+      {
+        "time": 24.0,
+        "decoded": "https://topa-totem.vercel.app"
+      },
+      {
+        "time": 26.0,
+        "decoded": "https://topa-totem.vercel.app"
+      },
+      {
+        "time": 29.5,
+        "decoded": "https://topa-totem.vercel.app"
+      }
+    ],
+    "integrated_lufs": -15.86,
+    "true_peak_dbtp": -2.05
+  },
+  {
+    "file": "topa-vertical.mp4",
+    "size": [
+      1080,
+      1920
+    ],
+    "duration": 30,
+    "fps": 30,
+    "frames": 900,
+    "video": "H.264 / yuv420p",
+    "audio": "AAC stereo / 48 kHz",
+    "bytes": 2810500,
+    "qr_samples": [
+      {
+        "time": 24.0,
+        "decoded": "https://topa-totem.vercel.app"
+      },
+      {
+        "time": 26.0,
+        "decoded": "https://topa-totem.vercel.app"
+      },
+      {
+        "time": 29.5,
+        "decoded": "https://topa-totem.vercel.app"
+      }
+    ],
+    "integrated_lufs": -15.86,
+    "true_peak_dbtp": -2.05
+  }
+]

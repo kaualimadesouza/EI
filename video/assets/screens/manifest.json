@@ -1,0 +1,24 @@
+{
+  "captured_at": "2026-11-15T13:13:56.397324+00:00",
+  "source_commit": "fb5e05bd06b33ca2f1501c1f39561f640f35dea0",
+  "mode": "demo",
+  "data": "Dados fictícios locais, sem pedidos na API publicada.",
+  "viewports": {
+    "kiosk": [
+      720,
+      960,
+      2
+    ],
+    "phone": [
+      390,
+      780,
+      3
+    ],
+    "dashboard": [
+      1280,
+      820,
+      2
+    ]
+  },
+  "note": "Capturas originais produzidas antes de versionar os scripts em video/tools."
+}

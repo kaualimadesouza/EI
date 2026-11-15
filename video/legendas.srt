@@ -1,0 +1,55 @@
+1
+00:00:00,654 --> 00:00:02,168
+Seu negócio cresceu.
+
+2
+00:00:02,282 --> 00:00:03,366
+A fila também?
+
+3
+00:00:05,454 --> 00:00:07,023
+Com TOPA, seu balcão ganha
+
+4
+00:00:07,043 --> 00:00:08,921
+autoatendimento por assinatura.
+
+5
+00:00:09,035 --> 00:00:10,460
+O cliente escolhe e monta
+
+6
+00:00:10,480 --> 00:00:11,656
+o próprio pedido.
+
+7
+00:00:13,504 --> 00:00:14,703
+Totem ocupado?
+
+8
+00:00:14,815 --> 00:00:16,769
+Seu cliente pede pelo celular,
+
+9
+00:00:16,789 --> 00:00:18,574
+por QR Code ou NFC,
+
+10
+00:00:18,594 --> 00:00:20,222
+sem baixar aplicativo.
+
+11
+00:00:20,334 --> 00:00:21,962
+Você acompanha no painel.
+
+12
+00:00:23,588 --> 00:00:25,406
+TOPA. Totem por assinatura.
+
+13
+00:00:25,477 --> 00:00:27,350
+Topa transformar seu atendimento?
+
+14
+00:00:27,421 --> 00:00:29,119
+Acesse e explore o cardápio.
