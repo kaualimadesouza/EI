@@ -15,6 +15,44 @@ npm run lint && npm run typecheck
 
 `make run` from `topa/` brings up the web app with the API and Postgres.
 
+## Product landing page
+
+Open `/conheca` for the TOPA presentation, proposed plans, interactive product overview, FAQ, and
+the v2 film. The existing customer entry at `/`, store links and `/painel` keep their roles.
+The page also works under `BASE_PATH`, such as `/EI/conheca`.
+
+Content lives in `src/ui/landing/content.ts`. The three plans are proposals for the pilot;
+R$ 249 per terminal/month comes from the draft in `pipe/pipe_EI_2026.tex`, where it is still a
+working hypothesis. Digital and Redes remain under consultation.
+
+Set the public `VITE_COMMERCIAL_CONTACT_URL` to a real WhatsApp or `mailto:` URL to turn the plan
+buttons into proposal requests. With no value configured, they link to the product demonstration.
+The page does not collect leads or start a subscription checkout.
+
+Images and video are optimized copies in `public/landing/`; the original v2 films remain in
+`video/`. Videos load only when a visitor opens the native dialog. Phones receive the vertical
+version; larger screens receive the horizontal version. To renew the assets after replacing the
+source videos or captures, run from the repository root (requires uv and FFmpeg):
+
+```bash
+uv run --no-project python topa/web/scripts/prepare-landing-assets.py
+```
+
+For browser checks, start the demo server on port 5188, then run from the repository root:
+
+```bash
+uv run --locked --project video playwright install chromium
+uv run --locked --project video python topa/web/scripts/check-landing.py
+```
+
+`TOPA_PREVIEW_URL` can point the check at another local server. `TOPA_VIDEO_CHROMIUM` can select an
+existing browser binary. Screenshots and the browser report go to `.playwright-mcp/landing/`,
+which is ignored by Git. The check covers four viewport sizes, the video selected, mobile menu,
+product exploration, FAQ and the existing store/dashboard entries.
+
+Design references and the commercial assumptions are documented in
+[`docs/landing-page.md`](../../docs/landing-page.md).
+
 ## Which API a build talks to
 
 `src/composition.ts` uses the API when `VITE_API_URL` is set and demo mode when it is unset or

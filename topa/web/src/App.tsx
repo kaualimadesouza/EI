@@ -5,6 +5,7 @@ import { DEMO_STORE_SLUG, locationStore } from './domain/store'
 import type { Adapters } from './ports/adapters'
 import type { AuthenticatedCustomer } from './ports/customer-auth'
 import { StoreMark } from './ui/icons'
+import { LandingPage } from './ui/landing/LandingPage'
 import { CustomerAuthScreen } from './ui/customer/CustomerAuthScreen'
 import { StoreSelectorScreen } from './ui/customer/StoreSelectorScreen'
 import { KioskApp } from './ui/kiosk/KioskApp'
@@ -21,7 +22,15 @@ interface AppProps {
   onSwitchRole?: () => void
 }
 
-export function App({
+export function App(props: AppProps) {
+  const path = props.path ?? window.location.pathname
+  if (path.replace(/\/$/, '') === `${import.meta.env.BASE_URL}conheca`) {
+    return <LandingPage />
+  }
+  return <OrderingApp {...props} />
+}
+
+function OrderingApp({
   adapters,
   path = window.location.pathname,
   phone = false,

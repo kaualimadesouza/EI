@@ -47,6 +47,15 @@ describe('App', () => {
     localStorage.clear()
   })
 
+  it('opens the promotional page under /conheca without loading the ordering flow', () => {
+    const adapters = createAdapters(undefined)
+    const menuLoad = vi.spyOn(adapters.menu, 'load')
+    render(<App adapters={adapters} path="/conheca/" />)
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Seu próximo pedido começa com um toque.')
+    expect(menuLoad).not.toHaveBeenCalled()
+  })
+
   it('runs the kiosk on the configured adapters with the real clock', async () => {
     const user = userEvent.setup()
     render(<App adapters={createAdapters(undefined)} totem />)
