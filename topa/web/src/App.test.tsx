@@ -47,13 +47,38 @@ describe('App', () => {
     localStorage.clear()
   })
 
-  it('opens the promotional page under /conheca without loading the ordering flow', () => {
-    const adapters = createAdapters(undefined)
-    const menuLoad = vi.spyOn(adapters.menu, 'load')
-    render(<App adapters={adapters} path="/conheca/" />)
+  it.each(['/', '/?utm_source=instagram', '/conheca/'])(
+    'opens the promotional page at %s without initializing the ordering flow',
+    (url) => {
+      window.history.replaceState(null, '', url)
+      const adapters = createAdapters(undefined)
+      const menuLoad = vi.spyOn(adapters.menu, 'load')
+      const initCustomer = vi.spyOn(adapters.customerAuth, 'init')
+      render(<App adapters={adapters} />)
 
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Seu próximo pedido começa com um toque.')
+      expect(menuLoad).not.toHaveBeenCalled()
+      expect(initCustomer).not.toHaveBeenCalled()
+    },
+  )
+
+  it('keeps the native desktop app on the ordering flow', async () => {
+    render(<App adapters={createAdapters(undefined)} native />)
+
+    expect(await screen.findByRole('heading', { name: 'Onde você quer pedir hoje?' })).toBeInTheDocument()
+  })
+
+  it('follows browser history between the landing and a legacy store link', async () => {
+    render(<App adapters={createAdapters(undefined)} />)
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Seu próximo pedido começa com um toque.')
-    expect(menuLoad).not.toHaveBeenCalled()
+
+    window.history.replaceState(null, '', '/?loja=brasa-burgers')
+    act(() => window.dispatchEvent(new PopStateEvent('popstate')))
+    expect(await screen.findByRole('button', { name: /Comer aqui/ })).toBeInTheDocument()
+
+    window.history.replaceState(null, '', '/')
+    act(() => window.dispatchEvent(new PopStateEvent('popstate')))
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Seu próximo pedido começa com um toque.')
   })
 
   it('runs the kiosk on the configured adapters with the real clock', async () => {
@@ -222,9 +247,10 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Peça pelo celular.' })).toBeInTheDocument()
   })
 
-  it('opens store selector on direct web access without requiring customer login', async () => {
+  it('opens store selector at /pedir without requiring customer login and keeps orders under that path', async () => {
     const user = userEvent.setup()
     const adapters = createAdapters(undefined)
+    window.history.replaceState(null, '', '/pedir')
 
     render(<App adapters={adapters} />)
 
@@ -234,11 +260,14 @@ describe('App', () => {
     // Can order directly without logging in
     await user.click(await screen.findByRole('button', { name: 'Pedir em Brasa Burgers' }))
     expect(await screen.findByRole('button', { name: /Comer aqui/ })).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/pedir')
+    expect(window.location.search).toBe('?loja=brasa-burgers')
   })
 
   it('allows logging in via Entrar / Cadastrar button and then shows customer greeting and logout', async () => {
     const user = userEvent.setup()
     const adapters = createAdapters(undefined)
+    window.history.replaceState(null, '', '/pedir')
 
     render(<App adapters={adapters} />)
 
@@ -279,9 +308,9 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Onde você quer pedir hoje?' })).toBeInTheDocument()
   })
 
-  it('retains selected restaurant when page is refreshed with loja parameter', async () => {
+  it.each(['/', '/pedir'])('retains selected restaurant on refresh at %s with loja parameter', async (path) => {
     const adapters = createAdapters(undefined)
-    window.history.replaceState(null, '', '/?loja=brasa-burgers')
+    window.history.replaceState(null, '', `${path}?loja=brasa-burgers`)
 
     render(<App adapters={adapters} />)
 
@@ -301,13 +330,14 @@ describe('App', () => {
   it('updates selected store on popstate event', async () => {
     const user = userEvent.setup()
     const adapters = createAdapters(undefined)
+    window.history.replaceState(null, '', '/pedir')
 
     render(<App adapters={adapters} />)
 
     await user.click(await screen.findByRole('button', { name: 'Pedir em Brasa Burgers' }))
     expect(await screen.findByRole('button', { name: /Comer aqui/ })).toBeInTheDocument()
 
-    window.history.replaceState(null, '', '/')
+    window.history.replaceState(null, '', '/pedir')
     act(() => {
       window.dispatchEvent(new PopStateEvent('popstate'))
     })

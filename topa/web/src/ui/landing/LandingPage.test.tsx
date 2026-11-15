@@ -23,7 +23,8 @@ describe('TOPA landing page', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'Seu próximo pedido começa com um toque.',
     )
-    expect(screen.getByRole('link', { name: 'Abrir cardápio' })).toHaveAttribute('href', '/')
+    expect(screen.getByRole('link', { name: 'Abrir cardápio' })).toHaveAttribute('href', '/pedir')
+    expect(screen.getByRole('link', { name: 'Explorar cardápio' })).toHaveAttribute('href', '/pedir')
     expect(screen.getByRole('link', { name: 'Acessar painel' })).toHaveAttribute('href', '/painel')
     expect(screen.getByRole('link', { name: 'Ver planos' })).toHaveAttribute('href', '#planos')
     expect(screen.getByText('Projeto acadêmico · EACH/USP · Grupo T94')).toBeInTheDocument()

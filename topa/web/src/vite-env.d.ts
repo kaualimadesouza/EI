@@ -3,7 +3,7 @@
 interface ImportMetaEnv {
   // `/api` under `make run`; production builds read the deployed API's URL from .env.production
   readonly VITE_API_URL?: string
-  // Optional public destination for proposal requests on /conheca.
+  // Optional public destination for proposal requests on the landing page.
   readonly VITE_COMMERCIAL_CONTACT_URL?: string
 }
 

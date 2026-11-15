@@ -15,6 +15,7 @@ import { PhoneApp } from './ui/phone/PhoneApp'
 interface AppProps {
   adapters: Adapters
   path?: string
+  native?: boolean
   phone?: boolean
   storeRole?: StoreRole
   totem?: boolean
@@ -23,8 +24,24 @@ interface AppProps {
 }
 
 export function App(props: AppProps) {
-  const path = props.path ?? window.location.pathname
-  if (path.replace(/\/$/, '') === `${import.meta.env.BASE_URL}conheca`) {
+  const [href, setHref] = useState(() => window.location.href)
+  useEffect(() => {
+    const onPopState = () => setHref(window.location.href)
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [])
+
+  const path = (props.path ?? new URL(href).pathname).replace(/\/$/, '')
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '')
+  const landingPath = path === base || path === `${base}/conheca`
+  if (
+    !props.native &&
+    !props.phone &&
+    !props.totem &&
+    props.storeRole !== 'painel' &&
+    landingPath &&
+    locationStore(href).kind === 'absent'
+  ) {
     return <LandingPage />
   }
   return <OrderingApp {...props} />

@@ -135,7 +135,7 @@ export function LandingPage({ contactUrl = import.meta.env.VITE_COMMERCIAL_CONTA
             <a className={styles.merchantLink} href={`${BASE}painel`}>
               Acessar painel
             </a>
-            <a className={styles.navCta} href={BASE}>
+            <a className={styles.navCta} href={`${BASE}pedir`}>
               Abrir cardápio <Arrow />
             </a>
           </div>
@@ -434,7 +434,7 @@ export function LandingPage({ contactUrl = import.meta.env.VITE_COMMERCIAL_CONTA
               </h2>
               <p>Comece conhecendo a experiência que seu cliente vai encontrar.</p>
             </div>
-            <a className={styles.lightButton} href={contactUrl || BASE}>
+            <a className={styles.lightButton} href={contactUrl || `${BASE}pedir`}>
               {contactUrl ? 'Solicitar proposta' : 'Explorar cardápio'}
               <Arrow />
             </a>

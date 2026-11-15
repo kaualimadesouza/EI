@@ -1,7 +1,13 @@
 # Landing page do TOPA
 
-A página de apresentação fica em `/conheca`, no frontend existente. O cardápio
-continua em `/`; os links de loja e o painel mantêm os caminhos anteriores.
+A página de apresentação ocupa a URL principal, `https://topa-totem.vercel.app/`.
+O produto usa caminhos próprios no mesmo domínio: `/pedir` para escolher uma loja
+e fazer pedidos e `/painel` para o lojista. Assim, não é necessário configurar
+outro domínio para separar a apresentação do uso do produto.
+
+Os links existentes de QR Code e NFC (`/?loja=...`, com ou sem sessão temporária)
+continuam abrindo o cardápio diretamente. `/conheca` segue como caminho alternativo
+da apresentação. Os aplicativos nativos mantêm suas telas de entrada.
 
 Prévia da composição: [desktop](landing-topa-desktop.png) e
 [celular](landing-topa-mobile.png).

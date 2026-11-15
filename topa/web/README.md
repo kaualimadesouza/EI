@@ -17,9 +17,11 @@ npm run lint && npm run typecheck
 
 ## Product landing page
 
-Open `/conheca` for the TOPA presentation, proposed plans, interactive product overview, FAQ, and
-the v2 film. The existing customer entry at `/`, store links and `/painel` keep their roles.
-The page also works under `BASE_PATH`, such as `/EI/conheca`.
+Open `/` for the TOPA presentation, proposed plans, interactive product overview, FAQ, and
+the v2 film. Customers choose a store and order at `/pedir`; merchants use `/painel`.
+Existing QR/NFC links at `/?loja=...` (including temporary sessions) still open the store directly,
+and `/conheca` remains an alias for the landing. Native apps keep their ordering/dashboard entry.
+All paths respect `BASE_PATH`, such as `/EI/` and `/EI/pedir`.
 
 Content lives in `src/ui/landing/content.ts`. The three plans are proposals for the pilot;
 R$ 249 per terminal/month comes from the draft in `pipe/pipe_EI_2026.tex`, where it is still a

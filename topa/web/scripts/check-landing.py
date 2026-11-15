@@ -23,8 +23,9 @@ async def main():
                 device_scale_factor=1, reduced_motion='reduce', locale='pt-BR')
             errors=[]
             page.on('pageerror', lambda error: errors.append(str(error)))
-            response=await page.goto(BASE+'/conheca',wait_until='networkidle')
+            response=await page.goto(BASE+'/',wait_until='networkidle')
             assert response.status==200
+            assert (await page.get_by_role('link',name='Abrir cardápio',exact=True).get_attribute('href')).endswith('/pedir')
             await page.evaluate('document.fonts.ready')
             assert await page.get_by_role('heading',level=1).count()==1
             assert await page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')
@@ -75,8 +76,16 @@ async def main():
             await page.close()
 
         page=await browser.new_page()
+        await page.goto(BASE+'/',wait_until='networkidle')
+        await page.get_by_role('link',name='Abrir cardápio',exact=True).click()
+        await page.get_by_role('heading',name='Onde você quer pedir hoje?').wait_for()
+        assert page.url==BASE+'/pedir'
+        await page.goto(BASE+'/pedir?loja=lanchonete-bem-te-vi',wait_until='networkidle')
+        await page.get_by_role('heading',name='Peça aqui. Pague aqui.').wait_for()
         await page.goto(BASE+'/?loja=lanchonete-bem-te-vi',wait_until='networkidle')
         await page.get_by_role('heading',name='Peça aqui. Pague aqui.').wait_for()
+        await page.goto(BASE+'/conheca',wait_until='networkidle')
+        await page.get_by_role('heading',name='Seu próximo pedido começa com um toque.').wait_for()
         await page.goto(BASE+'/painel',wait_until='networkidle')
         await page.get_by_role('heading',name='Painel do lojista').wait_for()
         await browser.close()

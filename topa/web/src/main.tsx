@@ -13,6 +13,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App
       adapters={adapters}
+      native={runtime.tauri}
       phone={isPhoneApp(runtime)}
       storeRole={runtime.storeRole}
       totem={runtime.totem}
