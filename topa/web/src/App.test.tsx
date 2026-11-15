@@ -56,8 +56,8 @@ describe('App', () => {
     await user.click(await screen.findByRole('button', { name: 'Cadastrar primeiro produto' }))
     expect(screen.getByRole('dialog', { name: 'Novo produto' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Fechar' }))
-    await user.click(screen.getAllByRole('button', { name: 'Sair', exact: true })[0])
-    expect(await screen.findByRole('button', { name: 'Entrar', exact: true })).toBeInTheDocument()
+    await user.click(screen.getAllByRole('button', { name: 'Sair' })[0])
+    expect(await screen.findByRole('button', { name: 'Entrar' })).toBeInTheDocument()
   })
   afterEach(() => {
     window.history.replaceState(null, '', '/')
@@ -132,8 +132,8 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Brasa Burgers' })).toBeInTheDocument()
     expect(load).toHaveBeenCalledWith('brasa-burgers')
     expect(screen.queryByText('Acesso não autorizado')).not.toBeInTheDocument()
-    fireEvent.click(screen.getAllByRole('button', { name: 'Sair', exact: true })[0])
-    expect(await screen.findByRole('button', { name: 'Entrar', exact: true })).toBeInTheDocument()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Sair' })[0])
+    expect(await screen.findByRole('button', { name: 'Entrar' })).toBeInTheDocument()
   })
 
   it('opens a store-specific totem instead of the landing or the customer phone', async () => {
