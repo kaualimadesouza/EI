@@ -71,7 +71,7 @@ the MVP monorepo (`topa/web/`, `topa/api/`). The repo is public.
 10. CI green, squash-merge, delete the branch, move the card to **Done**
     (`Closes #<n>` closes the issue). Merging the release-please PR cuts a
     release; what each merge deploys, and what still goes out by hand, is in
-    `CLAUDE.md`.
+    `AGENTS.md`.
 
 ## Board operations
 
