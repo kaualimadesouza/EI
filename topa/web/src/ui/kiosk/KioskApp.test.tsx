@@ -66,6 +66,7 @@ function fakes(
       }),
     },
     auth: {
+      register: vi.fn(),
       login: vi.fn(),
       logout: vi.fn(),
       getToken: () => null,
@@ -81,6 +82,7 @@ function fakes(
       init: () => Promise.resolve(null),
     },
     stores: {
+      setAcceptingOrders: vi.fn(),
       listAll: () => Promise.resolve([]),
     },
     totemSession: new LocalTotemSession(),
@@ -159,6 +161,56 @@ async function showPage(state: DocumentVisibilityState) {
 }
 
 describe('KioskApp', () => {
+  it('explains a store rejection before charging and ignores a rejection after unmount', async () => {
+    const f = fakes()
+    f.adapters.mode = 'api'
+    f.place.mockRejectedValueOnce(new OrderRejectedError('A loja pausou os pedidos.'))
+    const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) })
+    const first = render(<KioskApp adapters={f.adapters} now={morning} storeSlug={DEMO_STORE_SLUG} surface="phone" />)
+    await startOrder(user)
+    await user.click(button(COMBO_BANNER))
+    await user.click(button('Ver pedido'))
+    await user.click(button('Pagar'))
+    expect(await screen.findByRole('alert')).toHaveTextContent('A loja pausou os pedidos.')
+    first.unmount()
+
+    let rejectOrder: (reason: unknown) => void = () => {}
+    f.place.mockImplementationOnce(() => new Promise((_, reject) => { rejectOrder = reject }))
+    const second = render(<KioskApp adapters={f.adapters} now={morning} storeSlug={DEMO_STORE_SLUG} surface="phone" />)
+    await startOrder(user)
+    await user.click(button(COMBO_BANNER))
+    await user.click(button('Ver pedido'))
+    await user.click(button('Pagar'))
+    second.unmount()
+    await act(async () => { rejectOrder(new Error('Late network failure')) })
+    expect(f.adapters.payment.createPixCharge).not.toHaveBeenCalled()
+  })
+  it('shows that a paused store is closed and prevents starting an order', async () => {
+    const f = fakes()
+    f.load.mockResolvedValue({ store: { slug: DEMO_STORE_SLUG, name: DEMO_STORE_NAME, acceptingOrders: false }, products: DEMO_CATALOG.map((p) => ({ ...p })) })
+    setup(f)
+    expect(await screen.findByRole('heading', { name: 'Loja fechada para pedidos' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Comer aqui/ })).not.toBeInTheDocument()
+    f.load.mockResolvedValue({ store: { slug: DEMO_STORE_SLUG, name: DEMO_STORE_NAME, acceptingOrders: true }, products: DEMO_CATALOG.map((p) => ({ ...p })) })
+    await userEvent.click(screen.getByRole('button', { name: 'Atualizar cardápio' }))
+    expect(await screen.findByRole('button', { name: /Comer aqui/ })).toBeInTheDocument()
+  })
+
+  it('creates a real Pix charge only after the order has a persisted ID', async () => {
+    const user = userEvent.setup()
+    const f = fakes()
+    f.adapters.mode = 'api'
+    f.place.mockResolvedValue({ id: 'o47', number: 47, totalCents: 3290 })
+    setupPhone(f)
+    await startOrder(user)
+    await user.click(await screen.findByRole('button', { name: 'Bebidas' }))
+    await user.click(screen.getByRole('button', { name: 'Adicionar Água sem gás' }))
+    await user.click(screen.getByRole('button', { name: 'Ver pedido' }))
+    await user.click(screen.getByRole('button', { name: 'Pagar' }))
+    await waitFor(() => expect(f.adapters.payment.createPixCharge).toHaveBeenCalledWith('o47', 3290, 'Pedido TOPA'))
+    expect(screen.getByText('R$ 32,90')).toBeInTheDocument()
+    expect(f.adapters.payment.createPixCharge).not.toHaveBeenCalledWith(expect.stringMatching(/^demo-order/), expect.anything(), expect.anything())
+  })
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
   })
@@ -929,7 +981,7 @@ describe('KioskApp', () => {
     expect(f.place).toHaveBeenCalledTimes(1)
   })
 
-  it('silently handles error when pre-placing order in api mode fails', async () => {
+  it('explains an order placement failure and offers a retry without inventing a payment', async () => {
     const f = fakes()
     f.adapters.mode = 'api'
     f.place.mockRejectedValueOnce(new Error('Pre-place network fail'))
@@ -951,10 +1003,13 @@ describe('KioskApp', () => {
       expect(f.place).toHaveBeenCalledTimes(1)
     })
 
-    f.place.mockResolvedValueOnce({ id: 'order-fallback-123', number: 456, totalCents: 1290 })
-    await act(async () => {
-      vi.advanceTimersByTime(2000)
-    })
+    expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível iniciar o pagamento.')
+    expect(f.adapters.payment.createPixCharge).not.toHaveBeenCalled()
+    await user.click(button('Voltar ao pedido'))
+    f.place.mockResolvedValueOnce({ id: 'order-retry-123', number: 456, totalCents: 1290 })
+    await user.click(button('Pagar'))
+    await screen.findByRole('button', { name: 'Copiar código Pix' })
+    await act(() => vi.advanceTimersByTimeAsync(2000))
     expect(await screen.findByText('456')).toBeInTheDocument()
     expect(f.place).toHaveBeenCalledTimes(2)
   })

@@ -35,7 +35,11 @@ class AbacatePayGateway(PaymentGatewayPort):
         customer_name: str | None = None,
     ) -> PixCharge:
         now = datetime.now(UTC)
-        if not self._api_key or self._api_key.startswith("mock:"):
+        if not self._api_key:
+            raise PaymentProcessingError(
+                "O recebimento por Pix não está configurado para esta loja."
+            )
+        if self._api_key.startswith("mock:"):
             charge_id = f"pix_char_{order_id.hex[:12]}"
             br_code = (
                 f"00020126580014br.gov.bcb.pix0136{order_id}52040000"
@@ -105,7 +109,11 @@ class AbacatePayGateway(PaymentGatewayPort):
             raise PaymentProcessingError("Falha na comunicação com Abacate Pay.") from exc
 
     def get_payment_status(self, payment_id: str) -> PaymentStatus:
-        if not self._api_key or self._api_key.startswith("mock:"):
+        if not self._api_key:
+            raise PaymentProcessingError(
+                "O recebimento por Pix não está configurado para esta loja."
+            )
+        if self._api_key.startswith("mock:"):
             return PaymentStatus.PENDING
 
         req = urllib.request.Request(

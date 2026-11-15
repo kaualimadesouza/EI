@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, insert
 from sqlalchemy.orm import Session
 
+from tests.paid_orders import confirm_pix
 from topa_api.adapters.db.models import StoreRow
 from topa_api.adapters.db.repositories import SqlAlchemyMerchantRepository
 from topa_api.adapters.security.password_hasher import ScryptPasswordHasher
@@ -121,6 +122,7 @@ def test_protected_routes_refuse_cross_store_access(client: TestClient, db_engin
             "payment_method": "pix",
         },
     ).json()
+    confirm_pix(client, placed["id"])
     res_order_match = client.patch(
         f"/orders/{placed['id']}?loja={DEFAULT_STORE}",
         json={"status": "preparing"},

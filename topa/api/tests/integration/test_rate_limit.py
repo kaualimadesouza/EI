@@ -35,7 +35,7 @@ def test_post_orders_rate_limiting_by_client_ip(client: TestClient) -> None:
 def test_client_ip_fallback_when_no_forwarded_or_client() -> None:
     from fastapi import Request
 
-    from topa_api.presentation.fastapi.orders import _client_ip
+    from topa_api.presentation.fastapi.client_ip import client_ip as _client_ip
 
     req = Request({"type": "http", "headers": []})
     assert _client_ip(req) == "127.0.0.1"
@@ -44,7 +44,7 @@ def test_client_ip_fallback_when_no_forwarded_or_client() -> None:
 def test_client_ip_prefers_rightmost_forwarded_ip_to_prevent_spoofing() -> None:
     from fastapi import Request
 
-    from topa_api.presentation.fastapi.orders import _client_ip
+    from topa_api.presentation.fastapi.client_ip import client_ip as _client_ip
 
     req = Request(
         {
@@ -58,7 +58,7 @@ def test_client_ip_prefers_rightmost_forwarded_ip_to_prevent_spoofing() -> None:
 def test_client_ip_reads_direct_client_host() -> None:
     from fastapi import Request
 
-    from topa_api.presentation.fastapi.orders import _client_ip
+    from topa_api.presentation.fastapi.client_ip import client_ip as _client_ip
 
     req = Request(
         {
@@ -73,7 +73,7 @@ def test_client_ip_reads_direct_client_host() -> None:
 def test_client_ip_falls_back_when_forwarded_is_only_commas() -> None:
     from fastapi import Request
 
-    from topa_api.presentation.fastapi.orders import _client_ip
+    from topa_api.presentation.fastapi.client_ip import client_ip as _client_ip
 
     req = Request(
         {

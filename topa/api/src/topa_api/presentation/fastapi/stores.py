@@ -4,7 +4,15 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from topa_api.application.list_stores import ListStoresUseCase
-from topa_api.presentation.fastapi.dependencies import get_list_stores_use_case
+from topa_api.application.set_store_ordering import SetStoreOrderingUseCase
+from topa_api.domain.auth import AuthenticatedMerchant
+from topa_api.domain.errors import ForbiddenStoreAccessError
+from topa_api.presentation.fastapi.dependencies import (
+    StoreSlug,
+    get_current_merchant,
+    get_list_stores_use_case,
+    get_set_store_ordering_use_case,
+)
 
 router = APIRouter(tags=["stores"])
 
@@ -17,6 +25,24 @@ class StoreResponse(BaseModel):
     address: str | None = None
     category: str | None = None
     segment: str = "restaurant"
+    accepting_orders: bool = True
+
+
+class OrderingRequest(BaseModel):
+    accepting_orders: bool
+
+
+@router.patch("/stores/{store_slug}/ordering")
+def set_store_ordering(
+    store_slug: StoreSlug,
+    request: OrderingRequest,
+    merchant: Annotated[AuthenticatedMerchant, Depends(get_current_merchant)],
+    use_case: Annotated[SetStoreOrderingUseCase, Depends(get_set_store_ordering_use_case)],
+) -> StoreResponse:
+    if merchant.store_slug != store_slug:
+        raise ForbiddenStoreAccessError()
+    store = use_case.execute(store_slug, request.accepting_orders)
+    return StoreResponse(slug=store.slug, name=store.name, accepting_orders=store.accepting_orders)
 
 
 @router.get("/stores")
@@ -37,6 +63,7 @@ def list_stores(
             address=store.address,
             category=store.category,
             segment=store.segment,
+            accepting_orders=store.accepting_orders,
         )
         for store in stores
     ]

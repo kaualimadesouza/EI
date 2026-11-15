@@ -4,6 +4,7 @@ import {
   AuthError,
   type AuthPort,
   type LoginCredentials,
+  type MerchantRegistration,
 } from '../../ports/auth'
 import type { HttpClient } from './http-client'
 
@@ -39,9 +40,23 @@ export class HttpAuth implements AuthPort {
   }
 
   async login(credentials: LoginCredentials): Promise<AuthenticatedMerchant> {
-    const response = await this.client.post('/auth/login', {
+    return this.authenticate('/auth/login', {
       email: credentials.email,
       password: credentials.password,
+    })
+  }
+
+  async register(registration: MerchantRegistration): Promise<AuthenticatedMerchant> {
+    return this.authenticate('/auth/register', {
+      store_name: registration.storeName,
+      email: registration.email,
+      password: registration.password,
+    })
+  }
+
+  private async authenticate(path: string, body: Record<string, string>): Promise<AuthenticatedMerchant> {
+    const response = await this.client.post(path, body).catch(() => {
+      throw new AuthError('Não foi possível conectar ao TOPA. Verifique sua conexão e tente de novo.')
     })
 
     if (!response.ok) {

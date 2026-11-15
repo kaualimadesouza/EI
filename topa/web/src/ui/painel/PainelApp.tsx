@@ -17,12 +17,14 @@ import { MenuTable } from './MenuTable'
 import { OrdersBoard } from './OrdersBoard'
 import { ProductModal } from './ProductModal'
 import { TicketPreviewModal } from './TicketPreviewModal'
+import { StoreSetup } from './StoreSetup'
 
 interface PainelAppProps {
   adapters: Adapters
   storeSlug?: string
   now?: () => Date
   onSwitchToTotem?: () => void
+  startWithRegistration?: boolean
 }
 
 interface Undo {
@@ -56,9 +58,12 @@ function dayBefore(date: Date): Date {
   return previous
 }
 
-export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => new Date(), onSwitchToTotem }: PainelAppProps) {
+export function PainelApp({ adapters, storeSlug: requestedStoreSlug, now = () => new Date(), onSwitchToTotem, startWithRegistration }: PainelAppProps) {
   const [merchant, setMerchant] = useState<AuthenticatedMerchant | null>(() => adapters.auth.getMerchant())
+  const [showRegistration, setShowRegistration] = useState(startWithRegistration && merchant === null)
+  const storeSlug = requestedStoreSlug ?? merchant?.storeSlug ?? DEMO_STORE_SLUG
   const [storeName, setStoreName] = useState<string | null>(null)
+  const [acceptingOrders, setAcceptingOrders] = useState(false)
   const [notFound, setNotFound] = useState(false)
   const [orders, setOrders] = useState<OrderSummary[]>([])
   const [yesterday, setYesterday] = useState<OrderSummary[]>([])
@@ -123,6 +128,7 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
     adapters.menu.load(storeSlug).then(
       (menu) => {
         setStoreName(menu.store.name)
+        setAcceptingOrders(menu.store.acceptingOrders !== false)
         setProducts(menu.products)
       },
       (error: unknown) => {
@@ -205,7 +211,10 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
   if (soldOut.length > 0) alerts.push(`Esgotados no totem: ${soldOut.map((p) => p.name).join(', ')}.`)
 
   if (!merchant) {
-    return <LoginScreen auth={adapters.auth} storeSlug={storeSlug} onLoginSuccess={setMerchant} />
+    return <LoginScreen auth={adapters.auth} storeSlug={storeSlug} onLoginSuccess={(owner) => {
+      setShowRegistration(false)
+      setMerchant(owner)
+    }} startWithRegistration={showRegistration} />
   }
 
   if (merchant.storeSlug !== storeSlug) {
@@ -281,7 +290,7 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
             </button>
           ) : (
             <a
-              href={import.meta.env.BASE_URL}
+              href={`${import.meta.env.BASE_URL}totem?loja=${encodeURIComponent(storeSlug)}`}
               aria-label="Abrir o totem"
               className="flex h-12 items-center gap-3 rounded-[12px] px-3 text-[15px] font-medium text-teal hover:bg-white max-xl:justify-center"
             >
@@ -300,7 +309,7 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
           </button>
         </div>
       </aside>
-      <main className="flex min-w-0 flex-1 flex-col gap-8 px-8 py-6 max-md:px-4">
+      <main className="flex min-w-0 flex-1 flex-col gap-8 px-8 py-6 max-md:px-4 max-md:pb-24">
         <header className="flex flex-wrap items-end justify-between gap-2">
           <div>
             <h1 className="text-[32px] leading-tight font-bold">Painel do lojista</h1>
@@ -332,6 +341,11 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
             </p>
           </div>
         </header>
+        <StoreSetup storeSlug={storeSlug} storeName={storeName} loaded={storeName !== null}
+          accepting={acceptingOrders} productCount={products.length}
+          availableCount={products.filter((product) => product.available).length}
+          stores={adapters.stores} onAddProduct={() => setEditingProduct('new')}
+          onOrderingChanged={setAcceptingOrders} />
         {(alerts.length > 0 || problem) && (
           <div role="alert" className="flex items-start gap-3 rounded-[16px] bg-warning-tint px-5 py-3 text-[15px] font-medium text-warning">
             <AlertIcon size={20} className="mt-0.5" />
@@ -349,6 +363,7 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
         </section>
         <section id="pedidos" aria-labelledby="pedidos-title" className="flex scroll-mt-6 flex-col gap-4">
           <h2 id="pedidos-title" className="text-[22px] font-bold">Pedidos em andamento</h2>
+          {adapters.mode === 'api' && <p className="text-[14px] text-muted">Pedidos Pix só entram na cozinha e no resumo após a confirmação do pagamento.</p>}
           <OrdersBoard
             orders={orders}
             now={today}
@@ -382,6 +397,11 @@ export function PainelApp({ adapters, storeSlug = DEMO_STORE_SLUG, now = () => n
           />
         </section>
       </main>
+      <nav aria-label="Atalhos do painel" className="fixed inset-x-0 bottom-0 z-10 hidden grid-cols-3 border-t border-line bg-white p-2 max-md:grid">
+        <a href="#pedidos" className="flex min-h-11 items-center justify-center rounded-[10px] font-medium text-teal">Pedidos</a>
+        <a href="#cardapio" className="flex min-h-11 items-center justify-center rounded-[10px] font-medium text-teal">Cardápio</a>
+        <a href="#resumo" className="flex min-h-11 items-center justify-center rounded-[10px] font-medium text-teal">Resumo</a>
+      </nav>
       <ProductModal
         product={editingProduct === 'new' ? null : editingProduct}
         isOpen={editingProduct !== null}

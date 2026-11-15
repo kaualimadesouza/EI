@@ -20,10 +20,12 @@ const STORE_NAMES: Record<string, string> = {
 export class LocalMenu implements MenuPort {
   private readonly soldOut: StoredValue<string[]>
   private readonly customProducts: StoredValue<Product[]>
+  private readonly ordering: StoredValue<Record<string, boolean>>
 
   constructor(storage: KeyValueStore | null = browserStorage()) {
     this.soldOut = new StoredValue<string[]>(storage, 'topa.sold-out', [])
     this.customProducts = new StoredValue<Product[]>(storage, 'topa.custom-products', [])
+    this.ordering = new StoredValue(storage, 'topa.store-ordering', {})
   }
 
   private allProducts(): Product[] {
@@ -39,7 +41,7 @@ export class LocalMenu implements MenuPort {
     if (!storeName) return Promise.reject(new StoreNotFoundError())
     const soldOut = this.soldOut.read()
     return Promise.resolve({
-      store: { slug: storeSlug, name: storeName },
+      store: { slug: storeSlug, name: storeName, acceptingOrders: this.ordering.read()[storeSlug] },
       products: this.allProducts().map((product) => ({ ...product, available: !soldOut.includes(product.id) })),
     })
   }

@@ -33,6 +33,10 @@ class StoreRepository(Protocol):
 
     def list_all(self) -> list[Store]: ...
 
+    def add(self, store: Store) -> None: ...
+
+    def set_accepting_orders(self, slug: str, accepting: bool) -> Store | None: ...
+
 
 class ProductRepository(Protocol):
     def list_for_store(self, store_slug: str) -> list[Product]:

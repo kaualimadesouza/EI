@@ -66,6 +66,10 @@ export class LocalAuth implements AuthPort {
     return this.merchant
   }
 
+  async register(): Promise<AuthenticatedMerchant> {
+    throw new AuthError('O cadastro de lojas precisa do servidor. Nesta demonstração, use a loja de exemplo.')
+  }
+
   logout(): void {
     this.token = null
     this.merchant = null

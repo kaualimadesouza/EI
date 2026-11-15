@@ -88,6 +88,7 @@ class UpdateProductRequest(BaseModel):
 class StoreResponse(BaseModel):
     slug: str
     name: str
+    accepting_orders: bool = True
 
 
 class ProductResponse(BaseModel):
@@ -119,7 +120,9 @@ def get_store_menu(
     """One store's identity and full menu in display order, sold-out products included."""
     menu = use_case.execute(store_slug)
     return StoreMenuResponse(
-        store=StoreResponse(slug=menu.store.slug, name=menu.store.name),
+        store=StoreResponse(
+            slug=menu.store.slug, name=menu.store.name, accepting_orders=menu.store.accepting_orders
+        ),
         products=[_product_response(product) for product in menu.products],
     )
 

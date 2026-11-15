@@ -57,8 +57,8 @@ describe('TOPA landing page', () => {
     expect(within(plans).getByText(/249,00/)).toBeInTheDocument()
     expect(within(plans).getAllByText('Sob consulta')).toHaveLength(2)
     expect(within(plans).getByText(/Valores propostos para o piloto/)).toBeInTheDocument()
-    for (const link of within(plans).getAllByRole('link', { name: /Ver na prática/ })) {
-      expect(link).toHaveAttribute('href', '#demonstracao')
+    for (const link of within(plans).getAllByRole('link', { name: /Criar minha loja/ })) {
+      expect(link).toHaveAttribute('href', '/painel?cadastro=1')
     }
     expect(screen.queryByText(/teste grátis|clientes satisfeitos|mais vendido/i)).not.toBeInTheDocument()
   })
@@ -80,6 +80,8 @@ describe('TOPA landing page', () => {
     await user.click(toggle)
     const menu = screen.getByRole('navigation', { name: 'Navegação mobile' })
     expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(within(menu).getByRole('link', { name: 'Acessar painel' })).toHaveAttribute('href', '/painel')
+    expect(within(menu).getByRole('link', { name: 'Criar minha loja' })).toHaveAttribute('href', '/painel?cadastro=1')
     await user.click(within(menu).getByRole('link', { name: 'Planos' }))
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
     await user.click(toggle)

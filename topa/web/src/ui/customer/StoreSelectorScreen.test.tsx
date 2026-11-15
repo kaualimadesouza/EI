@@ -99,6 +99,7 @@ describe('StoreSelectorScreen', () => {
 
   function createPorts(overrides?: { stores?: Partial<StoresPort>; orders?: Partial<OrdersPort> }) {
     const stores: StoresPort = {
+      setAcceptingOrders: vi.fn(),
       listAll: vi.fn().mockResolvedValue(sampleStores),
       ...overrides?.stores,
     }
@@ -147,6 +148,7 @@ describe('StoreSelectorScreen', () => {
     const user = userEvent.setup()
     const { stores, orders } = createPorts({
       stores: {
+        setAcceptingOrders: vi.fn(),
         listAll: vi
           .fn()
           .mockRejectedValueOnce(new Error('Network error'))

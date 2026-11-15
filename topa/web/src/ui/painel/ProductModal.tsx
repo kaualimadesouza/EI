@@ -51,12 +51,14 @@ export function ProductModal({ product, isOpen, onClose, onSave }: ProductModalP
       setError('Informe a categoria.')
       return
     }
-    const parsedPrice = parseFloat(price.replace(',', '.'))
-    if (isNaN(parsedPrice) || parsedPrice < 0) {
+    const cleanPrice = price.trim()
+    const validPrice = /^(?:\d+(?:[,.]\d{1,2})?|\d{1,3}(?:\.\d{3})+,\d{1,2})$/.test(cleanPrice)
+    const parsedPrice = Number(cleanPrice.includes(',') ? cleanPrice.replaceAll('.', '').replace(',', '.') : cleanPrice)
+    const priceCents = Math.round(parsedPrice * 100)
+    if (!validPrice || !Number.isSafeInteger(priceCents)) {
       setError('Informe um preço válido.')
       return
     }
-    const priceCents = Math.round(parsedPrice * 100)
     const cleanPhoto = photoUrl.trim()
     if (
       cleanPhoto &&
@@ -156,6 +158,7 @@ export function ProductModal({ product, isOpen, onClose, onSave }: ProductModalP
             <input
               id="product-price"
               type="text"
+              inputMode="decimal"
               required
               value={price}
               onChange={(e) => setPrice(e.target.value)}

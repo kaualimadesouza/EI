@@ -113,8 +113,8 @@ export function LandingPage({ contactUrl = import.meta.env.VITE_COMMERCIAL_CONTA
   const [videoOpen, setVideoOpen] = useState(false)
   const [stepIndex, setStepIndex] = useState(0)
   const step = PRODUCT_STEPS[stepIndex]
-  const proposalHref = contactUrl || '#demonstracao'
-  const proposalLabel = contactUrl ? 'Solicitar proposta' : 'Ver na prática'
+  const proposalHref = contactUrl || `${BASE}painel?cadastro=1`
+  const proposalLabel = contactUrl ? 'Solicitar proposta' : 'Criar minha loja'
 
   return (
     <div className={styles.page} id="inicio">
@@ -172,6 +172,8 @@ export function LandingPage({ contactUrl = import.meta.env.VITE_COMMERCIAL_CONTA
               <Arrow />
             </a>
           ))}
+          <a href={`${BASE}painel`}>Acessar painel <Arrow /></a>
+          <a href={`${BASE}painel?cadastro=1`}>Criar minha loja <Arrow /></a>
         </nav>
       </header>
 

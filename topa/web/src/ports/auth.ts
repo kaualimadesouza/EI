@@ -8,8 +8,13 @@ export interface LoginCredentials {
   password: string
 }
 
+export interface MerchantRegistration extends LoginCredentials {
+  storeName: string
+}
+
 export interface AuthPort {
   login(credentials: LoginCredentials): Promise<AuthenticatedMerchant>
+  register(registration: MerchantRegistration): Promise<AuthenticatedMerchant>
   logout(): Promise<void> | void
   getToken(): string | null
   getMerchant(): AuthenticatedMerchant | null

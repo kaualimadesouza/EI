@@ -11,6 +11,7 @@ function fakeAuth(overrides?: Partial<AuthPort>): AuthPort {
       email: 'admin@bemtevi.topa.com',
       storeSlug: 'lanchonete-bem-te-vi',
     }),
+    register: vi.fn().mockResolvedValue({ email: 'dono@example.com', storeSlug: 'restaurante-123' }),
     logout: vi.fn(),
     getToken: vi.fn().mockReturnValue(null),
     getMerchant: vi.fn().mockReturnValue(null),
@@ -19,6 +20,40 @@ function fakeAuth(overrides?: Partial<AuthPort>): AuthPort {
 }
 
 describe('LoginScreen', () => {
+  it('creates the merchant store and enters its dashboard without a customer account', async () => {
+    const user = userEvent.setup()
+    const auth = fakeAuth()
+    const onLoginSuccess = vi.fn()
+    render(<LoginScreen auth={auth} onLoginSuccess={onLoginSuccess} />)
+    await user.click(screen.getByRole('button', { name: 'Criar minha loja' }))
+    await user.type(screen.getByLabelText('Nome da loja'), 'Restaurante da Esquina')
+    await user.type(screen.getByLabelText('E-mail'), 'dono@example.com')
+    await user.type(screen.getByLabelText('Senha'), 'senha-local-123')
+    await user.type(screen.getByLabelText('Confirme a senha'), 'senha-local-123')
+    await user.click(screen.getByRole('button', { name: 'Criar loja e acessar painel' }))
+    expect(auth.register).toHaveBeenCalledWith({
+      storeName: 'Restaurante da Esquina', email: 'dono@example.com', password: 'senha-local-123',
+    })
+    expect(onLoginSuccess).toHaveBeenCalledWith({ email: 'dono@example.com', storeSlug: 'restaurante-123' })
+    expect(screen.getByRole('link', { name: 'Voltar ao site' })).toHaveAttribute('href', '/')
+    expect(screen.getByRole('link', { name: 'Quero fazer um pedido' })).toHaveAttribute('href', '/pedir')
+  })
+
+  it('explains mismatched passwords and lets the owner return to login', async () => {
+    const user = userEvent.setup()
+    const auth = fakeAuth()
+    render(<LoginScreen auth={auth} onLoginSuccess={vi.fn()} startWithRegistration />)
+    await user.type(screen.getByLabelText('Nome da loja'), 'Restaurante')
+    await user.type(screen.getByLabelText('E-mail'), 'dono@example.com')
+    await user.type(screen.getByLabelText('Senha'), 'senha-local-123')
+    await user.type(screen.getByLabelText('Confirme a senha'), 'outra-senha-123')
+    await user.click(screen.getByRole('button', { name: 'Criar loja e acessar painel' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('As senhas não coincidem.')
+    expect(auth.register).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Já tenho uma loja' }))
+    expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
   it('renders form inputs, submit button and LGPD notice', () => {
     const auth = fakeAuth()
     render(<LoginScreen auth={auth} onLoginSuccess={vi.fn()} />)

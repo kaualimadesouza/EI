@@ -11,6 +11,7 @@ from sqlalchemy import Engine, func, insert, select
 from sqlalchemy.orm import Session
 
 from tests.fakes import FixedClock
+from tests.paid_orders import confirm_pix
 from topa_api.adapters.db.models import OrderItemRow, OrderRow, ProductRow, StoreRow
 from topa_api.adapters.db.session import get_engine
 from topa_api.adapters.security.token_service import HmacTokenService
@@ -32,6 +33,14 @@ def _order(
         "dine_in": dine_in,
         "payment_method": payment_method,
     }
+
+
+def _place_paid(client: TestClient, payload: dict[str, object]) -> dict[str, object]:
+    response = client.post("/orders", json=payload)
+    assert response.status_code == 201
+    order: dict[str, object] = response.json()
+    confirm_pix(client, str(order["id"]))
+    return order
 
 
 def _stored_orders(db_engine: Engine) -> int:
@@ -228,10 +237,10 @@ def test_an_order_whose_commit_fails_is_never_confirmed(app: FastAPI, db_engine:
 def test_the_days_orders_are_listed_by_number_as_they_were_placed(
     client: TestClient, auth_headers: dict[str, str]
 ) -> None:
-    first = client.post(
-        "/orders", json=_order(("xsalada", 2), ("refri", 1), dine_in=False, payment_method="card")
-    ).json()
-    second = client.post("/orders", json=_order(("cafe", 1))).json()
+    first = _place_paid(
+        client, _order(("xsalada", 2), ("refri", 1), dine_in=False, payment_method="card")
+    )
+    second = _place_paid(client, _order(("cafe", 1)))
 
     response = client.get("/orders", headers=auth_headers)
 
@@ -243,7 +252,7 @@ def test_listed_items_follow_the_menu_order(
     client: TestClient, auth_headers: dict[str, str]
 ) -> None:
     """The kitchen reads lanches before bebidas, whatever order the customer tapped them in."""
-    client.post("/orders", json=_order(("refri", 1), ("cafe", 1), ("xsalada", 1)))
+    _place_paid(client, _order(("refri", 1), ("cafe", 1), ("xsalada", 1)))
 
     items = client.get("/orders", headers=auth_headers).json()[0]["items"]
 
@@ -253,9 +262,9 @@ def test_listed_items_follow_the_menu_order(
 def test_another_days_orders_are_listed_when_asked_for(
     client: TestClient, clock: FixedClock, auth_headers: dict[str, str]
 ) -> None:
-    monday = client.post("/orders", json=_order(("cafe", 1))).json()
+    monday = _place_paid(client, _order(("cafe", 1)))
     clock.moment += timedelta(days=1)
-    tuesday = client.post("/orders", json=_order(("agua", 1))).json()
+    tuesday = _place_paid(client, _order(("agua", 1)))
 
     assert client.get("/orders", params={"date": "2026-10-26"}, headers=auth_headers).json() == [
         monday
@@ -287,7 +296,7 @@ def test_a_malformed_date_gets_the_generic_message(
 def test_moving_an_order_returns_it_with_the_new_status(
     client: TestClient, auth_headers: dict[str, str]
 ) -> None:
-    placed = client.post("/orders", json=_order(("xsalada", 1), ("refri", 2))).json()
+    placed = _place_paid(client, _order(("xsalada", 1), ("refri", 2)))
 
     response = client.patch(
         f"/orders/{placed['id']}", json={"status": "preparing"}, headers=auth_headers
@@ -301,7 +310,7 @@ def test_moving_an_order_returns_it_with_the_new_status(
 def test_an_order_walks_to_delivered_and_back_one_step_at_a_time(
     client: TestClient, auth_headers: dict[str, str]
 ) -> None:
-    order_id = client.post("/orders", json=_order(("cafe", 1))).json()["id"]
+    order_id = _place_paid(client, _order(("cafe", 1)))["id"]
     steps = ["preparing", "ready", "delivered", "ready", "preparing", "received"]
 
     responses = [
@@ -317,7 +326,7 @@ def test_an_order_walks_to_delivered_and_back_one_step_at_a_time(
 def test_skipping_a_step_is_refused_and_the_order_stays_put(
     client: TestClient, auth_headers: dict[str, str]
 ) -> None:
-    placed = client.post("/orders", json=_order(("cafe", 1))).json()
+    placed = _place_paid(client, _order(("cafe", 1)))
 
     response = client.patch(
         f"/orders/{placed['id']}", json={"status": "delivered"}, headers=auth_headers
@@ -331,7 +340,7 @@ def test_skipping_a_step_is_refused_and_the_order_stays_put(
 def test_one_order_is_read_as_it_stands_now(
     client: TestClient, auth_headers: dict[str, str]
 ) -> None:
-    placed = client.post("/orders", json=_order(("xsalada", 1), ("refri", 2))).json()
+    placed = _place_paid(client, _order(("xsalada", 1), ("refri", 2)))
     client.patch(f"/orders/{placed['id']}", json={"status": "preparing"}, headers=auth_headers)
 
     response = client.get(f"/orders/{placed['id']}")
@@ -408,10 +417,8 @@ def test_orders_and_daily_numbers_are_isolated_per_store(
             )
         )
 
-    bem_te_vi = client.post("/orders", json=_order(("cafe", 1))).json()
-    cantina = client.post(
-        "/orders", json={**_order(("cafe", 1)), "store_slug": "cantina-central"}
-    ).json()
+    bem_te_vi = _place_paid(client, _order(("cafe", 1)))
+    cantina = _place_paid(client, {**_order(("cafe", 1)), "store_slug": "cantina-central"})
 
     assert (bem_te_vi["store_slug"], bem_te_vi["number"], bem_te_vi["total_cents"]) == (
         "lanchonete-bem-te-vi",

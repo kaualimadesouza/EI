@@ -5,6 +5,26 @@ import type { PaymentPort, PixChargeInfo } from '../../ports/payment'
 import { PaymentScreen } from './PaymentScreen'
 
 describe('PaymentScreen', () => {
+  it('waits for a persisted order before requesting a Pix charge outside demo mode', () => {
+    const paymentPort = { createPixCharge: vi.fn(), getPaymentStatus: vi.fn() }
+    render(<PaymentScreen totalCents={3290} method="pix" payment="choosing" error={null} surface="phone"
+      isDemo={false} paymentPort={paymentPort} onMethod={vi.fn()} onApprove={vi.fn()} onDecline={vi.fn()} onBackToBag={vi.fn()} />)
+    expect(paymentPort.createPixCharge).not.toHaveBeenCalled()
+    expect(screen.getByRole('status')).toHaveTextContent('Preparando seu pagamento...')
+    expect(screen.queryByRole('button', { name: 'Copiar código Pix' })).not.toBeInTheDocument()
+  })
+
+  it('shows a payment error instead of a demo QR when the real charge fails', async () => {
+    const paymentPort = { createPixCharge: vi.fn().mockRejectedValue(new Error('Indisponível')), getPaymentStatus: vi.fn() }
+    render(<PaymentScreen totalCents={3290} method="pix" payment="choosing" error={null} surface="phone"
+      isDemo={false} orderId="order-real" paymentPort={paymentPort} onMethod={vi.fn()} onApprove={vi.fn()} onDecline={vi.fn()} onBackToBag={vi.fn()} />)
+    await act(async () => { await Promise.resolve() })
+    expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível gerar o Pix.')
+    expect(screen.queryByRole('button', { name: 'Copiar código Pix' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Tentar gerar Pix novamente' }))
+    await act(async () => { await Promise.resolve() })
+    expect(paymentPort.createPixCharge).toHaveBeenCalledTimes(2)
+  })
   beforeEach(() => {
     vi.useFakeTimers()
   })

@@ -30,6 +30,16 @@ import { WebWakeLock } from './adapters/web/web-wake-lock'
 import type { NdefReader } from './adapters/web/web-nfc'
 import { createAdapters, detectRuntime, isPhoneApp, roleSwitch, type Runtime } from './composition'
 
+it('uses the owner token when the composed store adapter pauses ordering', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ accepting_orders: false }))))
+  const adapters = createAdapters('https://api.example')
+  vi.spyOn(adapters.auth, 'getToken').mockReturnValue('owner-token')
+  await expect(adapters.stores.setAcceptingOrders('minha-loja', false)).resolves.toBe(false)
+  expect(fetch).toHaveBeenCalledWith('https://api.example/stores/minha-loja/ordering', expect.objectContaining({
+    headers: expect.objectContaining({ Authorization: 'Bearer owner-token' }),
+  }))
+})
+
 const browser: Runtime = {
   tauri: false,
   mobile: false,

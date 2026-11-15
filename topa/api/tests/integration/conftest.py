@@ -135,6 +135,7 @@ def reset_database(db_engine: Engine) -> Iterator[None]:
         connection.execute(delete(MerchantRow).where(MerchantRow.email != "admin@bemtevi.topa.com"))
         connection.execute(delete(StoreRow).where(StoreRow.slug.not_in(SEEDED_STORES.keys())))
         connection.execute(update(ProductRow).values(available=True, photo_url=None))
+        connection.execute(update(StoreRow).values(accepting_orders=True))
 
 
 @pytest.fixture
@@ -143,7 +144,8 @@ def clock() -> FixedClock:
 
 
 @pytest.fixture
-def app(db_engine: Engine, clock: FixedClock) -> FastAPI:
+def app(db_engine: Engine, clock: FixedClock, monkeypatch: pytest.MonkeyPatch) -> FastAPI:
+    monkeypatch.setenv("TOPA_ABACATEPAY_API_KEY", "mock:integration-test")
     application = create_app()
     application.dependency_overrides[get_clock] = lambda: clock
     return application

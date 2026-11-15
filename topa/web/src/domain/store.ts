@@ -10,6 +10,7 @@ export interface Store {
   address?: string
   category?: string
   segment?: 'restaurant' | 'market'
+  acceptingOrders?: boolean
 }
 
 /** One store and its whole menu in display order, sold-out products included. */

@@ -22,6 +22,7 @@ from topa_api.domain.errors import ForbiddenStoreAccessError, InvalidIdempotency
 from topa_api.domain.fiscal import FiscalStandard
 from topa_api.domain.orders import Order, OrderLine, OrderStatus, PaymentMethod
 from topa_api.domain.pos_integration import PosAdapterPort
+from topa_api.presentation.fastapi.client_ip import client_ip as _client_ip
 from topa_api.presentation.fastapi.dependencies import (
     StoreSlug,
     get_change_order_status_use_case,
@@ -79,17 +80,6 @@ class OrderResponse(BaseModel):
     created_at: datetime
     items: list[OrderItemResponse]
     client_order_id: uuid.UUID | None = None
-
-
-def _client_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        parts = [p.strip() for p in forwarded.split(",") if p.strip()]
-        if parts:
-            return parts[-1]
-    if request.client and request.client.host:
-        return request.client.host
-    return "127.0.0.1"
 
 
 @router.post(

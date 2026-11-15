@@ -1,22 +1,28 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
 
 from topa_api.application.authenticate_customer import AuthenticateCustomerUseCase
 from topa_api.application.authenticate_merchant import AuthenticateMerchantUseCase
+from topa_api.application.check_order_rate_limit import CheckOrderRateLimitUseCase
 from topa_api.application.register_customer import RegisterCustomerUseCase
+from topa_api.application.register_merchant import RegisterMerchantUseCase
 from topa_api.domain.auth import (
     AuthenticatedCustomer,
     Credentials,
     CustomerCredentials,
     CustomerRegistration,
+    MerchantRegistration,
 )
+from topa_api.presentation.fastapi.client_ip import client_ip
 from topa_api.presentation.fastapi.dependencies import (
     get_authenticate_customer_use_case,
     get_authenticate_merchant_use_case,
+    get_check_order_rate_limit_use_case,
     get_current_customer,
     get_register_customer_use_case,
+    get_register_merchant_use_case,
 )
 from topa_api.presentation.fastapi.errors import ErrorResponse
 
@@ -39,6 +45,39 @@ class CustomerRegisterRequest(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     email: str = Field(min_length=3, max_length=254)
     password: str = Field(min_length=6, max_length=128)
+
+
+class MerchantRegisterRequest(BaseModel):
+    store_name: str = Field(min_length=1, max_length=100)
+    email: str = Field(min_length=3, max_length=254)
+    password: str = Field(min_length=8, max_length=128)
+
+
+@router.post(
+    "/auth/register",
+    status_code=201,
+    responses={
+        409: {"model": ErrorResponse},
+        422: {"model": ErrorResponse},
+        429: {"model": ErrorResponse},
+    },
+)
+def register_merchant(
+    request_obj: Request,
+    request: MerchantRegisterRequest,
+    use_case: Annotated[RegisterMerchantUseCase, Depends(get_register_merchant_use_case)],
+    rate_limit: Annotated[CheckOrderRateLimitUseCase, Depends(get_check_order_rate_limit_use_case)],
+) -> AuthResponse:
+    rate_limit.execute("merchant-register:" + client_ip(request_obj))
+    result = use_case.execute(
+        MerchantRegistration(request.store_name, request.email, request.password)
+    )
+    return AuthResponse(
+        access_token=result.access_token,
+        token_type=result.token_type,
+        store_slug=result.store_slug,
+        email=result.email,
+    )
 
 
 class CustomerLoginRequest(BaseModel):

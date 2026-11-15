@@ -5,6 +5,7 @@ from datetime import UTC, date, datetime
 import pytest
 
 from tests.fakes import InMemoryOrderRepository
+from tests.paid_orders import paid_payments_for
 from topa_api.application.change_order_status import ChangeOrderStatusUseCase
 from topa_api.domain.errors import OrderNotFoundError, StatusChangeNotAllowedError
 from topa_api.domain.orders import Order, OrderItem, OrderStatus, PaymentMethod
@@ -30,7 +31,9 @@ def orders() -> InMemoryOrderRepository:
 def test_stores_the_new_status_and_returns_the_moved_order(
     orders: InMemoryOrderRepository,
 ) -> None:
-    moved = ChangeOrderStatusUseCase(orders).execute(PLACED.id, OrderStatus.PREPARING)
+    moved = ChangeOrderStatusUseCase(orders, paid_payments_for(orders.orders)).execute(
+        PLACED.id, OrderStatus.PREPARING
+    )
 
     assert moved == replace(PLACED, status=OrderStatus.PREPARING)
     assert orders.orders == [moved]
@@ -38,7 +41,9 @@ def test_stores_the_new_status_and_returns_the_moved_order(
 
 def test_an_unknown_order_is_reported(orders: InMemoryOrderRepository) -> None:
     with pytest.raises(OrderNotFoundError) as raised:
-        ChangeOrderStatusUseCase(orders).execute(uuid.uuid4(), OrderStatus.PREPARING)
+        ChangeOrderStatusUseCase(orders, paid_payments_for(orders.orders)).execute(
+            uuid.uuid4(), OrderStatus.PREPARING
+        )
 
     assert str(raised.value) == "Pedido não encontrado."
     assert orders.orders == [PLACED]
@@ -46,14 +51,16 @@ def test_an_unknown_order_is_reported(orders: InMemoryOrderRepository) -> None:
 
 def test_a_refused_change_leaves_the_order_as_it_was(orders: InMemoryOrderRepository) -> None:
     with pytest.raises(StatusChangeNotAllowedError):
-        ChangeOrderStatusUseCase(orders).execute(PLACED.id, OrderStatus.DELIVERED)
+        ChangeOrderStatusUseCase(orders, paid_payments_for(orders.orders)).execute(
+            PLACED.id, OrderStatus.DELIVERED
+        )
 
 
 def test_refuses_updating_order_of_another_store(orders: InMemoryOrderRepository) -> None:
     from topa_api.domain.errors import ForbiddenStoreAccessError
 
     with pytest.raises(ForbiddenStoreAccessError):
-        ChangeOrderStatusUseCase(orders).execute(
+        ChangeOrderStatusUseCase(orders, paid_payments_for(orders.orders)).execute(
             PLACED.id, OrderStatus.PREPARING, store_slug="outra-loja"
         )
 

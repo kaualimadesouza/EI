@@ -21,6 +21,7 @@ erDiagram
     stores {
         text slug PK "identificador, como lanchonete-bem-te-vi"
         text name
+        boolean accepting_orders "Aberta para novos pedidos; lojas novas começam pausadas"
     }
 
     merchants {

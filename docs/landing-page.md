@@ -45,8 +45,12 @@ O valor de R$ 249 vem do rascunho `pipe/pipe_EI_2026.tex`, que registra a decis�
 de preço como pendente de validação. Isso aparece junto aos planos e no FAQ.
 
 Os botões comerciais podem receber uma URL de contato real através de
-`VITE_COMMERCIAL_CONTACT_URL`. Sem essa configuração, levam à demonstração.
+`VITE_COMMERCIAL_CONTACT_URL`. Sem essa configuração, levam ao cadastro real
+de lojista em `/painel?cadastro=1`, sem contratar automaticamente um plano.
 Não há cadastro fictício, formulário sem destino nem confirmação de contratação.
+
+O menu móvel também oferece gestão e criação de loja. A jornada foi revista na
+[validação do primeiro expediente](validacao/2026-11-15/README.md).
 
 A página apresenta funcionalidades existentes e não promete visão computacional
 já entregue, aceitação de cartão por aproximação pronta, pagamentos offline ou

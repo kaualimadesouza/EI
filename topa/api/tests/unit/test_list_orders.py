@@ -4,6 +4,7 @@ from datetime import UTC, date, datetime
 import pytest
 
 from tests.fakes import FixedClock, InMemoryOrderRepository, InMemoryStoreRepository
+from tests.paid_orders import paid_payments_for
 from topa_api.application.list_orders import ListOrdersUseCase
 from topa_api.domain.catalog import Store
 from topa_api.domain.errors import StoreNotFoundError
@@ -51,7 +52,9 @@ def test_lists_the_day_asked_for_by_number_for_that_store_only(
 ) -> None:
     clock = FixedClock(datetime(2026, 10, 27, 15, 0, tzinfo=UTC))
 
-    listed = ListOrdersUseCase(stores, orders, clock).execute(BEM_TE_VI.slug, MONDAY)
+    listed = ListOrdersUseCase(stores, orders, clock, paid_payments_for(orders.orders)).execute(
+        BEM_TE_VI.slug, MONDAY
+    )
 
     assert [(order.store_slug, order.business_date, order.number) for order in listed] == [
         (BEM_TE_VI.slug, MONDAY, 1),
@@ -64,7 +67,9 @@ def test_without_a_day_lists_today_in_sao_paulo(
 ) -> None:
     clock = FixedClock(datetime(2026, 10, 27, 15, 0, tzinfo=UTC))
 
-    listed = ListOrdersUseCase(stores, orders, clock).execute(BEM_TE_VI.slug, None)
+    listed = ListOrdersUseCase(stores, orders, clock, paid_payments_for(orders.orders)).execute(
+        BEM_TE_VI.slug, None
+    )
 
     assert [(order.business_date, order.number) for order in listed] == [(TUESDAY, 1)]
 
@@ -75,7 +80,9 @@ def test_late_at_night_today_is_still_that_evenings_shift(
     """2h30 UTC on Tuesday is 23h30 on Monday in São Paulo."""
     clock = FixedClock(datetime(2026, 10, 27, 2, 30, tzinfo=UTC))
 
-    listed = ListOrdersUseCase(stores, orders, clock).execute(BEM_TE_VI.slug, None)
+    listed = ListOrdersUseCase(stores, orders, clock, paid_payments_for(orders.orders)).execute(
+        BEM_TE_VI.slug, None
+    )
 
     assert [(order.business_date, order.number) for order in listed] == [(MONDAY, 1), (MONDAY, 2)]
 
@@ -86,6 +93,8 @@ def test_an_unknown_store_is_reported(
     clock = FixedClock(datetime(2026, 10, 27, 15, 0, tzinfo=UTC))
 
     with pytest.raises(StoreNotFoundError) as raised:
-        ListOrdersUseCase(stores, orders, clock).execute("outra-loja", MONDAY)
+        ListOrdersUseCase(stores, orders, clock, paid_payments_for(orders.orders)).execute(
+            "outra-loja", MONDAY
+        )
 
     assert str(raised.value) == "Loja não encontrada."

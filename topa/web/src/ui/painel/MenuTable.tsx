@@ -29,13 +29,13 @@ export function MenuTable({ products, orders, onAvailability, onEdit }: MenuTabl
 
   return (
     <div className="overflow-x-auto rounded-[20px] border border-line bg-white">
-      <table className="w-full min-w-[700px] text-left text-[15px]">
-        <thead className="text-[13px] text-muted">
+      <table className="w-full text-left text-[15px] lg:min-w-[700px] max-lg:[&_th]:px-2 max-lg:[&_td]:px-2 max-lg:[&_th]:text-[13px] max-lg:[&_td]:text-[13px] max-sm:block">
+        <thead className="text-[13px] text-muted max-sm:hidden">
           <tr className="border-b border-line">
             <th scope="col" className="px-5 py-3 font-medium">Produto</th>
             <th scope="col" className="px-3 py-3 text-right font-medium">Preço</th>
-            <th scope="col" className="px-3 py-3 text-right font-medium">Vendidos hoje</th>
-            <th scope="col" className="px-3 py-3 font-medium">Sugestão no totem</th>
+            <th scope="col" className="px-3 py-3 text-right font-medium max-lg:hidden">Vendidos hoje</th>
+            <th scope="col" className="px-3 py-3 font-medium max-lg:hidden">Sugestão no totem</th>
             <th scope="col" className="px-5 py-3 text-right font-medium">À venda</th>
             <th scope="col" className="px-5 py-3 text-right font-medium">Ações</th>
           </tr>
@@ -45,21 +45,21 @@ export function MenuTable({ products, orders, onAvailability, onEdit }: MenuTabl
             .filter((product) => product.category === category.id)
             .sort((a, b) => Number(a.available) - Number(b.available))
           return (
-            <tbody key={category.id} className="border-b border-line last:border-b-0">
-              <tr>
-                <th scope="rowgroup" colSpan={6} className="bg-ground-2 px-5 py-2 text-[13px] font-semibold">
+            <tbody key={category.id} className="border-b border-line last:border-b-0 max-sm:block">
+              <tr className="max-sm:block">
+                <th scope="rowgroup" colSpan={6} className="bg-ground-2 px-5 py-2 text-[13px] font-semibold max-sm:block">
                   {category.label}
                 </th>
               </tr>
               {rows.map((product) => (
-                <tr key={product.id} className={product.available ? '' : 'bg-warning-tint'}>
-                  <th scope="row" className="px-5 py-3 font-medium">
+                <tr key={product.id} className={`max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto_auto] max-sm:border-b max-sm:border-line ${product.available ? '' : 'bg-warning-tint'}`}>
+                  <th scope="row" className="break-words px-5 py-3 font-medium max-sm:col-span-3">
                     {product.name}
                     {!product.available && <span className="ml-2 text-[13px] font-semibold text-warning">Esgotado</span>}
                   </th>
-                  <td className="px-3 py-3 text-right tabular-nums">{formatBRL(product.priceCents)}</td>
-                  <td className="px-3 py-3 text-right tabular-nums">{sold.get(product.id) ?? 0}</td>
-                  <td className={`px-3 py-3 ${SUGGESTION_RULES[product.id] ? '' : 'text-muted'}`}>
+                  <td className="px-3 py-3 text-right tabular-nums max-sm:text-left">{formatBRL(product.priceCents)}</td>
+                  <td className="px-3 py-3 text-right tabular-nums max-lg:hidden">{sold.get(product.id) ?? 0}</td>
+                  <td className={`px-3 py-3 max-lg:hidden ${SUGGESTION_RULES[product.id] ? '' : 'text-muted'}`}>
                     {SUGGESTION_RULES[product.id] ?? 'Sem regra'}
                   </td>
                   <td className="px-5 py-2 text-right">
@@ -69,7 +69,7 @@ export function MenuTable({ products, orders, onAvailability, onEdit }: MenuTabl
                       aria-checked={product.available}
                       aria-label={`${product.name} à venda`}
                       onClick={() => onAvailability(product, !product.available)}
-                      className={`relative inline-flex h-8 w-14 flex-none items-center rounded-full transition-colors ${
+                      className={`relative inline-flex h-11 w-14 flex-none items-center rounded-full transition-colors ${
                         product.available ? 'bg-teal' : 'bg-line'
                       }`}
                     >
@@ -85,7 +85,7 @@ export function MenuTable({ products, orders, onAvailability, onEdit }: MenuTabl
                       type="button"
                       aria-label={`Editar ${product.name}`}
                       onClick={() => onEdit?.(product)}
-                      className="cursor-pointer rounded-[8px] border border-line px-3 py-1 text-[13px] font-medium text-ink hover:bg-ground-2"
+                      className="min-h-11 cursor-pointer rounded-[8px] border border-slate px-3 py-1 text-[13px] font-medium text-ink hover:bg-ground-2 max-md:px-2"
                     >
                       Editar
                     </button>

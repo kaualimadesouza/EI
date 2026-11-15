@@ -54,7 +54,16 @@ make test
 
 ## Endpoints
 
-- `GET /menu?loja=<slug>`: one store (`{"slug", "name"}`) and its products in display order,
+- `POST /auth/register`: `{"store_name", "email", "password"}` creates the merchant and a new
+  empty store in one transaction, returning the merchant bearer token and `store_slug` (201).
+  Email is normalized, passwords use scrypt, duplicate email returns 409 and invalid data 422.
+  The store starts with `accepting_orders: false`. Registration is rate limited by client IP.
+- `POST /auth/login`: merchant login, returning the account's own store and token.
+- `PATCH /stores/{slug}/ordering`: `{"accepting_orders": bool}`, authenticated and restricted
+  to that merchant's store. Opening requires an available product; pausing refuses new orders
+  server-side, while existing paid orders can still be prepared and delivered.
+
+- `GET /menu?loja=<slug>`: one store (`{"slug", "name", "accepting_orders"}`) and its products in display order,
   sold-out products included with `available: false`. 404 when no store has that slug.
 - `GET /products?loja=<slug>`: the store's products in display order (`loja` defaults to
   `lanchonete-bem-te-vi`).
@@ -79,7 +88,17 @@ Every error body is `{"detail": "<one pt-BR sentence>"}`: 422 for an empty order
 quantity outside 1 to 20 per product, an unknown product or a malformed body, path or query;
 409 for a sold-out product or a status change that is not
 one step; 404 for an unknown store, order or product. Metrics are not an endpoint: the
-dashboard computes them from `GET /orders`.
+dashboard computes them from `GET /orders`. That operational list includes only orders with
+a confirmed payment record, and status changes reject unconfirmed orders with 409. Historical
+orders without confirmation remain stored but no longer inflate the kitchen or sales totals.
+
+The production gateway requires `TOPA_ABACATEPAY_API_KEY`; absent configuration returns a
+payment error instead of creating a fictitious Pix code. An explicit `mock:` key is for tests
+only. The browser offers Pix, waits for a persisted order ID, and never substitutes a demo QR
+when the real charge fails. Native card acceptance still requires its own integration.
+
+For the reproducible, local-only first-shift exercise and its controlled provider, see
+[`docs/validacao/2026-11-15/README.md`](../../docs/validacao/2026-11-15/README.md).
 
 ## Layout
 
