@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.8](https://github.com/kaualimadesouza/EI/compare/topa-0.1.7...topa-0.1.8) (2026-11-15)
+
+
+### Features
+
+* **api,web:** enable merchant onboarding and validate first shift ([#82](https://github.com/kaualimadesouza/EI/issues/82)) ([c6ff45e](https://github.com/kaualimadesouza/EI/commit/c6ff45edac8154a22c834a519bd1080e3b13505d))
+* **web:** add TOPA product landing page ([275c373](https://github.com/kaualimadesouza/EI/commit/275c373e23e66d49c566fc5e3d982c9cd0786267))
+* **web:** serve the product landing at the root URL ([db92a01](https://github.com/kaualimadesouza/EI/commit/db92a01829a38e666acb9a0bc641af400f9ed4c0))
+
 ## [0.1.7](https://github.com/kaualimadesouza/EI/compare/topa-0.1.6...topa-0.1.7) (2026-11-01)
 
 
