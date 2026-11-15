@@ -16,6 +16,15 @@ Os MP4s usam H.264, áudio AAC estéreo e início rápido para reprodução na w
 A versão vertical tem composição própria e margens reservadas para legendas e
 interfaces de redes sociais.
 
+## Segunda versão (v2)
+
+[topa-horizontal-v2.mp4](topa-horizontal-v2.mp4) e
+[topa-vertical-v2.mp4](topa-vertical-v2.mp4) são o corte atual: seis cenas em
+30 segundos, descritas em [roteiro.md](roteiro.md), com a narração de
+[narracao.wav](narracao.wav) sobre os efeitos sonoros e sem trilha de fundo.
+Essa versão foi animada fora deste repositório e exportada como MP4; os scripts
+de `tools/` continuam gerando apenas a primeira versão, descrita abaixo.
+
 ## Recriar os vídeos
 
 Execute na raiz do repositório. Precisa de [uv](https://docs.astral.sh/uv/), Python
